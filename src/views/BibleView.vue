@@ -108,6 +108,13 @@
               <AppSpinner size="sm" />
             </div>
 
+            <p
+              v-else-if="searchInput && searchResults.length === 0"
+              class="mt-3 text-sm text-slate-400 text-center"
+            >
+              No results found.
+            </p>
+
             <div
               v-else-if="searchResults.length > 0"
               class="mt-3 space-y-1 max-h-64 overflow-y-auto"
@@ -116,10 +123,7 @@
                 v-for="(result, i) in searchResults"
                 :key="i"
                 class="w-full text-left p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                @click="
-                  loadChapter(result.book, result.chapter)
-                  showSearch = false
-                "
+                @click="loadChapter(result.book, result.chapter); showSearch = false"
               >
                 <p class="text-xs font-semibold text-primary-600 mb-0.5">
                   {{ result.book }} {{ result.chapter }}:{{ result.verse }}

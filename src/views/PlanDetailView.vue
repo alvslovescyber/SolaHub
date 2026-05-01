@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { onMounted } from 'vue'
   import { useRouter } from 'vue-router'
-  import { ArrowLeft, Users, CheckCircle } from 'lucide-vue-next'
+  import { ArrowLeft, Users, CheckCircle, Trash2 } from 'lucide-vue-next'
   import { usePlansStore } from '@/stores/plans.store'
   import { useAuthStore } from '@/stores/auth.store'
   import AppPageHeader from '@/components/layout/AppPageHeader.vue'
@@ -19,9 +19,16 @@
   onMounted(() => plans.fetchPlan(props.id))
 
   const myParticipant = () => plans.activePlan?.participants.find((p) => p.userId === auth.user?.id)
+  const isOwner = () => plans.activePlan?.createdBy === auth.user?.id
 
   async function markDay(dayNumber: number) {
     await plans.recordProgress(props.id, dayNumber)
+  }
+
+  async function deletePlan() {
+    if (!window.confirm('Delete this reading plan? This cannot be undone.')) return
+    await plans.remove(props.id)
+    await router.push({ name: 'plans' })
   }
 </script>
 
@@ -36,6 +43,10 @@
           <ArrowLeft class="h-4 w-4" />
           Back
         </AppButton>
+        <AppButton v-if="isOwner()" variant="danger" size="sm" @click="deletePlan">
+          <Trash2 class="h-4 w-4" />
+          Delete Plan
+        </AppButton>
       </template>
     </AppPageHeader>
 
@@ -43,6 +54,17 @@
       <AppSpinner v-if="plans.isLoading" />
 
       <div v-else-if="plans.activePlan" class="space-y-6">
+        <!-- Status -->
+        <div class="flex items-center gap-2">
+          <AppBadge
+            :variant="plans.activePlan.status === 'Active' ? 'success' : plans.activePlan.status === 'Draft' ? 'primary' : 'default'"
+            size="sm"
+          >
+            {{ plans.activePlan.status }}
+          </AppBadge>
+          <AppBadge v-if="plans.activePlan.isPublic" variant="default" size="sm">Public</AppBadge>
+        </div>
+
         <!-- Participants -->
         <section>
           <h2

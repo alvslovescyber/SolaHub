@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-const uniqueEmail = () => `e2e_${Date.now()}@example.com`
+const uniqueEmail = () => `e2e_${Date.now()}_${Math.random().toString(36).slice(2, 7)}@example.com`
 
 test.describe('Authentication', () => {
   test('shows login page on first load', async ({ page }) => {
@@ -28,7 +28,7 @@ test.describe('Authentication', () => {
     await page.getByRole('button', { name: 'Sign in' }).click()
 
     // Error message should appear
-    await expect(page.locator('text=Invalid')).toBeVisible({ timeout: 5_000 })
+    await expect(page.locator('text=Invalid email or password')).toBeVisible({ timeout: 5_000 })
   })
 
   test('logout clears session and redirects', async ({ page }) => {

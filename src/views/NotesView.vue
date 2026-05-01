@@ -17,6 +17,10 @@
 
   onMounted(() => notes.fetchMyNotes())
 
+  function confirmDelete(id: string) {
+    if (window.confirm('Delete this note?')) notes.remove(id)
+  }
+
   async function createNote() {
     if (!newContent.value.trim() || !newVerseRef.value.trim()) return
     await notes.create({
@@ -108,7 +112,7 @@
             </div>
             <button
               class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-              @click="notes.remove(note.id)"
+              @click="confirmDelete(note.id)"
             >
               <Trash2 class="h-4 w-4" />
             </button>

@@ -23,6 +23,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
+
+        // Run migrations after the host is built and postgres is ready
+        await using var scope = Server.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Database.MigrateAsync();
     }
 
     public new async Task DisposeAsync()
@@ -47,12 +52,6 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             services.AddDbContext<AppDbContext>(opts =>
                 opts.UseNpgsql(_postgres.GetConnectionString()).UseSnakeCaseNamingConvention()
             );
-
-            // Run migrations
-            var sp = services.BuildServiceProvider();
-            using var scope = sp.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            db.Database.Migrate();
         });
     }
 }

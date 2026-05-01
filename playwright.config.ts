@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: [['html'], ['list']],
 
   use: {
-    baseURL: 'http://localhost:1420',
+    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -22,8 +22,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'pnpm exec vite --port 1420',
-    url: 'http://localhost:1420',
+    command: 'npm run dev:web',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
   },

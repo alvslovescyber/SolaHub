@@ -99,6 +99,7 @@ api/publish/
 coverage/
 playwright-report/
 test-results/
+.playwright-mcp/
 
 # ─── SQLite ───────────────────────────────────────────────────────────────────
 *.db

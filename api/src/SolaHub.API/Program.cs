@@ -111,7 +111,8 @@ try
                     .WithOrigins(
                         "tauri://localhost",
                         "https://tauri.localhost",
-                        "http://localhost:1420", // Vite dev server
+                        "http://localhost:1420", // Vite dev (Tauri)
+                        "http://localhost:3000", // Vite dev (web)
                         "http://localhost:5173"
                     )
                     .AllowAnyHeader()

@@ -75,7 +75,6 @@ export const useAuthStore = defineStore('auth', () => {
 })
 
 function extractErrorMessage(e: unknown): string {
-  if (e instanceof Error) return e.message
   if (
     typeof e === 'object' &&
     e !== null &&
@@ -85,5 +84,6 @@ function extractErrorMessage(e: unknown): string {
   ) {
     return (e as { response: { data: { description: string } } }).response.data.description
   }
+  if (e instanceof Error) return e.message
   return 'An unexpected error occurred.'
 }
