@@ -1,0 +1,120 @@
+name: API CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - '.github/workflows/api.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - '.github/workflows/api.yml'
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+jobs:
+  lint:
+    name: Lint (CSharpier)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install CSharpier
+        run: dotnet tool install --global csharpier
+
+      - name: Check formatting
+        run: dotnet csharpier --check api/
+
+  build:
+    name: Build & Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore api/SolaHub.sln
+
+      - name: Build
+        run: dotnet build api/SolaHub.sln --no-restore --configuration Release
+
+      - name: Unit Tests
+        run: >
+          dotnet test api/tests/SolaHub.Tests.Unit/SolaHub.Tests.Unit.csproj
+          --no-build
+          --configuration Release
+          --logger "trx;LogFileName=unit-results.xml"
+          --collect:"XPlat Code Coverage"
+          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: '**/TestResults/*.trx'
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: solahub_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore api/SolaHub.sln
+
+      - name: Build
+        run: dotnet build api/SolaHub.sln --no-restore --configuration Release
+
+      - name: Integration Tests
+        run: >
+          dotnet test api/tests/SolaHub.Tests.Integration/SolaHub.Tests.Integration.csproj
+          --no-build
+          --configuration Release
+          --logger "trx;LogFileName=integration-results.xml"
+        env:
+          ConnectionStrings__DefaultConnection: >-
+            Host=localhost;Port=5432;Database=solahub_test;Username=test;Password=test
+          Jwt__SecretKey: ci-secret-key-must-be-at-least-32-bytes-long!!
+          Jwt__Issuer: SolaHub
+          Jwt__Audience: SolaHub.Desktop
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: '**/TestResults/*.trx'

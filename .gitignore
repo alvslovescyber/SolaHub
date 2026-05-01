@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Vite
+.vite/
+
+# Tauri
+src-tauri/target/
+src-tauri/WixTools/
+
+# Rust
+Cargo.lock
+**/*.rs.bk
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+playwright-report/
+
+# API
+api/src/*/bin/
+api/src/*/obj/
+api/*.user
+
+# SQLite
+*.db
+*.sqlite
+!src-tauri/resources/*.db

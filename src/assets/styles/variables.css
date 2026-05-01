@@ -1,0 +1,64 @@
+:root {
+  /* ─── Colours ─────────────────────────────────────────────────────────────── */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+
+  /* ─── Surface ─────────────────────────────────────────────────────────────── */
+  --surface-base: #ffffff;
+  --surface-elevated: #f8fafc;
+  --surface-overlay: #f1f5f9;
+  --surface-sidebar: rgba(248, 250, 252, 0.85);
+
+  /* ─── Text ────────────────────────────────────────────────────────────────── */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+
+  /* ─── Border ──────────────────────────────────────────────────────────────── */
+  --border-default: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --border-focus: #3b82f6;
+
+  /* ─── Shadow ──────────────────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-panel: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* ─── Layout ──────────────────────────────────────────────────────────────── */
+  --sidebar-width: 220px;
+  --sidebar-collapsed-width: 60px;
+  --header-height: 48px;
+  --context-panel-width: 320px;
+
+  /* ─── Radius ──────────────────────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* ─── Transition ──────────────────────────────────────────────────────────── */
+  --transition-fast: 100ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 350ms ease;
+}
+
+.dark {
+  --surface-base: #0f172a;
+  --surface-elevated: #1e293b;
+  --surface-overlay: #334155;
+  --surface-sidebar: rgba(15, 23, 42, 0.85);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+
+  --border-default: #1e293b;
+  --border-subtle: #0f172a;
+}

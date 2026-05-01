@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import './base.css';
+
+/* ─── Tauri drag region ───────────────────────────────────────────────────── */
+[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+  cursor: default;
+  user-select: none;
+}
+
+[data-tauri-drag-region] button,
+[data-tauri-drag-region] a,
+[data-tauri-drag-region] input {
+  -webkit-app-region: no-drag;
+}
+
+/* ─── Sidebar glass effect ────────────────────────────────────────────────── */
+.sidebar-glass {
+  background: var(--surface-sidebar);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  border-right: 1px solid var(--border-subtle);
+}
+
+/* ─── Card surface ────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-base);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* ─── Prose (Bible text) ──────────────────────────────────────────────────── */
+.bible-verse {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  font-size: 1.05rem;
+  line-height: 1.9;
+  color: var(--text-primary);
+}
+
+.bible-verse sup {
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.65em;
+  color: var(--color-primary-600);
+  font-weight: 600;
+  margin-right: 2px;
+  user-select: none;
+}
+
+.bible-verse .verse-highlight {
+  background-color: rgb(251 191 36 / 0.25);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+/* ─── Presenter mode ──────────────────────────────────────────────────────── */
+.presenter-slide {
+  font-size: clamp(1.5rem, 4vw, 3.5rem);
+  font-family: 'Georgia', serif;
+  line-height: 1.6;
+  text-align: center;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+}
+
+/* ─── Slide-in transitions ────────────────────────────────────────────────── */
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform var(--transition-base), opacity var(--transition-base);
+}
+
+.slide-enter-from {
+  transform: translateX(24px);
+  opacity: 0;
+}
+
+.slide-leave-to {
+  transform: translateX(-24px);
+  opacity: 0;
+}
+
+/* ─── Fade transition ─────────────────────────────────────────────────────── */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--transition-base);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
