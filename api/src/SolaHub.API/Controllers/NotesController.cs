@@ -28,7 +28,8 @@ public sealed class NotesController(ISender sender) : ControllerBase
 
         return result.Match<IActionResult>(
             value => Ok(value),
-            error => StatusCode(500, new { error.Code, error.Description }));
+            error => StatusCode(500, new { error.Code, error.Description })
+        );
     }
 
     /// <summary>Get notes for a specific Bible verse, optionally filtered to shared only.</summary>
@@ -38,18 +39,21 @@ public sealed class NotesController(ISender sender) : ControllerBase
     public async Task<IActionResult> GetVerseNotes(
         [FromRoute] string verseRef,
         [FromQuery] bool sharedOnly = false,
-        CancellationToken ct = default)
+        CancellationToken ct = default
+    )
     {
         var query = new GetVerseNotesQuery(verseRef, sharedOnly);
         var result = await sender.Send(query, ct);
 
         return result.Match<IActionResult>(
             value => Ok(value),
-            error => error.Type switch
-            {
-                ErrorType.Validation => BadRequest(new { error.Code, error.Description }),
-                _ => StatusCode(500, new { error.Code, error.Description }),
-            });
+            error =>
+                error.Type switch
+                {
+                    ErrorType.Validation => BadRequest(new { error.Code, error.Description }),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
     }
 
     /// <summary>Create a new verse note.</summary>
@@ -58,19 +62,29 @@ public sealed class NotesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateNote(
         [FromBody] CreateNoteRequest request,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
-        var command = new CreateNoteCommand(CurrentUserId, request.VerseRef, request.Content,
-            request.Tags ?? [], request.IsShared);
+        var command = new CreateNoteCommand(
+            CurrentUserId,
+            request.VerseRef,
+            request.Content,
+            request.Tags ?? [],
+            request.IsShared
+        );
         var result = await sender.Send(command, ct);
 
         return result.Match<IActionResult>(
             value => CreatedAtAction(nameof(GetMyNotes), value),
-            error => error.Type switch
-            {
-                ErrorType.Validation => UnprocessableEntity(new { error.Code, error.Description }),
-                _ => StatusCode(500, new { error.Code, error.Description }),
-            });
+            error =>
+                error.Type switch
+                {
+                    ErrorType.Validation => UnprocessableEntity(
+                        new { error.Code, error.Description }
+                    ),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
     }
 
     /// <summary>Update an existing note (owner only).</summary>
@@ -81,25 +95,31 @@ public sealed class NotesController(ISender sender) : ControllerBase
     public async Task<IActionResult> UpdateNote(
         [FromRoute] Guid id,
         [FromBody] UpdateNoteRequest request,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
         var command = new UpdateNoteCommand(
             VerseNoteId.From(id),
             CurrentUserId,
             request.Content,
             request.Tags ?? [],
-            request.IsShared);
+            request.IsShared
+        );
         var result = await sender.Send(command, ct);
 
         return result.Match<IActionResult>(
             value => Ok(value),
-            error => error.Type switch
-            {
-                ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
-                ErrorType.Forbidden => Forbid(),
-                ErrorType.Validation => UnprocessableEntity(new { error.Code, error.Description }),
-                _ => StatusCode(500, new { error.Code, error.Description }),
-            });
+            error =>
+                error.Type switch
+                {
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Forbidden => Forbid(),
+                    ErrorType.Validation => UnprocessableEntity(
+                        new { error.Code, error.Description }
+                    ),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
     }
 
     /// <summary>Delete a note (owner only).</summary>
@@ -114,12 +134,14 @@ public sealed class NotesController(ISender sender) : ControllerBase
 
         return result.Match<IActionResult>(
             () => NoContent(),
-            error => error.Type switch
-            {
-                ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
-                ErrorType.Forbidden => Forbid(),
-                _ => StatusCode(500, new { error.Code, error.Description }),
-            });
+            error =>
+                error.Type switch
+                {
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Forbidden => Forbid(),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
     }
 }
 
@@ -128,9 +150,7 @@ public sealed record CreateNoteRequest(
     string VerseRef,
     string Content,
     IReadOnlyList<string>? Tags,
-    bool IsShared);
+    bool IsShared
+);
 
-public sealed record UpdateNoteRequest(
-    string Content,
-    IReadOnlyList<string>? Tags,
-    bool IsShared);
+public sealed record UpdateNoteRequest(string Content, IReadOnlyList<string>? Tags, bool IsShared);

@@ -1,33 +1,34 @@
 <script setup lang="ts">
-interface Props {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
-  size?: 'sm' | 'md' | 'lg'
-  loading?: boolean
-  disabled?: boolean
-  type?: 'button' | 'submit' | 'reset'
-}
+  interface Props {
+    variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+    size?: 'sm' | 'md' | 'lg'
+    loading?: boolean
+    disabled?: boolean
+    type?: 'button' | 'submit' | 'reset'
+  }
 
-const {
-  variant = 'primary',
-  size = 'md',
-  loading = false,
-  disabled = false,
-  type = 'button',
-} = defineProps<Props>()
+  const {
+    variant = 'primary',
+    size = 'md',
+    loading = false,
+    disabled = false,
+    type = 'button',
+  } = defineProps<Props>()
 
-const variantClasses = {
-  primary: 'bg-primary-600 text-white hover:bg-primary-700 focus-visible:ring-primary-500',
-  secondary:
-    'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 focus-visible:ring-slate-400 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700',
-  ghost: 'text-slate-600 hover:bg-slate-100 focus-visible:ring-slate-400 dark:text-slate-300 dark:hover:bg-slate-800',
-  danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500',
-}
+  const variantClasses = {
+    primary: 'bg-primary-600 text-white hover:bg-primary-700 focus-visible:ring-primary-500',
+    secondary:
+      'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 focus-visible:ring-slate-400 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700',
+    ghost:
+      'text-slate-600 hover:bg-slate-100 focus-visible:ring-slate-400 dark:text-slate-300 dark:hover:bg-slate-800',
+    danger: 'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500',
+  }
 
-const sizeClasses = {
-  sm: 'px-3 py-1.5 text-xs gap-1.5',
-  md: 'px-4 py-2 text-sm gap-2',
-  lg: 'px-5 py-2.5 text-base gap-2.5',
-}
+  const sizeClasses = {
+    sm: 'px-3 py-1.5 text-xs gap-1.5',
+    md: 'px-4 py-2 text-sm gap-2',
+    lg: 'px-5 py-2.5 text-base gap-2.5',
+  }
 </script>
 
 <template>

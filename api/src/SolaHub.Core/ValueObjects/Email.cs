@@ -8,7 +8,8 @@ public sealed record Email
     private static readonly Regex EmailRegex = new(
         @"^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase,
-        TimeSpan.FromMilliseconds(100));
+        TimeSpan.FromMilliseconds(100)
+    );
 
     private Email(string value) => Value = value;
 

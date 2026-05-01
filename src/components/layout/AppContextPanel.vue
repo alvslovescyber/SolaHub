@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { X } from 'lucide-vue-next'
-import { useUiStore } from '@/stores/ui.store'
+  import { X } from 'lucide-vue-next'
+  import { useUiStore } from '@/stores/ui.store'
 
-const ui = useUiStore()
+  const ui = useUiStore()
 </script>
 
 <template>
@@ -11,7 +11,9 @@ const ui = useUiStore()
       v-if="ui.contextPanelOpen"
       class="w-[320px] shrink-0 flex flex-col border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden"
     >
-      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+      <div
+        class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700"
+      >
         <h3 class="text-sm font-semibold text-slate-900 dark:text-white">
           <slot name="title">Context</slot>
         </h3>
@@ -31,15 +33,17 @@ const ui = useUiStore()
 </template>
 
 <style scoped>
-.slide-panel-enter-active,
-.slide-panel-leave-active {
-  transition: width 200ms ease, opacity 200ms ease;
-  overflow: hidden;
-}
+  .slide-panel-enter-active,
+  .slide-panel-leave-active {
+    transition:
+      width 200ms ease,
+      opacity 200ms ease;
+    overflow: hidden;
+  }
 
-.slide-panel-enter-from,
-.slide-panel-leave-to {
-  width: 0;
-  opacity: 0;
-}
+  .slide-panel-enter-from,
+  .slide-panel-leave-to {
+    width: 0;
+    opacity: 0;
+  }
 </style>

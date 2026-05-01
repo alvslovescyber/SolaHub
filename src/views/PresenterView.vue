@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Monitor, ChevronLeft, ChevronRight, Maximize2, ExternalLink } from 'lucide-vue-next'
-import { usePresenterStore } from '@/stores/presenter.store'
-import { useBibleStore } from '@/stores/bible.store'
-import AppPageHeader from '@/components/layout/AppPageHeader.vue'
-import AppButton from '@/components/ui/AppButton.vue'
-import AppCard from '@/components/ui/AppCard.vue'
-import type { PresenterSlide } from '@/types/presenter.types'
+  import { computed } from 'vue'
+  import { Monitor, ChevronLeft, ChevronRight, Maximize2, ExternalLink } from 'lucide-vue-next'
+  import { usePresenterStore } from '@/stores/presenter.store'
+  import { useBibleStore } from '@/stores/bible.store'
+  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import AppCard from '@/components/ui/AppCard.vue'
+  import type { PresenterSlide } from '@/types/presenter.types'
 
-const presenter = usePresenterStore()
-const bible = useBibleStore()
+  const presenter = usePresenterStore()
+  const bible = useBibleStore()
 
-const slide = computed(() => presenter.currentSlide)
-const progress = computed(() => presenter.progress)
+  const slide = computed(() => presenter.currentSlide)
+  const progress = computed(() => presenter.progress)
 
-async function loadCurrentChapterAsSlides() {
-  if (!bible.currentChapter) return
-  const slides: PresenterSlide[] = bible.currentChapter.verses.map((v) => ({
-    verseRef: `${v.book}.${v.chapter}.${v.verse}`,
-    text: v.text,
-    book: v.book,
-    chapter: v.chapter,
-    verse: v.verse,
-  }))
-  presenter.loadSlides(slides)
-}
+  function loadCurrentChapterAsSlides() {
+    if (!bible.currentChapter) return
+    const slides: PresenterSlide[] = bible.currentChapter.verses.map((v) => ({
+      verseRef: `${v.book}.${v.chapter}.${v.verse}`,
+      text: v.text,
+      book: v.book,
+      chapter: v.chapter,
+      verse: v.verse,
+    }))
+    presenter.loadSlides(slides)
+  }
 </script>
 
 <template>
@@ -53,7 +53,8 @@ async function loadCurrentChapterAsSlides() {
           <div>
             <p class="text-sm font-semibold text-slate-900 dark:text-white">Load from Bible</p>
             <p class="text-xs text-slate-500 mt-0.5">
-              Load the current chapter ({{ bible.selectedBook }} {{ bible.selectedChapter }}) as slides
+              Load the current chapter ({{ bible.selectedBook }} {{ bible.selectedChapter }}) as
+              slides
             </p>
           </div>
           <AppButton size="sm" variant="secondary" @click="loadCurrentChapterAsSlides">
@@ -66,7 +67,9 @@ async function loadCurrentChapterAsSlides() {
       <!-- Slide preview -->
       <div v-if="presenter.session.slides.length > 0">
         <!-- Current slide preview -->
-        <div class="rounded-xl bg-slate-900 dark:bg-black aspect-video flex flex-col items-center justify-center p-8 shadow-2xl">
+        <div
+          class="rounded-xl bg-slate-900 dark:bg-black aspect-video flex flex-col items-center justify-center p-8 shadow-2xl"
+        >
           <div v-if="slide" class="presenter-slide">
             {{ slide.text }}
           </div>
@@ -91,27 +94,17 @@ async function loadCurrentChapterAsSlides() {
 
         <!-- Controls -->
         <div class="flex items-center justify-center gap-4 mt-4">
-          <AppButton
-            variant="secondary"
-            :disabled="!presenter.hasPrev"
-            @click="presenter.prev()"
-          >
+          <AppButton variant="secondary" :disabled="!presenter.hasPrev" @click="presenter.prev()">
             <ChevronLeft class="h-4 w-4" />
             Previous
           </AppButton>
 
-          <AppButton
-            variant="secondary"
-            @click="presenter.toggleFullscreen()"
-          >
+          <AppButton variant="secondary" @click="presenter.toggleFullscreen()">
             <Maximize2 class="h-4 w-4" />
             {{ presenter.session.isFullscreen ? 'Exit Fullscreen' : 'Fullscreen' }}
           </AppButton>
 
-          <AppButton
-            :disabled="!presenter.hasNext"
-            @click="presenter.next()"
-          >
+          <AppButton :disabled="!presenter.hasNext" @click="presenter.next()">
             Next
             <ChevronRight class="h-4 w-4" />
           </AppButton>

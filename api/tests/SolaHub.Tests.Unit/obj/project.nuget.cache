@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Cc6nA2CRbuI=",
+  "dgSpecHash": "Zyiri7pIlUo=",
   "success": true,
   "projectFilePath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/tests/SolaHub.Tests.Unit/SolaHub.Tests.Unit.csproj",
   "expectedPackageFiles": [
@@ -13,8 +13,8 @@
     "/Users/alvsabel/.nuget/packages/mediatr/12.4.1/mediatr.12.4.1.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/mediatr.contracts/2.0.1/mediatr.contracts.2.0.1.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/microsoft.codecoverage/17.12.0/microsoft.codecoverage.17.12.0.nupkg.sha512",
-    "/Users/alvsabel/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/9.0.4/microsoft.extensions.dependencyinjection.abstractions.9.0.4.nupkg.sha512",
-    "/Users/alvsabel/.nuget/packages/microsoft.extensions.logging.abstractions/9.0.4/microsoft.extensions.logging.abstractions.9.0.4.nupkg.sha512",
+    "/Users/alvsabel/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/10.0.7/microsoft.extensions.dependencyinjection.abstractions.10.0.7.nupkg.sha512",
+    "/Users/alvsabel/.nuget/packages/microsoft.extensions.logging.abstractions/10.0.7/microsoft.extensions.logging.abstractions.10.0.7.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/microsoft.net.test.sdk/17.12.0/microsoft.net.test.sdk.17.12.0.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/microsoft.testplatform.objectmodel/17.12.0/microsoft.testplatform.objectmodel.17.12.0.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/microsoft.testplatform.testhost/17.12.0/microsoft.testplatform.testhost.17.12.0.nupkg.sha512",
@@ -22,7 +22,6 @@
     "/Users/alvsabel/.nuget/packages/nsubstitute/5.3.0/nsubstitute.5.3.0.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/system.configuration.configurationmanager/4.4.0/system.configuration.configurationmanager.4.4.0.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/system.diagnostics.eventlog/6.0.0/system.diagnostics.eventlog.6.0.0.nupkg.sha512",
-    "/Users/alvsabel/.nuget/packages/system.reflection.metadata/1.6.0/system.reflection.metadata.1.6.0.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/system.security.cryptography.protecteddata/4.4.0/system.security.cryptography.protecteddata.4.4.0.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/xunit/2.9.3/xunit.2.9.3.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/xunit.abstractions/2.0.3/xunit.abstractions.2.0.3.nupkg.sha512",
@@ -31,9 +30,7 @@
     "/Users/alvsabel/.nuget/packages/xunit.core/2.9.3/xunit.core.2.9.3.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/xunit.extensibility.core/2.9.3/xunit.extensibility.core.2.9.3.nupkg.sha512",
     "/Users/alvsabel/.nuget/packages/xunit.extensibility.execution/2.9.3/xunit.extensibility.execution.2.9.3.nupkg.sha512",
-    "/Users/alvsabel/.nuget/packages/xunit.runner.visualstudio/2.8.2/xunit.runner.visualstudio.2.8.2.nupkg.sha512",
-    "/Users/alvsabel/.nuget/packages/microsoft.netcore.app.ref/9.0.11/microsoft.netcore.app.ref.9.0.11.nupkg.sha512",
-    "/Users/alvsabel/.nuget/packages/microsoft.aspnetcore.app.ref/9.0.11/microsoft.aspnetcore.app.ref.9.0.11.nupkg.sha512"
+    "/Users/alvsabel/.nuget/packages/xunit.runner.visualstudio/2.8.2/xunit.runner.visualstudio.2.8.2.nupkg.sha512"
   ],
   "logs": []
 }

@@ -37,13 +37,11 @@ export const useUiStore = defineStore('ui', () => {
     applyTheme(resolvedTheme.value)
 
     // Watch for system preference changes
-    window
-      .matchMedia('(prefers-color-scheme: dark)')
-      .addEventListener('change', (e) => {
-        if (theme.value === 'system') {
-          applyTheme(e.matches ? 'dark' : 'light')
-        }
-      })
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if (theme.value === 'system') {
+        applyTheme(e.matches ? 'dark' : 'light')
+      }
+    })
   }
 
   function toggleSidebar(): void {

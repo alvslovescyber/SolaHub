@@ -4,9 +4,28 @@ import { tokenStorage } from './http/client'
 export type CollaborationEvent =
   | { type: 'UserJoined'; userId: string; joinedAt: string }
   | { type: 'UserLeft'; userId: string; leftAt: string }
-  | { type: 'ProgressUpdated'; planId: string; userId: string; dayNumber: number; updatedAt: string }
-  | { type: 'AnnotationReceived'; planId: string; userId: string; verseRef: string; content: string; sentAt: string }
-  | { type: 'PresenterVerseChanged'; planId: string; presenterUserId: string; verseRef: string; pushedAt: string }
+  | {
+      type: 'ProgressUpdated'
+      planId: string
+      userId: string
+      dayNumber: number
+      updatedAt: string
+    }
+  | {
+      type: 'AnnotationReceived'
+      planId: string
+      userId: string
+      verseRef: string
+      content: string
+      sentAt: string
+    }
+  | {
+      type: 'PresenterVerseChanged'
+      planId: string
+      presenterUserId: string
+      verseRef: string
+      pushedAt: string
+    }
 
 type EventHandler = (event: CollaborationEvent) => void
 
@@ -35,9 +54,9 @@ class CollaborationService {
     await this.connection.start()
 
     // Re-join all plans after reconnect
-    this.connection.onreconnected(async () => {
+    this.connection.onreconnected(() => {
       for (const planId of this.joinedPlans) {
-        await this.connection!.invoke('JoinPlan', planId)
+        void this.connection!.invoke('JoinPlan', planId)
       }
     })
   }
@@ -86,20 +105,14 @@ class CollaborationService {
   private registerHandlers(): void {
     if (!this.connection) return
 
-    this.connection.on('UserJoined', (data) =>
-      this.emit({ type: 'UserJoined', ...data }),
-    )
-    this.connection.on('UserLeft', (data) =>
-      this.emit({ type: 'UserLeft', ...data }),
-    )
-    this.connection.on('ProgressUpdated', (data) =>
-      this.emit({ type: 'ProgressUpdated', ...data }),
-    )
+    this.connection.on('UserJoined', (data) => this.emit({ type: 'UserJoined', ...data }))
+    this.connection.on('UserLeft', (data) => this.emit({ type: 'UserLeft', ...data }))
+    this.connection.on('ProgressUpdated', (data) => this.emit({ type: 'ProgressUpdated', ...data }))
     this.connection.on('AnnotationReceived', (data) =>
-      this.emit({ type: 'AnnotationReceived', ...data }),
+      this.emit({ type: 'AnnotationReceived', ...data })
     )
     this.connection.on('PresenterVerseChanged', (data) =>
-      this.emit({ type: 'PresenterVerseChanged', ...data }),
+      this.emit({ type: 'PresenterVerseChanged', ...data })
     )
   }
 }

@@ -13,7 +13,10 @@ public sealed record GetUserNotesQuery(UserId UserId) : IQuery<IReadOnlyList<Not
 internal sealed class GetUserNotesQueryHandler(IVerseNoteRepository noteRepository)
     : IRequestHandler<GetUserNotesQuery, Result<IReadOnlyList<NoteDto>>>
 {
-    public async Task<Result<IReadOnlyList<NoteDto>>> Handle(GetUserNotesQuery request, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<NoteDto>>> Handle(
+        GetUserNotesQuery request,
+        CancellationToken ct
+    )
     {
         var notes = await noteRepository.GetByUserAsync(request.UserId, ct);
         var dtos = notes.Select(CreateNoteCommandHandler.MapToDto).ToList().AsReadOnly();

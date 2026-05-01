@@ -6,7 +6,8 @@ namespace SolaHub.API.Middleware;
 public sealed class GlobalExceptionMiddleware(
     RequestDelegate next,
     ILogger<GlobalExceptionMiddleware> logger,
-    IHostEnvironment env)
+    IHostEnvironment env
+)
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -26,8 +27,12 @@ public sealed class GlobalExceptionMiddleware(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Unhandled exception for {Method} {Path}",
-                context.Request.Method, context.Request.Path);
+            logger.LogError(
+                ex,
+                "Unhandled exception for {Method} {Path}",
+                context.Request.Method,
+                context.Request.Path
+            );
 
             await WriteErrorResponseAsync(context, ex);
         }
@@ -49,7 +54,6 @@ public sealed class GlobalExceptionMiddleware(
             stackTrace = env.IsDevelopment() ? ex.StackTrace : null,
         };
 
-        await context.Response.WriteAsync(
-            JsonSerializer.Serialize(response, JsonOptions));
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
     }
 }

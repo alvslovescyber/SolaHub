@@ -1,12 +1,12 @@
 <script setup lang="ts">
-interface Props {
-  size?: 'sm' | 'md' | 'lg'
-  label?: string
-}
+  interface Props {
+    size?: 'sm' | 'md' | 'lg'
+    label?: string
+  }
 
-const { size = 'md', label = 'Loading...' } = defineProps<Props>()
+  const { size = 'md', label = 'Loading...' } = defineProps<Props>()
 
-const sizeClasses = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-10 w-10' }
+  const sizeClasses = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-10 w-10' }
 </script>
 
 <template>

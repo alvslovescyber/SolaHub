@@ -11,7 +11,17 @@ public sealed class VerseNote : BaseEntity<VerseNoteId>
 
     private readonly List<string> _tags = [];
 
-    private VerseNote(VerseNoteId id, UserId userId, VerseRef verseRef, string content) : base(id)
+    // Required by EF Core for materialization — never called by application code
+    private VerseNote()
+        : base(default!)
+    {
+        UserId = default;
+        VerseRef = null!;
+        Content = string.Empty;
+    }
+
+    private VerseNote(VerseNoteId id, UserId userId, VerseRef verseRef, string content)
+        : base(id)
     {
         UserId = userId;
         VerseRef = verseRef;
@@ -31,14 +41,18 @@ public sealed class VerseNote : BaseEntity<VerseNoteId>
         VerseRef verseRef,
         string content,
         IEnumerable<string> tags,
-        bool isShared = false)
+        bool isShared = false
+    )
     {
         if (string.IsNullOrWhiteSpace(content))
             return Error.Validation("Notes.ContentRequired", "Note content cannot be empty.");
 
         if (content.Length > MaxContentLength)
-            return Error.Validation("Notes.ContentTooLong",
-                $"Note content must not exceed {MaxContentLength:N0} characters.");
+            return new Error(
+                "Notes.ContentTooLong",
+                $"Note content must not exceed {MaxContentLength:N0} characters.",
+                ErrorType.Validation
+            );
 
         var note = new VerseNote(VerseNoteId.New(), userId, verseRef, content.Trim())
         {
@@ -57,11 +71,17 @@ public sealed class VerseNote : BaseEntity<VerseNoteId>
     public Result UpdateContent(string content)
     {
         if (string.IsNullOrWhiteSpace(content))
-            return Result.Failure(Error.Validation("Notes.ContentRequired", "Content cannot be empty."));
+            return Result.Failure(
+                Error.Validation("Notes.ContentRequired", "Content cannot be empty.")
+            );
 
         if (content.Length > MaxContentLength)
-            return Result.Failure(Error.Validation("Notes.ContentTooLong",
-                $"Content must not exceed {MaxContentLength:N0} characters."));
+            return Result.Failure(
+                Error.Validation(
+                    "Notes.ContentTooLong",
+                    $"Content must not exceed {MaxContentLength:N0} characters."
+                )
+            );
 
         Content = content.Trim();
         MarkUpdated();
@@ -70,27 +90,37 @@ public sealed class VerseNote : BaseEntity<VerseNoteId>
 
     public void SetShared(bool shared)
     {
-        if (IsShared == shared) return;
+        if (IsShared == shared)
+            return;
         IsShared = shared;
         MarkUpdated();
     }
 
     public Result SetTags(IEnumerable<string> tags)
     {
-        var normalized = tags
-            .Select(t => t.Trim().ToLowerInvariant())
+        var normalized = tags.Select(t => t.Trim().ToLowerInvariant())
             .Where(t => t.Length > 0)
             .Distinct()
             .ToList();
 
         if (normalized.Count > MaxTagCount)
-            return Result.Failure(Error.Validation("Notes.TooManyTags",
-                $"Cannot have more than {MaxTagCount} tags."));
+            return Result.Failure(
+                new Error(
+                    "Notes.TooManyTags",
+                    $"Cannot have more than {MaxTagCount} tags.",
+                    ErrorType.Validation
+                )
+            );
 
         var tooLong = normalized.FirstOrDefault(t => t.Length > MaxTagLength);
         if (tooLong is not null)
-            return Result.Failure(Error.Validation("Notes.TagTooLong",
-                $"Tag '{tooLong}' exceeds the maximum length of {MaxTagLength} characters."));
+            return Result.Failure(
+                new Error(
+                    "Notes.TagTooLong",
+                    $"Tag '{tooLong}' exceeds the maximum length of {MaxTagLength} characters.",
+                    ErrorType.Validation
+                )
+            );
 
         _tags.Clear();
         _tags.AddRange(normalized);

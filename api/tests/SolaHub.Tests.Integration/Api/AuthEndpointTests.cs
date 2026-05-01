@@ -15,12 +15,15 @@ public sealed class AuthEndpointTests(ApiFactory factory)
     [Fact]
     public async Task Register_WithValidPayload_Returns201()
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/register", new
-        {
-            email = $"test_{Guid.NewGuid():N}@example.com",
-            password = "SecureP@ss1",
-            displayName = "Test User",
-        });
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email = $"test_{Guid.NewGuid():N}@example.com",
+                password = "SecureP@ss1",
+                displayName = "Test User",
+            }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -34,19 +37,25 @@ public sealed class AuthEndpointTests(ApiFactory factory)
     {
         var email = $"dup_{Guid.NewGuid():N}@example.com";
 
-        await _client.PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password = "SecureP@ss1",
-            displayName = "First User",
-        });
+        await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email,
+                password = "SecureP@ss1",
+                displayName = "First User",
+            }
+        );
 
-        var response = await _client.PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password = "SecureP@ss1",
-            displayName = "Second User",
-        });
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email,
+                password = "SecureP@ss1",
+                displayName = "Second User",
+            }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
@@ -54,12 +63,15 @@ public sealed class AuthEndpointTests(ApiFactory factory)
     [Fact]
     public async Task Register_WithWeakPassword_Returns422()
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/register", new
-        {
-            email = $"weak_{Guid.NewGuid():N}@example.com",
-            password = "weak",
-            displayName = "Test User",
-        });
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email = $"weak_{Guid.NewGuid():N}@example.com",
+                password = "weak",
+                displayName = "Test User",
+            }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -72,18 +84,17 @@ public sealed class AuthEndpointTests(ApiFactory factory)
         var email = $"login_{Guid.NewGuid():N}@example.com";
         const string password = "SecureP@ss1";
 
-        await _client.PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password,
-            displayName = "Login User",
-        });
+        await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email,
+                password,
+                displayName = "Login User",
+            }
+        );
 
-        var response = await _client.PostAsJsonAsync("/api/auth/login", new
-        {
-            email,
-            password,
-        });
+        var response = await _client.PostAsJsonAsync("/api/auth/login", new { email, password });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -96,18 +107,20 @@ public sealed class AuthEndpointTests(ApiFactory factory)
     {
         var email = $"wrong_{Guid.NewGuid():N}@example.com";
 
-        await _client.PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password = "SecureP@ss1",
-            displayName = "Test User",
-        });
+        await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email,
+                password = "SecureP@ss1",
+                displayName = "Test User",
+            }
+        );
 
-        var response = await _client.PostAsJsonAsync("/api/auth/login", new
-        {
-            email,
-            password = "WrongPassword1!",
-        });
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/login",
+            new { email, password = "WrongPassword1!" }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -115,11 +128,10 @@ public sealed class AuthEndpointTests(ApiFactory factory)
     [Fact]
     public async Task Login_WithNonExistentEmail_Returns401()
     {
-        var response = await _client.PostAsJsonAsync("/api/auth/login", new
-        {
-            email = "nobody@example.com",
-            password = "SecureP@ss1",
-        });
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/login",
+            new { email = "nobody@example.com", password = "SecureP@ss1" }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -132,18 +144,21 @@ public sealed class AuthEndpointTests(ApiFactory factory)
         var email = $"refresh_{Guid.NewGuid():N}@example.com";
         const string password = "SecureP@ss1";
 
-        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password,
-            displayName = "Refresh User",
-        });
+        var registerResponse = await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email,
+                password,
+                displayName = "Refresh User",
+            }
+        );
         var tokens = await registerResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
 
-        var response = await _client.PostAsJsonAsync("/api/auth/refresh", new
-        {
-            refreshToken = tokens!.RefreshToken,
-        });
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            new { refreshToken = tokens!.RefreshToken }
+        );
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var newTokens = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
@@ -156,25 +171,28 @@ public sealed class AuthEndpointTests(ApiFactory factory)
     {
         var email = $"reuse_{Guid.NewGuid():N}@example.com";
 
-        var registerResponse = await _client.PostAsJsonAsync("/api/auth/register", new
-        {
-            email,
-            password = "SecureP@ss1",
-            displayName = "Reuse User",
-        });
+        var registerResponse = await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email,
+                password = "SecureP@ss1",
+                displayName = "Reuse User",
+            }
+        );
         var tokens = await registerResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
 
         // Use once — success
-        await _client.PostAsJsonAsync("/api/auth/refresh", new
-        {
-            refreshToken = tokens!.RefreshToken,
-        });
+        await _client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            new { refreshToken = tokens!.RefreshToken }
+        );
 
         // Reuse — should fail (token was rotated)
-        var second = await _client.PostAsJsonAsync("/api/auth/refresh", new
-        {
-            refreshToken = tokens.RefreshToken,
-        });
+        var second = await _client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            new { refreshToken = tokens.RefreshToken }
+        );
 
         second.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -183,4 +201,5 @@ public sealed class AuthEndpointTests(ApiFactory factory)
 internal sealed record AuthResponseDto(
     string AccessToken,
     string RefreshToken,
-    DateTimeOffset ExpiresAt);
+    DateTimeOffset ExpiresAt
+);

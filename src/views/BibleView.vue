@@ -1,59 +1,62 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { Search, ChevronLeft, ChevronRight } from 'lucide-vue-next'
-import { useBible } from '@/composables/useBible'
-import AppPageHeader from '@/components/layout/AppPageHeader.vue'
-import AppInput from '@/components/ui/AppInput.vue'
-import AppSpinner from '@/components/ui/AppSpinner.vue'
-import AppButton from '@/components/ui/AppButton.vue'
+  import { ref, watch, computed } from 'vue'
+  import { Search, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+  import { useBible } from '@/composables/useBible'
+  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
+  import AppInput from '@/components/ui/AppInput.vue'
+  import AppSpinner from '@/components/ui/AppSpinner.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
 
-const {
-  books,
-  currentChapter,
-  searchResults,
-  selectedBook,
-  selectedChapter,
-  selectedVerse,
-  searchQuery,
-  currentBook,
-  isLoadingChapter,
-  isLoadingSearch,
-  loadChapter,
-  search,
-  selectVerse,
-} = useBible()
+  const {
+    books,
+    currentChapter,
+    searchResults,
+    selectedBook,
+    selectedChapter,
+    selectedVerse,
+    currentBook,
+    isLoadingChapter,
+    isLoadingSearch,
+    loadChapter,
+    search,
+    selectVerse,
+  } = useBible()
 
-const searchInput = ref('')
-const showSearch = ref(false)
+  const searchInput = ref('')
+  const showSearch = ref(false)
 
-let searchTimeout: ReturnType<typeof setTimeout>
+  let searchTimeout: ReturnType<typeof setTimeout>
 
-function onSearchInput() {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    void search(searchInput.value)
-  }, 300)
-}
-
-const canPrevChapter = computed(() => selectedChapter.value > 1)
-const canNextChapter = computed(
-  () => currentBook.value ? selectedChapter.value < currentBook.value.chapters : false,
-)
-
-function prevChapter() {
-  if (canPrevChapter.value) void loadChapter(selectedBook.value, selectedChapter.value - 1)
-}
-
-function nextChapter() {
-  if (canNextChapter.value) void loadChapter(selectedBook.value, selectedChapter.value + 1)
-}
-
-// Load Genesis 1 on mount if nothing selected
-watch(books, (b) => {
-  if (b.length > 0 && !currentChapter.value) {
-    void loadChapter('GEN', 1)
+  function onSearchInput() {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+      void search(searchInput.value)
+    }, 300)
   }
-}, { immediate: true })
+
+  const canPrevChapter = computed(() => selectedChapter.value > 1)
+  const canNextChapter = computed(() =>
+    currentBook.value ? selectedChapter.value < currentBook.value.chapters : false
+  )
+
+  function prevChapter() {
+    if (canPrevChapter.value) void loadChapter(selectedBook.value, selectedChapter.value - 1)
+  }
+
+  function nextChapter() {
+    if (canNextChapter.value) void loadChapter(selectedBook.value, selectedChapter.value + 1)
+  }
+
+  // Load Genesis 1 on mount if nothing selected
+  watch(
+    books,
+    (b) => {
+      if (b.length > 0 && !currentChapter.value) {
+        void loadChapter('GEN', 1)
+      }
+    },
+    { immediate: true }
+  )
 </script>
 
 <template>
@@ -91,7 +94,10 @@ watch(books, (b) => {
       <div class="flex-1 flex flex-col overflow-hidden">
         <!-- Search overlay -->
         <Transition name="fade">
-          <div v-if="showSearch" class="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+          <div
+            v-if="showSearch"
+            class="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+          >
             <AppInput
               v-model="searchInput"
               placeholder="Search Bible (e.g. 'love one another')..."
@@ -102,24 +108,34 @@ watch(books, (b) => {
               <AppSpinner size="sm" />
             </div>
 
-            <div v-else-if="searchResults.length > 0" class="mt-3 space-y-1 max-h-64 overflow-y-auto">
+            <div
+              v-else-if="searchResults.length > 0"
+              class="mt-3 space-y-1 max-h-64 overflow-y-auto"
+            >
               <button
                 v-for="(result, i) in searchResults"
                 :key="i"
                 class="w-full text-left p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                @click="loadChapter(result.book, result.chapter); showSearch = false"
+                @click="
+                  loadChapter(result.book, result.chapter)
+                  showSearch = false
+                "
               >
                 <p class="text-xs font-semibold text-primary-600 mb-0.5">
                   {{ result.book }} {{ result.chapter }}:{{ result.verse }}
                 </p>
-                <p class="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">{{ result.text }}</p>
+                <p class="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">
+                  {{ result.text }}
+                </p>
               </button>
             </div>
           </div>
         </Transition>
 
         <!-- Chapter navigation -->
-        <div class="flex items-center justify-between px-6 py-2 border-b border-slate-200 dark:border-slate-700 text-sm">
+        <div
+          class="flex items-center justify-between px-6 py-2 border-b border-slate-200 dark:border-slate-700 text-sm"
+        >
           <button
             :disabled="!canPrevChapter"
             class="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
@@ -157,14 +173,13 @@ watch(books, (b) => {
               ]"
               @click="selectVerse(verse.verse)"
             >
-              <sup>{{ verse.verse }}</sup>{{ verse.text }}
+              <sup>{{ verse.verse }}</sup
+              >{{ verse.text }}
               {{ ' ' }}
             </span>
           </div>
 
-          <div v-else class="text-center text-slate-400 pt-16">
-            Select a book to start reading
-          </div>
+          <div v-else class="text-center text-slate-400 pt-16">Select a book to start reading</div>
         </div>
       </div>
     </div>

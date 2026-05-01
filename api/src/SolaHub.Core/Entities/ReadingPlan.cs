@@ -9,7 +9,16 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
     private readonly List<ReadingPlanDay> _days = [];
     private readonly List<PlanParticipant> _participants = [];
 
-    private ReadingPlan(ReadingPlanId id, UserId createdBy, string title) : base(id)
+    // Required by EF Core for materialization — never called by application code
+    private ReadingPlan()
+        : base(default!)
+    {
+        CreatedBy = default;
+        Title = string.Empty;
+    }
+
+    private ReadingPlan(ReadingPlanId id, UserId createdBy, string title)
+        : base(id)
     {
         CreatedBy = createdBy;
         Title = title;
@@ -30,7 +39,8 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
         UserId createdBy,
         string title,
         string? description,
-        bool isPublic)
+        bool isPublic
+    )
     {
         if (string.IsNullOrWhiteSpace(title))
             return Error.Validation("Plans.TitleRequired", "Title cannot be empty.");
@@ -54,19 +64,32 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
     public Result AddDay(int dayNumber, string title, IReadOnlyList<VerseRef> verseRefs)
     {
         if (Status != PlanStatus.Draft)
-            return Result.Failure(Error.Conflict("Plans.NotDraft", "Can only modify days of a Draft plan."));
+            return Result.Failure(
+                Error.Conflict("Plans.NotDraft", "Can only modify days of a Draft plan.")
+            );
 
         if (dayNumber <= 0)
-            return Result.Failure(Error.Validation("Plans.InvalidDayNumber", "Day number must be positive."));
+            return Result.Failure(
+                Error.Validation("Plans.InvalidDayNumber", "Day number must be positive.")
+            );
 
         if (string.IsNullOrWhiteSpace(title))
-            return Result.Failure(Error.Validation("Plans.DayTitleRequired", "Day title cannot be empty."));
+            return Result.Failure(
+                Error.Validation("Plans.DayTitleRequired", "Day title cannot be empty.")
+            );
 
         if (_days.Any(d => d.DayNumber == dayNumber))
-            return Result.Failure(Error.Conflict("Plans.DuplicateDay", $"Day {dayNumber} already exists."));
+            return Result.Failure(
+                Error.Conflict("Plans.DuplicateDay", $"Day {dayNumber} already exists.")
+            );
 
         if (verseRefs.Count == 0)
-            return Result.Failure(Error.Validation("Plans.NoVerseRefs", "At least one verse reference is required per day."));
+            return Result.Failure(
+                Error.Validation(
+                    "Plans.NoVerseRefs",
+                    "At least one verse reference is required per day."
+                )
+            );
 
         _days.Add(new ReadingPlanDay(dayNumber, title.Trim(), verseRefs));
         _days.Sort((a, b) => a.DayNumber.CompareTo(b.DayNumber));
@@ -79,10 +102,18 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
     public Result AddParticipant(UserId userId)
     {
         if (Status == PlanStatus.Archived)
-            return Result.Failure(Error.Conflict("Plans.Archived", "Cannot join an archived plan."));
+            return Result.Failure(
+                Error.Conflict("Plans.Archived", "Cannot join an archived plan.")
+            );
 
         if (_participants.Any(p => p.UserId == userId))
-            return Result.Failure(Error.Conflict("Plans.AlreadyParticipant", "User is already a participant."));
+            return Result.Failure(
+                new Error(
+                    "Plans.AlreadyParticipant",
+                    "User is already a participant.",
+                    ErrorType.Conflict
+                )
+            );
 
         _participants.Add(new PlanParticipant(userId));
         MarkUpdated();
@@ -92,11 +123,22 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
     public Result RemoveParticipant(UserId userId)
     {
         if (userId == CreatedBy)
-            return Result.Failure(Error.Conflict("Plans.CreatorCannotLeave", "Plan creator cannot leave the plan."));
+            return Result.Failure(
+                new Error(
+                    "Plans.CreatorCannotLeave",
+                    "Plan creator cannot leave the plan.",
+                    ErrorType.Conflict
+                )
+            );
 
         var participant = _participants.FirstOrDefault(p => p.UserId == userId);
         if (participant is null)
-            return Result.Failure(Error.NotFound("Plans.ParticipantNotFound", $"User {userId.Value} is not a participant."));
+            return Result.Failure(
+                Error.NotFound(
+                    "Plans.ParticipantNotFound",
+                    $"User {userId.Value} is not a participant."
+                )
+            );
 
         _participants.Remove(participant);
         MarkUpdated();
@@ -109,10 +151,17 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
     {
         var participant = _participants.FirstOrDefault(p => p.UserId == userId);
         if (participant is null)
-            return Result.Failure(Error.NotFound("Plans.NotParticipant", $"User {userId.Value} is not a participant in this plan."));
+            return Result.Failure(
+                Error.NotFound(
+                    "Plans.NotParticipant",
+                    $"User {userId.Value} is not a participant in this plan."
+                )
+            );
 
         if (!_days.Any(d => d.DayNumber == dayNumber))
-            return Result.Failure(Error.NotFound("Plans.DayNotFound", $"Day {dayNumber} does not exist in this plan."));
+            return Result.Failure(
+                Error.NotFound("Plans.DayNotFound", $"Day {dayNumber} does not exist in this plan.")
+            );
 
         participant.AdvanceToDay(dayNumber);
         MarkUpdated();
@@ -124,10 +173,18 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
     public Result Publish()
     {
         if (Status != PlanStatus.Draft)
-            return Result.Failure(Error.Conflict("Plans.NotDraft", "Only Draft plans can be published."));
+            return Result.Failure(
+                Error.Conflict("Plans.NotDraft", "Only Draft plans can be published.")
+            );
 
         if (_days.Count == 0)
-            return Result.Failure(Error.Conflict("Plans.NoDays", "Plan must have at least one day before publishing."));
+            return Result.Failure(
+                new Error(
+                    "Plans.NoDays",
+                    "Plan must have at least one day before publishing.",
+                    ErrorType.Conflict
+                )
+            );
 
         Status = PlanStatus.Active;
         MarkUpdated();
@@ -137,7 +194,9 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
     public Result Archive()
     {
         if (Status == PlanStatus.Archived)
-            return Result.Failure(Error.Conflict("Plans.AlreadyArchived", "Plan is already archived."));
+            return Result.Failure(
+                Error.Conflict("Plans.AlreadyArchived", "Plan is already archived.")
+            );
 
         Status = PlanStatus.Archived;
         MarkUpdated();
@@ -153,34 +212,45 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
 
 public sealed class ReadingPlanDay
 {
-    private readonly List<VerseRef> _verseRefs;
+    // EF Core uses this field for JSONB persistence via UsePropertyAccessMode(Field)
+    private List<string> _verseRefKeys = [];
+
+    // Private parameterless constructor for EF Core materialization
+    private ReadingPlanDay() { }
 
     public ReadingPlanDay(int dayNumber, string title, IReadOnlyList<VerseRef> verseRefs)
     {
         DayNumber = dayNumber;
         Title = title;
-        _verseRefs = [.. verseRefs];
+        _verseRefKeys = [.. verseRefs.Select(v => v.Key)];
     }
 
-    public int DayNumber { get; }
-    public string Title { get; }
-    public IReadOnlyList<VerseRef> VerseRefs => _verseRefs.AsReadOnly();
+    public int DayNumber { get; private set; }
+    public string Title { get; private set; } = string.Empty;
+
+    // Computed from the persisted keys — parsed on first access
+    public IReadOnlyList<VerseRef> VerseRefs =>
+        _verseRefKeys.Select(VerseRef.Parse).ToList().AsReadOnly();
 }
 
 public sealed class PlanParticipant
 {
+    // Private parameterless constructor for EF Core materialization
+    private PlanParticipant() { }
+
     public PlanParticipant(UserId userId)
     {
         UserId = userId;
         JoinedAt = DateTimeOffset.UtcNow;
     }
 
-    public UserId UserId { get; }
+    public UserId UserId { get; private set; }
     public int CurrentDay { get; private set; }
-    public DateTimeOffset JoinedAt { get; }
+    public DateTimeOffset JoinedAt { get; private set; }
 
     internal void AdvanceToDay(int day)
     {
-        if (day > CurrentDay) CurrentDay = day;
+        if (day > CurrentDay)
+            CurrentDay = day;
     }
 }

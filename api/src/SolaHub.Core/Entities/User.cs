@@ -6,7 +6,16 @@ namespace SolaHub.Core.Entities;
 
 public sealed class User : BaseEntity<UserId>
 {
-    private User(UserId id, string displayName, Email email, UserRole role) : base(id)
+    // Required by EF Core for materialization — never called by application code
+    private User()
+        : base(default!)
+    {
+        DisplayName = string.Empty;
+        Email = null!;
+    }
+
+    private User(UserId id, string displayName, Email email, UserRole role)
+        : base(id)
     {
         DisplayName = displayName;
         Email = email;
@@ -30,13 +39,17 @@ public sealed class User : BaseEntity<UserId>
         string email,
         string passwordHash,
         string displayName,
-        UserRole role = UserRole.Member)
+        UserRole role = UserRole.Member
+    )
     {
         if (string.IsNullOrWhiteSpace(displayName))
             return Error.Validation("User.DisplayNameRequired", "Display name cannot be empty.");
 
         if (displayName.Length > 100)
-            return Error.Validation("User.DisplayNameTooLong", "Display name must not exceed 100 characters.");
+            return Error.Validation(
+                "User.DisplayNameTooLong",
+                "Display name must not exceed 100 characters."
+            );
 
         var emailResult = Email.Create(email);
         if (emailResult.IsFailure)
@@ -80,10 +93,14 @@ public sealed class User : BaseEntity<UserId>
     public Result UpdateRefreshToken(string token, DateTimeOffset expiry)
     {
         if (string.IsNullOrWhiteSpace(token))
-            return Result.Failure(Error.Validation("User.InvalidToken", "Refresh token cannot be empty."));
+            return Result.Failure(
+                Error.Validation("User.InvalidToken", "Refresh token cannot be empty.")
+            );
 
         if (expiry <= DateTimeOffset.UtcNow)
-            return Result.Failure(Error.Validation("User.InvalidExpiry", "Token expiry must be in the future."));
+            return Result.Failure(
+                Error.Validation("User.InvalidExpiry", "Token expiry must be in the future.")
+            );
 
         RefreshToken = token;
         RefreshTokenExpiry = expiry;
@@ -98,11 +115,11 @@ public sealed class User : BaseEntity<UserId>
         MarkUpdated();
     }
 
-    public bool HasValidRefreshToken(string? token)
-        => token is not null
-           && RefreshToken == token
-           && RefreshTokenExpiry.HasValue
-           && RefreshTokenExpiry.Value > DateTimeOffset.UtcNow;
+    public bool HasValidRefreshToken(string? token) =>
+        token is not null
+        && RefreshToken == token
+        && RefreshTokenExpiry.HasValue
+        && RefreshTokenExpiry.Value > DateTimeOffset.UtcNow;
 
     public void RecordLogin()
     {

@@ -1,17 +1,17 @@
 <script setup lang="ts">
-interface Tab {
-  id: string
-  label: string
-  count?: number
-}
+  interface Tab {
+    id: string
+    label: string
+    count?: number
+  }
 
-interface Props {
-  tabs: Tab[]
-  modelValue: string
-}
+  interface Props {
+    tabs: Tab[]
+    modelValue: string
+  }
 
-defineProps<Props>()
-const emit = defineEmits<{ 'update:modelValue': [id: string] }>()
+  defineProps<Props>()
+  const emit = defineEmits<{ 'update:modelValue': [id: string] }>()
 </script>
 
 <template>

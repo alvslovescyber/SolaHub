@@ -1,46 +1,46 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { Plus, CalendarDays } from 'lucide-vue-next'
-import { usePlansStore } from '@/stores/plans.store'
-import AppPageHeader from '@/components/layout/AppPageHeader.vue'
-import AppButton from '@/components/ui/AppButton.vue'
-import AppCard from '@/components/ui/AppCard.vue'
-import AppBadge from '@/components/ui/AppBadge.vue'
-import AppSpinner from '@/components/ui/AppSpinner.vue'
+  import { ref, onMounted } from 'vue'
+  import { useRouter } from 'vue-router'
+  import { Plus, CalendarDays } from 'lucide-vue-next'
+  import { usePlansStore } from '@/stores/plans.store'
+  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import AppCard from '@/components/ui/AppCard.vue'
+  import AppBadge from '@/components/ui/AppBadge.vue'
+  import AppSpinner from '@/components/ui/AppSpinner.vue'
 
-const plans = usePlansStore()
-const router = useRouter()
+  const plans = usePlansStore()
+  const router = useRouter()
 
-const showCreate = ref(false)
-const title = ref('')
-const description = ref('')
-const isPublic = ref(true)
+  const showCreate = ref(false)
+  const title = ref('')
+  const description = ref('')
+  const isPublic = ref(true)
 
-onMounted(() => plans.fetchMyPlans())
+  onMounted(() => plans.fetchMyPlans())
 
-async function createPlan() {
-  if (!title.value.trim()) return
-  const plan = await plans.create({
-    title: title.value.trim(),
-    description: description.value.trim() || null,
-    isPublic: isPublic.value,
-  })
-  showCreate.value = false
-  title.value = ''
-  description.value = ''
-  await router.push({ name: 'plan-detail', params: { id: plan.id } })
-}
-
-const statusVariant = (status: string) => {
-  const map: Record<string, 'success' | 'warning' | 'default'> = {
-    Active: 'success',
-    Draft: 'default',
-    Archived: 'warning',
-    Completed: 'primary',
+  async function createPlan() {
+    if (!title.value.trim()) return
+    const plan = await plans.create({
+      title: title.value.trim(),
+      description: description.value.trim() || null,
+      isPublic: isPublic.value,
+    })
+    showCreate.value = false
+    title.value = ''
+    description.value = ''
+    await router.push({ name: 'plan-detail', params: { id: plan.id } })
   }
-  return map[status] ?? 'default'
-}
+
+  const statusVariant = (status: string) => {
+    const map: Record<string, 'success' | 'warning' | 'default'> = {
+      Active: 'success',
+      Draft: 'default',
+      Archived: 'warning',
+      Completed: 'primary',
+    }
+    return map[status] ?? 'default'
+  }
 </script>
 
 <template>
@@ -70,7 +70,9 @@ const statusVariant = (status: string) => {
             placeholder="Description (optional)"
             class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
           />
-          <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer">
+          <label
+            class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer"
+          >
             <input v-model="isPublic" type="checkbox" class="rounded accent-primary-600" />
             Make public (others can join)
           </label>
@@ -83,7 +85,10 @@ const statusVariant = (status: string) => {
 
       <AppSpinner v-if="plans.isLoading" />
 
-      <div v-else-if="plans.plans.length === 0 && !showCreate" class="text-center text-slate-400 pt-16">
+      <div
+        v-else-if="plans.plans.length === 0 && !showCreate"
+        class="text-center text-slate-400 pt-16"
+      >
         <CalendarDays class="h-10 w-10 mx-auto mb-3 opacity-30" />
         <p class="text-sm">No reading plans yet.</p>
       </div>
@@ -102,7 +107,9 @@ const statusVariant = (status: string) => {
                 {{ plan.description }}
               </p>
               <p class="text-xs text-slate-400 mt-1">
-                {{ plan.participants.length }} participant{{ plan.participants.length !== 1 ? 's' : '' }}
+                {{ plan.participants.length }} participant{{
+                  plan.participants.length !== 1 ? 's' : ''
+                }}
                 · {{ plan.days.length }} day{{ plan.days.length !== 1 ? 's' : '' }}
               </p>
             </div>

@@ -5,7 +5,16 @@ namespace SolaHub.Core.Entities;
 
 public sealed class Church : BaseEntity<ChurchId>
 {
-    private Church(ChurchId id, string name, UserId adminId) : base(id)
+    // Required by EF Core for materialization — never called by application code
+    private Church()
+        : base(default!)
+    {
+        Name = string.Empty;
+        AdminId = default;
+    }
+
+    private Church(ChurchId id, string name, UserId adminId)
+        : base(id)
     {
         Name = name;
         AdminId = adminId;
@@ -52,7 +61,9 @@ public sealed class Church : BaseEntity<ChurchId>
     public Result TransferAdmin(UserId newAdminId)
     {
         if (newAdminId == AdminId)
-            return Result.Failure(Error.Conflict(nameof(Church), "New admin must be a different user."));
+            return Result.Failure(
+                Error.Conflict(nameof(Church), "New admin must be a different user.")
+            );
 
         AdminId = newAdminId;
         MarkUpdated();

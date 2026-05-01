@@ -1,17 +1,17 @@
 <script setup lang="ts">
-interface Props {
-  hoverable?: boolean
-  padding?: 'none' | 'sm' | 'md' | 'lg'
-}
+  interface Props {
+    hoverable?: boolean
+    padding?: 'none' | 'sm' | 'md' | 'lg'
+  }
 
-const { hoverable = false, padding = 'md' } = defineProps<Props>()
+  const { hoverable = false, padding = 'md' } = defineProps<Props>()
 
-const paddingClasses = {
-  none: '',
-  sm: 'p-3',
-  md: 'p-4',
-  lg: 'p-6',
-}
+  const paddingClasses = {
+    none: '',
+    sm: 'p-3',
+    md: 'p-4',
+    lg: 'p-6',
+  }
 </script>
 
 <template>

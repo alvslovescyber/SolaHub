@@ -8,8 +8,8 @@ namespace SolaHub.Infrastructure.Repositories;
 
 public sealed class UserRepository(AppDbContext db) : IUserRepository
 {
-    public Task<User?> GetByIdAsync(UserId id, CancellationToken ct)
-        => db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
+    public Task<User?> GetByIdAsync(UserId id, CancellationToken ct) =>
+        db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
 
     public Task<User?> GetByEmailAsync(string email, CancellationToken ct)
     {
@@ -17,8 +17,8 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
         return db.Users.FirstOrDefaultAsync(u => u.Email.Value == normalized, ct);
     }
 
-    public Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken ct)
-        => db.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken, ct);
+    public Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken ct) =>
+        db.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken, ct);
 
     public Task<bool> ExistsByEmailAsync(string email, CancellationToken ct)
     {
@@ -40,8 +40,6 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
 
     public async Task DeleteAsync(UserId id, CancellationToken ct)
     {
-        await db.Users
-            .Where(u => u.Id == id)
-            .ExecuteDeleteAsync(ct);
+        await db.Users.Where(u => u.Id == id).ExecuteDeleteAsync(ct);
     }
 }

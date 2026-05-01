@@ -23,7 +23,8 @@ public sealed class JwtTokenService : ITokenService
     public JwtTokenService(IConfiguration config, ILogger<JwtTokenService> logger)
     {
         _logger = logger;
-        _secret = config["Jwt:SecretKey"]
+        _secret =
+            config["Jwt:SecretKey"]
             ?? throw new InvalidOperationException("Jwt:SecretKey is not configured.");
         _issuer = config["Jwt:Issuer"] ?? "SolaHub";
         _audience = config["Jwt:Audience"] ?? "SolaHub.Desktop";
@@ -47,7 +48,8 @@ public sealed class JwtTokenService : ITokenService
             claims: claims,
             notBefore: DateTime.UtcNow,
             expires: DateTime.UtcNow.AddMinutes(_expiryMinutes),
-            signingCredentials: credentials);
+            signingCredentials: credentials
+        );
 
         _logger.LogDebug("Generated access token for user {UserId}", user.Id);
         return new JwtSecurityTokenHandler().WriteToken(token);
@@ -69,9 +71,11 @@ public sealed class JwtTokenService : ITokenService
             new(JwtRegisteredClaimNames.Name, user.DisplayName),
             new(ClaimTypes.Role, user.Role.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(JwtRegisteredClaimNames.Iat,
+            new(
+                JwtRegisteredClaimNames.Iat,
                 DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
-                ClaimValueTypes.Integer64),
+                ClaimValueTypes.Integer64
+            ),
         };
 
         if (user.ChurchId.HasValue)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Users } from 'lucide-vue-next'
-import AppPageHeader from '@/components/layout/AppPageHeader.vue'
+  import { Users } from 'lucide-vue-next'
+  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
 </script>
 
 <template>

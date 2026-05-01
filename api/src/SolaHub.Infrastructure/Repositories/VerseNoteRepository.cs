@@ -8,13 +8,13 @@ namespace SolaHub.Infrastructure.Repositories;
 
 public sealed class VerseNoteRepository(AppDbContext db) : IVerseNoteRepository
 {
-    public Task<VerseNote?> GetByIdAsync(VerseNoteId id, CancellationToken ct)
-        => db.VerseNotes.FirstOrDefaultAsync(n => n.Id == id, ct);
+    public Task<VerseNote?> GetByIdAsync(VerseNoteId id, CancellationToken ct) =>
+        db.VerseNotes.FirstOrDefaultAsync(n => n.Id == id, ct);
 
     public async Task<IReadOnlyList<VerseNote>> GetByUserAsync(UserId userId, CancellationToken ct)
     {
-        var notes = await db.VerseNotes
-            .Where(n => n.UserId == userId)
+        var notes = await db
+            .VerseNotes.Where(n => n.UserId == userId)
             .OrderByDescending(n => n.UpdatedAt)
             .ToListAsync(ct);
         return notes.AsReadOnly();
@@ -23,35 +23,35 @@ public sealed class VerseNoteRepository(AppDbContext db) : IVerseNoteRepository
     public async Task<IReadOnlyList<VerseNote>> GetByVerseRefAsync(
         VerseRef verseRef,
         bool sharedOnly,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
-        var query = db.VerseNotes
-            .Where(n =>
-                n.VerseRef.BookShort == verseRef.BookShort &&
-                n.VerseRef.Chapter == verseRef.Chapter &&
-                n.VerseRef.Verse == verseRef.Verse);
+        var query = db.VerseNotes.Where(n =>
+            n.VerseRef.BookShort == verseRef.BookShort
+            && n.VerseRef.Chapter == verseRef.Chapter
+            && n.VerseRef.Verse == verseRef.Verse
+        );
 
         if (sharedOnly)
             query = query.Where(n => n.IsShared);
 
-        var notes = await query
-            .OrderByDescending(n => n.CreatedAt)
-            .ToListAsync(ct);
+        var notes = await query.OrderByDescending(n => n.CreatedAt).ToListAsync(ct);
         return notes.AsReadOnly();
     }
 
     public async Task<IReadOnlyList<VerseNote>> SearchByTagAsync(
         UserId userId,
         string tag,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
         var normalized = tag.Trim().ToLowerInvariant();
         // Use EF Core + PostgreSQL JSONB contains for tag search
-        var notes = await db.VerseNotes
-            .Where(n => n.UserId == userId)
-            .Where(n => EF.Functions.JsonContains(
-                EF.Property<string>(n, "_tags"),
-                $"\"{normalized}\""))
+        var notes = await db
+            .VerseNotes.Where(n => n.UserId == userId)
+            .Where(n =>
+                EF.Functions.JsonContains(EF.Property<string>(n, "_tags"), $"\"{normalized}\"")
+            )
             .OrderByDescending(n => n.UpdatedAt)
             .ToListAsync(ct);
         return notes.AsReadOnly();
@@ -71,8 +71,6 @@ public sealed class VerseNoteRepository(AppDbContext db) : IVerseNoteRepository
 
     public async Task DeleteAsync(VerseNoteId id, CancellationToken ct)
     {
-        await db.VerseNotes
-            .Where(n => n.Id == id)
-            .ExecuteDeleteAsync(ct);
+        await db.VerseNotes.Where(n => n.Id == id).ExecuteDeleteAsync(ct);
     }
 }

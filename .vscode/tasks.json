@@ -1,0 +1,232 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // ─── API ─────────────────────────────────────────────────────────────────
+    {
+      "label": "api: build",
+      "type": "shell",
+      "command": "dotnet",
+      "args": ["build", "api/SolaHub.sln", "--configuration", "Debug"],
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "api: watch",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "watch",
+        "run",
+        "--project",
+        "api/src/SolaHub.API/SolaHub.API.csproj",
+        "--launch-profile",
+        "Development"
+      ],
+      "group": "build",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "api" },
+      "problemMatcher": {
+        "base": "$msCompile",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Starting SolaHub API",
+          "endsPattern": "Now listening on:"
+        }
+      }
+    },
+    {
+      "label": "api: test (unit)",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "test",
+        "api/tests/SolaHub.Tests.Unit/SolaHub.Tests.Unit.csproj",
+        "--logger",
+        "console;verbosity=normal"
+      ],
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "api: test (integration)",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "test",
+        "api/tests/SolaHub.Tests.Integration/SolaHub.Tests.Integration.csproj",
+        "--logger",
+        "console;verbosity=normal"
+      ],
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "api: ef migration add",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "ef",
+        "migrations",
+        "add",
+        "${input:migrationName}",
+        "--project",
+        "api/src/SolaHub.Infrastructure/SolaHub.Infrastructure.csproj",
+        "--startup-project",
+        "api/src/SolaHub.API/SolaHub.API.csproj",
+        "--output-dir",
+        "Persistence/Migrations"
+      ],
+      "group": "none",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "api: ef database update",
+      "type": "shell",
+      "command": "dotnet",
+      "args": [
+        "ef",
+        "database",
+        "update",
+        "--project",
+        "api/src/SolaHub.Infrastructure/SolaHub.Infrastructure.csproj",
+        "--startup-project",
+        "api/src/SolaHub.API/SolaHub.API.csproj"
+      ],
+      "group": "none",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+
+    // ─── Frontend ─────────────────────────────────────────────────────────────
+    {
+      "label": "frontend: install",
+      "type": "shell",
+      "command": "npm",
+      "args": ["install"],
+      "group": "none",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "frontend: dev",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev"],
+      "group": "build",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "frontend" },
+      "problemMatcher": {
+        "base": "$eslint-stylish",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE",
+          "endsPattern": "ready in"
+        }
+      }
+    },
+    {
+      "label": "frontend: build",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "build"],
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "frontend: type-check",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "type-check"],
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "frontend: lint",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "lint"],
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+
+    // ─── Tauri ───────────────────────────────────────────────────────────────
+    {
+      "label": "tauri: dev",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "tauri", "dev"],
+      "group": "build",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "tauri" },
+      "problemMatcher": []
+    },
+    {
+      "label": "tauri: build",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "tauri", "build"],
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+
+    // ─── Docker ───────────────────────────────────────────────────────────────
+    {
+      "label": "docker: up",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "up", "-d", "--wait"],
+      "group": "none",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "docker: down",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "down"],
+      "group": "none",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "docker: logs",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "logs", "-f"],
+      "group": "none",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "docker" },
+      "problemMatcher": []
+    },
+    {
+      "label": "docker: reset (wipe data)",
+      "type": "shell",
+      "command": "docker",
+      "args": ["compose", "down", "-v", "--remove-orphans"],
+      "group": "none",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+
+    // ─── Full stack ───────────────────────────────────────────────────────────
+    {
+      "label": "full: start (docker + api + tauri)",
+      "dependsOn": ["docker: up", "api: watch", "tauri: dev"],
+      "dependsOrder": "sequence",
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always" }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "migrationName",
+      "description": "EF Core migration name",
+      "default": "NewMigration",
+      "type": "promptString"
+    }
+  ]
+}

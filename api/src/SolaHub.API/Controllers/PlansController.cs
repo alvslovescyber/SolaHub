@@ -25,7 +25,10 @@ public sealed class PlansController(ISender sender) : ControllerBase
     {
         var query = new GetUserPlansQuery(CurrentUserId);
         var result = await sender.Send(query, ct);
-        return result.Match<IActionResult>(Ok, error => StatusCode(500, new { error.Code, error.Description }));
+        return result.Match<IActionResult>(
+            Ok,
+            error => StatusCode(500, new { error.Code, error.Description })
+        );
     }
 
     /// <summary>Get a single reading plan by ID.</summary>
@@ -40,12 +43,14 @@ public sealed class PlansController(ISender sender) : ControllerBase
 
         return result.Match<IActionResult>(
             Ok,
-            error => error.Type switch
-            {
-                ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
-                ErrorType.Forbidden => Forbid(),
-                _ => StatusCode(500, new { error.Code, error.Description }),
-            });
+            error =>
+                error.Type switch
+                {
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Forbidden => Forbid(),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
     }
 
     /// <summary>Create a new reading plan.</summary>
@@ -54,18 +59,28 @@ public sealed class PlansController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreatePlan(
         [FromBody] CreatePlanRequest request,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
-        var command = new CreatePlanCommand(CurrentUserId, request.Title, request.Description, request.IsPublic);
+        var command = new CreatePlanCommand(
+            CurrentUserId,
+            request.Title,
+            request.Description,
+            request.IsPublic
+        );
         var result = await sender.Send(command, ct);
 
         return result.Match<IActionResult>(
             value => CreatedAtAction(nameof(GetPlan), new { id = value.Id }, value),
-            error => error.Type switch
-            {
-                ErrorType.Validation => UnprocessableEntity(new { error.Code, error.Description }),
-                _ => StatusCode(500, new { error.Code, error.Description }),
-            });
+            error =>
+                error.Type switch
+                {
+                    ErrorType.Validation => UnprocessableEntity(
+                        new { error.Code, error.Description }
+                    ),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
     }
 
     /// <summary>Join a public reading plan.</summary>
@@ -80,12 +95,14 @@ public sealed class PlansController(ISender sender) : ControllerBase
 
         return result.Match<IActionResult>(
             () => NoContent(),
-            error => error.Type switch
-            {
-                ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
-                ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
-                _ => StatusCode(500, new { error.Code, error.Description }),
-            });
+            error =>
+                error.Type switch
+                {
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
     }
 
     /// <summary>Record progress for the current day in a reading plan.</summary>
@@ -95,19 +112,26 @@ public sealed class PlansController(ISender sender) : ControllerBase
     public async Task<IActionResult> RecordProgress(
         [FromRoute] Guid id,
         [FromBody] RecordProgressRequest request,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
-        var command = new RecordProgressCommand(ReadingPlanId.From(id), CurrentUserId, request.DayNumber);
+        var command = new RecordProgressCommand(
+            ReadingPlanId.From(id),
+            CurrentUserId,
+            request.DayNumber
+        );
         var result = await sender.Send(command, ct);
 
         return result.Match<IActionResult>(
             () => NoContent(),
-            error => error.Type switch
-            {
-                ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
-                ErrorType.Forbidden => Forbid(),
-                _ => StatusCode(500, new { error.Code, error.Description }),
-            });
+            error =>
+                error.Type switch
+                {
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Forbidden => Forbid(),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
     }
 
     /// <summary>Delete a reading plan (creator only).</summary>
@@ -122,15 +146,18 @@ public sealed class PlansController(ISender sender) : ControllerBase
 
         return result.Match<IActionResult>(
             () => NoContent(),
-            error => error.Type switch
-            {
-                ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
-                ErrorType.Forbidden => Forbid(),
-                _ => StatusCode(500, new { error.Code, error.Description }),
-            });
+            error =>
+                error.Type switch
+                {
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Forbidden => Forbid(),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
     }
 }
 
 // ─── Request records ───────────────────────────────────────────────────────────
 public sealed record CreatePlanRequest(string Title, string? Description, bool IsPublic);
+
 public sealed record RecordProgressRequest(int DayNumber);

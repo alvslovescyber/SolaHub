@@ -18,7 +18,10 @@ internal sealed class DeletePlanCommandHandler(IReadingPlanRepository planReposi
             return Error.NotFound("Plans.NotFound", $"Plan {request.PlanId.Value} was not found.");
 
         if (plan.CreatedBy != request.RequestingUserId)
-            return Error.Forbidden("Plans.Forbidden", "Only the plan creator can delete this plan.");
+            return Error.Forbidden(
+                "Plans.Forbidden",
+                "Only the plan creator can delete this plan."
+            );
 
         await planRepository.DeleteAsync(request.PlanId, ct);
         return Result.Success();

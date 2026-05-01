@@ -74,7 +74,9 @@
 /* ─── Slide-in transitions ────────────────────────────────────────────────── */
 .slide-enter-active,
 .slide-leave-active {
-  transition: transform var(--transition-base), opacity var(--transition-base);
+  transition:
+    transform var(--transition-base),
+    opacity var(--transition-base);
 }
 
 .slide-enter-from {

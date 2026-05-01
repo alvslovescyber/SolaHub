@@ -13,21 +13,30 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration config)
+        IConfiguration config
+    )
     {
         // ─── Database ──────────────────────────────────────────────────────────
-        var connectionString = config.GetConnectionString("DefaultConnection")
+        var connectionString =
+            config.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("DefaultConnection is required.");
 
         services.AddDbContext<AppDbContext>(opts =>
-            opts
-                .UseNpgsql(connectionString, pg =>
-                {
-                    pg.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
-                    pg.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5), errorCodesToAdd: null);
-                    pg.CommandTimeout(30);
-                })
-                .UseSnakeCaseNamingConvention());
+            opts.UseNpgsql(
+                    connectionString,
+                    pg =>
+                    {
+                        pg.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
+                        pg.EnableRetryOnFailure(
+                            maxRetryCount: 3,
+                            maxRetryDelay: TimeSpan.FromSeconds(5),
+                            errorCodesToAdd: null
+                        );
+                        pg.CommandTimeout(30);
+                    }
+                )
+                .UseSnakeCaseNamingConvention()
+        );
 
         // ─── Repositories ──────────────────────────────────────────────────────
         services.AddScoped<IUserRepository, UserRepository>();

@@ -50,13 +50,13 @@ http.interceptors.response.use(
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
     if (error.response?.status !== 401 || original._retry) {
-      return Promise.reject(error)
+      return Promise.reject(error as Error)
     }
 
     const refreshToken = tokenStorage.getRefresh()
     if (!refreshToken) {
       tokenStorage.clear()
-      return Promise.reject(error)
+      return Promise.reject(error as Error)
     }
 
     original._retry = true
@@ -64,10 +64,9 @@ http.interceptors.response.use(
     try {
       if (!refreshPromise) {
         refreshPromise = axios
-          .post<{ accessToken: string; refreshToken: string }>(
-            `${API_BASE_URL}/api/auth/refresh`,
-            { refreshToken },
-          )
+          .post<{ accessToken: string; refreshToken: string }>(`${API_BASE_URL}/api/auth/refresh`, {
+            refreshToken,
+          })
           .then((res) => {
             tokenStorage.set(res.data.accessToken, res.data.refreshToken)
             return res.data.accessToken
@@ -84,7 +83,7 @@ http.interceptors.response.use(
       tokenStorage.clear()
       // Redirect to login — the auth store will handle this via its watcher
       window.dispatchEvent(new CustomEvent('auth:session-expired'))
-      return Promise.reject(error)
+      return Promise.reject(error as Error)
     }
-  },
+  }
 )

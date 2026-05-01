@@ -1,33 +1,43 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
-import { BookOpen, StickyNote, CalendarDays, TrendingUp } from 'lucide-vue-next'
-import { useAuthStore } from '@/stores/auth.store'
-import { useNotesStore } from '@/stores/notes.store'
-import { usePlansStore } from '@/stores/plans.store'
-import AppPageHeader from '@/components/layout/AppPageHeader.vue'
-import AppCard from '@/components/ui/AppCard.vue'
-import AppSpinner from '@/components/ui/AppSpinner.vue'
+  import { onMounted, computed } from 'vue'
+  import { BookOpen, StickyNote, CalendarDays, TrendingUp } from 'lucide-vue-next'
+  import { useAuthStore } from '@/stores/auth.store'
+  import { useNotesStore } from '@/stores/notes.store'
+  import { usePlansStore } from '@/stores/plans.store'
+  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
+  import AppCard from '@/components/ui/AppCard.vue'
+  import AppSpinner from '@/components/ui/AppSpinner.vue'
 
-const auth = useAuthStore()
-const notes = useNotesStore()
-const plans = usePlansStore()
+  const auth = useAuthStore()
+  const notes = useNotesStore()
+  const plans = usePlansStore()
 
-const greeting = computed(() => {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 17) return 'Good afternoon'
-  return 'Good evening'
-})
+  const greeting = computed(() => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  })
 
-const stats = computed(() => [
-  { label: 'Notes', value: notes.notes.length, icon: StickyNote, color: 'text-blue-500' },
-  { label: 'Active Plans', value: plans.activePlans.length, icon: CalendarDays, color: 'text-emerald-500' },
-  { label: 'Draft Plans', value: plans.draftPlans.length, icon: TrendingUp, color: 'text-amber-500' },
-])
+  const stats = computed(() => [
+    { label: 'Notes', value: notes.notes.length, icon: StickyNote, color: 'text-blue-500' },
+    {
+      label: 'Active Plans',
+      value: plans.activePlans.length,
+      icon: CalendarDays,
+      color: 'text-emerald-500',
+    },
+    {
+      label: 'Draft Plans',
+      value: plans.draftPlans.length,
+      icon: TrendingUp,
+      color: 'text-amber-500',
+    },
+  ])
 
-onMounted(async () => {
-  await Promise.all([notes.fetchMyNotes(), plans.fetchMyPlans()])
-})
+  onMounted(async () => {
+    await Promise.all([notes.fetchMyNotes(), plans.fetchMyPlans()])
+  })
 </script>
 
 <template>
@@ -55,7 +65,9 @@ onMounted(async () => {
 
       <!-- Recent plans -->
       <section>
-        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+        <h2
+          class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2"
+        >
           <CalendarDays class="h-4 w-4" />
           Recent Plans
         </h2>
@@ -63,7 +75,8 @@ onMounted(async () => {
         <AppSpinner v-if="plans.isLoading" />
 
         <div v-else-if="plans.plans.length === 0" class="text-sm text-slate-500">
-          No reading plans yet. <RouterLink to="/plans" class="text-primary-600 hover:underline">Create one →</RouterLink>
+          No reading plans yet.
+          <RouterLink to="/plans" class="text-primary-600 hover:underline">Create one →</RouterLink>
         </div>
 
         <div v-else class="space-y-2">
@@ -75,30 +88,36 @@ onMounted(async () => {
           >
             <div>
               <p class="text-sm font-medium text-slate-900 dark:text-white">{{ plan.title }}</p>
-              <p class="text-xs text-slate-500">{{ plan.participants.length }} participant{{ plan.participants.length !== 1 ? 's' : '' }}</p>
+              <p class="text-xs text-slate-500">
+                {{ plan.participants.length }} participant{{
+                  plan.participants.length !== 1 ? 's' : ''
+                }}
+              </p>
             </div>
             <span
               :class="[
                 'text-xs font-medium px-2 py-1 rounded-full',
-                plan.status === 'Active' ? 'bg-emerald-100 text-emerald-700' :
-                plan.status === 'Draft' ? 'bg-slate-100 text-slate-600' :
-                'bg-amber-100 text-amber-700',
+                plan.status === 'Active'
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : plan.status === 'Draft'
+                    ? 'bg-slate-100 text-slate-600'
+                    : 'bg-amber-100 text-amber-700',
               ]"
-            >{{ plan.status }}</span>
+              >{{ plan.status }}</span
+            >
           </RouterLink>
         </div>
       </section>
 
       <!-- Quick access Bible -->
       <section>
-        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+        <h2
+          class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2"
+        >
           <BookOpen class="h-4 w-4" />
           Quick Access
         </h2>
-        <RouterLink
-          to="/bible"
-          class="block card p-4 hover:shadow-md transition-shadow"
-        >
+        <RouterLink to="/bible" class="block card p-4 hover:shadow-md transition-shadow">
           <div class="flex items-center gap-3">
             <div class="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/30">
               <BookOpen class="h-5 w-5 text-primary-600" />

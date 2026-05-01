@@ -1,0 +1,27 @@
+{
+  "recommendations": [
+    // C# / .NET
+    "ms-dotnettools.csdevkit",
+    "ms-dotnettools.csharp",
+    "ms-dotnettools.vscode-dotnet-runtime",
+
+    // Vue / TypeScript
+    "vue.volar",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+
+    // Rust / Tauri
+    "rust-lang.rust-analyzer",
+    "tauri-apps.tauri-vscode",
+    "vadimcn.vscode-lldb",
+
+    // Database
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+
+    // General quality of life
+    "editorconfig.editorconfig",
+    "eamodio.gitlens",
+    "mhutchie.git-graph"
+  ]
+}

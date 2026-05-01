@@ -20,13 +20,16 @@ public sealed class RefreshTokenCommandValidator : AbstractValidator<RefreshToke
 
 internal sealed class RefreshTokenCommandHandler(
     IUserRepository userRepository,
-    ITokenService tokenService)
-    : IRequestHandler<RefreshTokenCommand, Result<AuthResponse>>
+    ITokenService tokenService
+) : IRequestHandler<RefreshTokenCommand, Result<AuthResponse>>
 {
     private static readonly TimeSpan AccessTokenExpiry = TimeSpan.FromMinutes(15);
     private static readonly TimeSpan RefreshTokenExpiry = TimeSpan.FromDays(30);
 
-    public async Task<Result<AuthResponse>> Handle(RefreshTokenCommand request, CancellationToken ct)
+    public async Task<Result<AuthResponse>> Handle(
+        RefreshTokenCommand request,
+        CancellationToken ct
+    )
     {
         var user = await userRepository.GetByRefreshTokenAsync(request.RefreshToken, ct);
 
@@ -34,12 +37,18 @@ internal sealed class RefreshTokenCommandHandler(
             return Error.Unauthorized("Auth.InvalidToken", "Invalid or expired refresh token.");
 
         if (!user.IsActive)
-            return Error.Unauthorized("Auth.AccountDeactivated", "This account has been deactivated.");
+            return Error.Unauthorized(
+                "Auth.AccountDeactivated",
+                "This account has been deactivated."
+            );
 
         // Rotate refresh token on every use — prevents stolen-token reuse
         var newAccessToken = tokenService.GenerateAccessToken(user);
         var newRefreshToken = tokenService.GenerateRefreshToken();
-        var tokenResult = user.UpdateRefreshToken(newRefreshToken, DateTimeOffset.UtcNow.Add(RefreshTokenExpiry));
+        var tokenResult = user.UpdateRefreshToken(
+            newRefreshToken,
+            DateTimeOffset.UtcNow.Add(RefreshTokenExpiry)
+        );
         if (tokenResult.IsFailure)
             return tokenResult.Error;
 
@@ -49,6 +58,7 @@ internal sealed class RefreshTokenCommandHandler(
             newAccessToken,
             newRefreshToken,
             DateTimeOffset.UtcNow.Add(AccessTokenExpiry),
-            RegisterCommandHandler.MapToUserDto(user));
+            RegisterCommandHandler.MapToUserDto(user)
+        );
     }
 }

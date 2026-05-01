@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { useAuth } from '@/composables/useAuth'
-import { useTheme } from '@/composables/useTheme'
-import AppPageHeader from '@/components/layout/AppPageHeader.vue'
-import AppCard from '@/components/ui/AppCard.vue'
-import AppButton from '@/components/ui/AppButton.vue'
-import AppAvatar from '@/components/ui/AppAvatar.vue'
-import type { Theme } from '@/stores/ui.store'
+  import { useAuth } from '@/composables/useAuth'
+  import { useTheme } from '@/composables/useTheme'
+  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
+  import AppCard from '@/components/ui/AppCard.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import AppAvatar from '@/components/ui/AppAvatar.vue'
+  import type { Theme } from '@/stores/ui.store'
 
-const { user, logout } = useAuth()
-const { theme, setTheme } = useTheme()
+  const { user, logout } = useAuth()
+  const { theme, setTheme } = useTheme()
 
-const themes: { label: string; value: Theme }[] = [
-  { label: 'Light', value: 'light' },
-  { label: 'Dark', value: 'dark' },
-  { label: 'System', value: 'system' },
-]
+  const themes: { label: string; value: Theme }[] = [
+    { label: 'Light', value: 'light' },
+    { label: 'Dark', value: 'dark' },
+    { label: 'System', value: 'system' },
+  ]
 </script>
 
 <template>
@@ -57,9 +57,7 @@ const themes: { label: string; value: Theme }[] = [
       <!-- Danger zone -->
       <AppCard>
         <p class="text-sm font-semibold text-slate-900 dark:text-white mb-3">Account</p>
-        <AppButton variant="danger" size="sm" @click="logout()">
-          Sign out
-        </AppButton>
+        <AppButton variant="danger" size="sm" @click="logout()"> Sign out </AppButton>
       </AppCard>
     </div>
   </div>

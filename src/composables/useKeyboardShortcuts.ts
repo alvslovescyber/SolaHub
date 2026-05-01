@@ -30,7 +30,10 @@ export function useKeyboardShortcuts() {
     }
 
     // Navigation shortcuts (only when no input is focused)
-    if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+    if (
+      document.activeElement?.tagName === 'INPUT' ||
+      document.activeElement?.tagName === 'TEXTAREA'
+    ) {
       return
     }
 

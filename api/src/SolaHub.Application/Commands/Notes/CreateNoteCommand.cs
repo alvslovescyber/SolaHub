@@ -14,7 +14,8 @@ public sealed record CreateNoteCommand(
     string VerseRef,
     string Content,
     IReadOnlyList<string> Tags,
-    bool IsShared) : ICommand<NoteDto>;
+    bool IsShared
+) : ICommand<NoteDto>;
 
 public sealed class CreateNoteCommandValidator : AbstractValidator<CreateNoteCommand>
 {
@@ -26,7 +27,8 @@ public sealed class CreateNoteCommandValidator : AbstractValidator<CreateNoteCom
             .WithMessage("VerseRef must follow format BOOK.CHAPTER.VERSE (e.g. JHN.3.16).");
 
         RuleFor(x => x.Content)
-            .NotEmpty().WithMessage("Content cannot be empty.")
+            .NotEmpty()
+            .WithMessage("Content cannot be empty.")
             .MaximumLength(VerseNote.MaxContentLength)
             .WithMessage($"Content must not exceed {VerseNote.MaxContentLength:N0} characters.");
 
@@ -42,15 +44,18 @@ internal sealed class CreateNoteCommandHandler(IVerseNoteRepository noteReposito
     public async Task<Result<NoteDto>> Handle(CreateNoteCommand request, CancellationToken ct)
     {
         if (!Core.ValueObjects.VerseRef.TryParse(request.VerseRef, out var verseRef))
-            return Error.Validation("Notes.InvalidVerseRef",
-                $"'{request.VerseRef}' is not a valid verse reference. Expected format: BOOK.CHAPTER.VERSE");
+            return Error.Validation(
+                "Notes.InvalidVerseRef",
+                $"'{request.VerseRef}' is not a valid verse reference. Expected format: BOOK.CHAPTER.VERSE"
+            );
 
         var noteResult = VerseNote.Create(
             request.UserId,
             verseRef,
             request.Content,
             request.Tags,
-            request.IsShared);
+            request.IsShared
+        );
 
         if (noteResult.IsFailure)
             return noteResult.Error;
@@ -59,12 +64,14 @@ internal sealed class CreateNoteCommandHandler(IVerseNoteRepository noteReposito
         return MapToDto(noteResult.Value);
     }
 
-    internal static NoteDto MapToDto(VerseNote note) => new(
-        note.Id.Value,
-        note.VerseRef.Key,
-        note.Content,
-        note.IsShared,
-        note.Tags.ToList(),
-        note.CreatedAt,
-        note.UpdatedAt);
+    internal static NoteDto MapToDto(VerseNote note) =>
+        new(
+            note.Id.Value,
+            note.VerseRef.Key,
+            note.Content,
+            note.IsShared,
+            note.Tags.ToList(),
+            note.CreatedAt,
+            note.UpdatedAt
+        );
 }

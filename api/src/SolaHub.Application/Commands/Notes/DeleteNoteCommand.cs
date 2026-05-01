@@ -18,7 +18,10 @@ internal sealed class DeleteNoteCommandHandler(IVerseNoteRepository noteReposito
             return Error.NotFound("Notes.NotFound", $"Note {request.NoteId.Value} was not found.");
 
         if (note.UserId != request.RequestingUserId)
-            return Error.Forbidden("Notes.Forbidden", "You do not have permission to delete this note.");
+            return Error.Forbidden(
+                "Notes.Forbidden",
+                "You do not have permission to delete this note."
+            );
 
         await noteRepository.DeleteAsync(request.NoteId, ct);
         return Result.Success();

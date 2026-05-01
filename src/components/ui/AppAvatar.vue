@@ -1,36 +1,36 @@
 <script setup lang="ts">
-interface Props {
-  name: string
-  size?: 'sm' | 'md' | 'lg'
-  src?: string
-}
+  interface Props {
+    name: string
+    size?: 'sm' | 'md' | 'lg'
+    src?: string
+  }
 
-const { name, size = 'md', src } = defineProps<Props>()
+  const { name, size = 'md', src } = defineProps<Props>()
 
-const initials = name
-  .split(' ')
-  .map((w) => w[0])
-  .join('')
-  .slice(0, 2)
-  .toUpperCase()
+  const initials = name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 
-const sizeClasses = {
-  sm: 'h-7 w-7 text-xs',
-  md: 'h-9 w-9 text-sm',
-  lg: 'h-12 w-12 text-base',
-}
+  const sizeClasses = {
+    sm: 'h-7 w-7 text-xs',
+    md: 'h-9 w-9 text-sm',
+    lg: 'h-12 w-12 text-base',
+  }
 
-// Deterministic colour from name
-const colors = [
-  'bg-blue-500',
-  'bg-violet-500',
-  'bg-emerald-500',
-  'bg-amber-500',
-  'bg-rose-500',
-  'bg-indigo-500',
-]
+  // Deterministic colour from name
+  const colors = [
+    'bg-blue-500',
+    'bg-violet-500',
+    'bg-emerald-500',
+    'bg-amber-500',
+    'bg-rose-500',
+    'bg-indigo-500',
+  ]
 
-const colorClass = colors[name.charCodeAt(0) % colors.length]
+  const colorClass = colors[name.charCodeAt(0) % colors.length]
 </script>
 
 <template>

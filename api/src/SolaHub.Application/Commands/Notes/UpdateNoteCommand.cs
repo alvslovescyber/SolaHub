@@ -14,14 +14,16 @@ public sealed record UpdateNoteCommand(
     UserId RequestingUserId,
     string Content,
     IReadOnlyList<string> Tags,
-    bool IsShared) : ICommand<NoteDto>;
+    bool IsShared
+) : ICommand<NoteDto>;
 
 public sealed class UpdateNoteCommandValidator : AbstractValidator<UpdateNoteCommand>
 {
     public UpdateNoteCommandValidator()
     {
         RuleFor(x => x.Content)
-            .NotEmpty().WithMessage("Content cannot be empty.")
+            .NotEmpty()
+            .WithMessage("Content cannot be empty.")
             .MaximumLength(VerseNote.MaxContentLength)
             .WithMessage($"Content must not exceed {VerseNote.MaxContentLength:N0} characters.");
 
@@ -41,7 +43,10 @@ internal sealed class UpdateNoteCommandHandler(IVerseNoteRepository noteReposito
             return Error.NotFound("Notes.NotFound", $"Note {request.NoteId.Value} was not found.");
 
         if (note.UserId != request.RequestingUserId)
-            return Error.Forbidden("Notes.Forbidden", "You do not have permission to update this note.");
+            return Error.Forbidden(
+                "Notes.Forbidden",
+                "You do not have permission to update this note."
+            );
 
         var contentResult = note.UpdateContent(request.Content);
         if (contentResult.IsFailure)

@@ -13,18 +13,22 @@ public sealed record CreatePlanCommand(
     UserId CreatedBy,
     string Title,
     string? Description,
-    bool IsPublic) : ICommand<ReadingPlanDto>;
+    bool IsPublic
+) : ICommand<ReadingPlanDto>;
 
 public sealed class CreatePlanCommandValidator : AbstractValidator<CreatePlanCommand>
 {
     public CreatePlanCommandValidator()
     {
         RuleFor(x => x.Title)
-            .NotEmpty().WithMessage("Title is required.")
-            .MaximumLength(200).WithMessage("Title must not exceed 200 characters.");
+            .NotEmpty()
+            .WithMessage("Title is required.")
+            .MaximumLength(200)
+            .WithMessage("Title must not exceed 200 characters.");
 
         RuleFor(x => x.Description)
-            .MaximumLength(2000).When(x => x.Description is not null)
+            .MaximumLength(2000)
+            .When(x => x.Description is not null)
             .WithMessage("Description must not exceed 2,000 characters.");
     }
 }
@@ -32,13 +36,17 @@ public sealed class CreatePlanCommandValidator : AbstractValidator<CreatePlanCom
 internal sealed class CreatePlanCommandHandler(IReadingPlanRepository planRepository)
     : IRequestHandler<CreatePlanCommand, Result<ReadingPlanDto>>
 {
-    public async Task<Result<ReadingPlanDto>> Handle(CreatePlanCommand request, CancellationToken ct)
+    public async Task<Result<ReadingPlanDto>> Handle(
+        CreatePlanCommand request,
+        CancellationToken ct
+    )
     {
         var planResult = ReadingPlan.Create(
             request.CreatedBy,
             request.Title,
             request.Description,
-            request.IsPublic);
+            request.IsPublic
+        );
 
         if (planResult.IsFailure)
             return planResult.Error;
@@ -49,15 +57,26 @@ internal sealed class CreatePlanCommandHandler(IReadingPlanRepository planReposi
         return MapToDto(plan);
     }
 
-    internal static ReadingPlanDto MapToDto(ReadingPlan plan) => new(
-        plan.Id.Value,
-        plan.Title,
-        plan.Description,
-        plan.Status.ToString(),
-        plan.IsPublic,
-        plan.CreatedBy.Value,
-        plan.CreatedAt,
-        plan.Days.Select(d => new PlanDayDto(d.DayNumber, d.Title, d.VerseRefs.Select(v => v.Key).ToList())).ToList(),
-        plan.Participants.Select(p => new PlanParticipantDto(p.UserId.Value, p.CurrentDay, p.JoinedAt)).ToList()
-    );
+    internal static ReadingPlanDto MapToDto(ReadingPlan plan) =>
+        new(
+            plan.Id.Value,
+            plan.Title,
+            plan.Description,
+            plan.Status.ToString(),
+            plan.IsPublic,
+            plan.CreatedBy.Value,
+            plan.CreatedAt,
+            plan.Days.Select(d => new PlanDayDto(
+                    d.DayNumber,
+                    d.Title,
+                    d.VerseRefs.Select(v => v.Key).ToList()
+                ))
+                .ToList(),
+            plan.Participants.Select(p => new PlanParticipantDto(
+                    p.UserId.Value,
+                    p.CurrentDay,
+                    p.JoinedAt
+                ))
+                .ToList()
+        );
 }

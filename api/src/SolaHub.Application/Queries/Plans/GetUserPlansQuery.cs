@@ -15,7 +15,8 @@ internal sealed class GetUserPlansQueryHandler(IReadingPlanRepository planReposi
 {
     public async Task<Result<IReadOnlyList<ReadingPlanDto>>> Handle(
         GetUserPlansQuery request,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
         var plans = await planRepository.GetByUserAsync(request.UserId, ct);
         var dtos = plans.Select(CreatePlanCommandHandler.MapToDto).ToList().AsReadOnly();

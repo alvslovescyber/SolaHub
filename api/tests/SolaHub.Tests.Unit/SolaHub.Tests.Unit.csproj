@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
@@ -28,5 +27,4 @@
     <ProjectReference Include="..\..\src\SolaHub.Core\SolaHub.Core.csproj" />
     <ProjectReference Include="..\..\src\SolaHub.Application\SolaHub.Application.csproj" />
   </ItemGroup>
-
 </Project>

@@ -1,42 +1,42 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import {
-  LayoutDashboard,
-  BookOpen,
-  CalendarDays,
-  StickyNote,
-  Monitor,
-  Users,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-} from 'lucide-vue-next'
-import { useUiStore } from '@/stores/ui.store'
-import { useAuthStore } from '@/stores/auth.store'
-import AppAvatar from '@/components/ui/AppAvatar.vue'
+  import { computed } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
+  import {
+    LayoutDashboard,
+    BookOpen,
+    CalendarDays,
+    StickyNote,
+    Monitor,
+    Users,
+    Settings,
+    ChevronLeft,
+    ChevronRight,
+  } from 'lucide-vue-next'
+  import { useUiStore } from '@/stores/ui.store'
+  import { useAuthStore } from '@/stores/auth.store'
+  import AppAvatar from '@/components/ui/AppAvatar.vue'
 
-const ui = useUiStore()
-const auth = useAuthStore()
-const route = useRoute()
-const router = useRouter()
+  const ui = useUiStore()
+  const auth = useAuthStore()
+  const route = useRoute()
+  const router = useRouter()
 
-const navItems = computed(() => [
-  { name: 'Dashboard', icon: LayoutDashboard, route: 'dashboard', section: 'dashboard' },
-  { name: 'Bible', icon: BookOpen, route: 'bible', section: 'bible' },
-  { name: 'Plans', icon: CalendarDays, route: 'plans', section: 'plans' },
-  { name: 'Notes', icon: StickyNote, route: 'notes', section: 'notes' },
-  ...(auth.isPresenter
-    ? [{ name: 'Presenter', icon: Monitor, route: 'presenter', section: 'presenter' }]
-    : []),
-  { name: 'Community', icon: Users, route: 'community', section: 'community' },
-])
+  const navItems = computed(() => [
+    { name: 'Dashboard', icon: LayoutDashboard, route: 'dashboard', section: 'dashboard' },
+    { name: 'Bible', icon: BookOpen, route: 'bible', section: 'bible' },
+    { name: 'Plans', icon: CalendarDays, route: 'plans', section: 'plans' },
+    { name: 'Notes', icon: StickyNote, route: 'notes', section: 'notes' },
+    ...(auth.isPresenter
+      ? [{ name: 'Presenter', icon: Monitor, route: 'presenter', section: 'presenter' }]
+      : []),
+    { name: 'Community', icon: Users, route: 'community', section: 'community' },
+  ])
 
-const isActive = (routeName: string) => route.name === routeName
+  const isActive = (routeName: string) => route.name === routeName
 
-function navigate(routeName: string) {
-  void router.push({ name: routeName })
-}
+  function navigate(routeName: string) {
+    void router.push({ name: routeName })
+  }
 </script>
 
 <template>
@@ -47,17 +47,17 @@ function navigate(routeName: string) {
     ]"
   >
     <!-- Title bar drag region -->
-    <div
-      class="h-12 flex items-center px-4 shrink-0"
-      data-tauri-drag-region
-    >
+    <div class="h-12 flex items-center px-4 shrink-0" data-tauri-drag-region>
       <div v-if="!ui.sidebarCollapsed" class="flex items-center gap-2">
         <div class="h-7 w-7 rounded-lg bg-primary-600 flex items-center justify-center">
           <BookOpen class="h-4 w-4 text-white" />
         </div>
         <span class="font-bold text-sm text-slate-900 dark:text-white tracking-tight">SolaHub</span>
       </div>
-      <div v-else class="h-7 w-7 rounded-lg bg-primary-600 flex items-center justify-center mx-auto">
+      <div
+        v-else
+        class="h-7 w-7 rounded-lg bg-primary-600 flex items-center justify-center mx-auto"
+      >
         <BookOpen class="h-4 w-4 text-white" />
       </div>
     </div>

@@ -22,15 +22,22 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
 
     public override async Task OnConnectedAsync()
     {
-        logger.LogDebug("User {UserId} connected (connection={ConnectionId})",
-            CurrentUserId.Value, Context.ConnectionId);
+        logger.LogDebug(
+            "User {UserId} connected (connection={ConnectionId})",
+            CurrentUserId.Value,
+            Context.ConnectionId
+        );
         await base.OnConnectedAsync();
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         if (exception is not null)
-            logger.LogWarning(exception, "User {UserId} disconnected with error", CurrentUserId.Value);
+            logger.LogWarning(
+                exception,
+                "User {UserId} disconnected with error",
+                CurrentUserId.Value
+            );
         else
             logger.LogDebug("User {UserId} disconnected cleanly", CurrentUserId.Value);
 
@@ -48,11 +55,12 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
         logger.LogDebug("User {UserId} joined plan group {PlanId}", CurrentUserId.Value, planId);
 
         // Notify others in the group that this user is now active
-        await Clients.OthersInGroup(group).SendAsync("UserJoined", new
-        {
-            UserId = CurrentUserId.Value,
-            JoinedAt = DateTimeOffset.UtcNow,
-        });
+        await Clients
+            .OthersInGroup(group)
+            .SendAsync(
+                "UserJoined",
+                new { UserId = CurrentUserId.Value, JoinedAt = DateTimeOffset.UtcNow }
+            );
     }
 
     /// <summary>Unsubscribe from real-time updates for a plan.</summary>
@@ -63,11 +71,12 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
 
         logger.LogDebug("User {UserId} left plan group {PlanId}", CurrentUserId.Value, planId);
 
-        await Clients.OthersInGroup(group).SendAsync("UserLeft", new
-        {
-            UserId = CurrentUserId.Value,
-            LeftAt = DateTimeOffset.UtcNow,
-        });
+        await Clients
+            .OthersInGroup(group)
+            .SendAsync(
+                "UserLeft",
+                new { UserId = CurrentUserId.Value, LeftAt = DateTimeOffset.UtcNow }
+            );
     }
 
     // ─── Progress broadcasting ─────────────────────────────────────────────────
@@ -80,16 +89,25 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
     {
         var group = PlanGroup(planId);
 
-        await Clients.OthersInGroup(group).SendAsync("ProgressUpdated", new
-        {
-            PlanId = planId,
-            UserId = CurrentUserId.Value,
-            DayNumber = dayNumber,
-            UpdatedAt = DateTimeOffset.UtcNow,
-        });
+        await Clients
+            .OthersInGroup(group)
+            .SendAsync(
+                "ProgressUpdated",
+                new
+                {
+                    PlanId = planId,
+                    UserId = CurrentUserId.Value,
+                    DayNumber = dayNumber,
+                    UpdatedAt = DateTimeOffset.UtcNow,
+                }
+            );
 
-        logger.LogDebug("User {UserId} broadcast progress day={Day} for plan {PlanId}",
-            CurrentUserId.Value, dayNumber, planId);
+        logger.LogDebug(
+            "User {UserId} broadcast progress day={Day} for plan {PlanId}",
+            CurrentUserId.Value,
+            dayNumber,
+            planId
+        );
     }
 
     // ─── Annotation broadcasting ───────────────────────────────────────────────
@@ -104,14 +122,19 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
         var truncated = content.Length > 1_000 ? content[..1_000] : content;
         var group = PlanGroup(planId);
 
-        await Clients.OthersInGroup(group).SendAsync("AnnotationReceived", new
-        {
-            PlanId = planId,
-            UserId = CurrentUserId.Value,
-            VerseRef = verseRef,
-            Content = truncated,
-            SentAt = DateTimeOffset.UtcNow,
-        });
+        await Clients
+            .OthersInGroup(group)
+            .SendAsync(
+                "AnnotationReceived",
+                new
+                {
+                    PlanId = planId,
+                    UserId = CurrentUserId.Value,
+                    VerseRef = verseRef,
+                    Content = truncated,
+                    SentAt = DateTimeOffset.UtcNow,
+                }
+            );
     }
 
     // ─── Presenter mode ────────────────────────────────────────────────────────
@@ -123,12 +146,17 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
             return;
 
         var group = PlanGroup(planId);
-        await Clients.OthersInGroup(group).SendAsync("PresenterVerseChanged", new
-        {
-            PlanId = planId,
-            PresenterUserId = CurrentUserId.Value,
-            VerseRef = verseRef,
-            PushedAt = DateTimeOffset.UtcNow,
-        });
+        await Clients
+            .OthersInGroup(group)
+            .SendAsync(
+                "PresenterVerseChanged",
+                new
+                {
+                    PlanId = planId,
+                    PresenterUserId = CurrentUserId.Value,
+                    VerseRef = verseRef,
+                    PushedAt = DateTimeOffset.UtcNow,
+                }
+            );
     }
 }

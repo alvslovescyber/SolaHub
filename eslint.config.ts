@@ -1,5 +1,13 @@
 import pluginVue from 'eslint-plugin-vue'
-import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
+import {
+  configureVueProject,
+  defineConfigWithVueTs,
+  vueTsConfigs,
+} from '@vue/eslint-config-typescript'
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+configureVueProject({ rootDir: dirname(fileURLToPath(import.meta.url)) })
 
 export default defineConfigWithVueTs(
   {
@@ -11,7 +19,7 @@ export default defineConfigWithVueTs(
     ignores: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**', 'src-tauri/**'],
   },
   pluginVue.configs['flat/recommended'],
-  vueTsConfigs.recommended,
+  vueTsConfigs.recommendedTypeChecked,
   {
     name: 'app/custom-rules',
     rules: {
@@ -34,5 +42,5 @@ export default defineConfigWithVueTs(
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       eqeqeq: ['error', 'always'],
     },
-  },
+  }
 )

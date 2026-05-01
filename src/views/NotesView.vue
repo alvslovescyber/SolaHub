@@ -1,38 +1,38 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { Plus, Trash2 } from 'lucide-vue-next'
-import { useNotesStore } from '@/stores/notes.store'
-import AppPageHeader from '@/components/layout/AppPageHeader.vue'
-import AppButton from '@/components/ui/AppButton.vue'
-import AppCard from '@/components/ui/AppCard.vue'
-import AppBadge from '@/components/ui/AppBadge.vue'
-import AppSpinner from '@/components/ui/AppSpinner.vue'
+  import { ref, onMounted } from 'vue'
+  import { Plus, Trash2 } from 'lucide-vue-next'
+  import { useNotesStore } from '@/stores/notes.store'
+  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
+  import AppButton from '@/components/ui/AppButton.vue'
+  import AppCard from '@/components/ui/AppCard.vue'
+  import AppBadge from '@/components/ui/AppBadge.vue'
+  import AppSpinner from '@/components/ui/AppSpinner.vue'
 
-const notes = useNotesStore()
+  const notes = useNotesStore()
 
-const showCreate = ref(false)
-const newContent = ref('')
-const newVerseRef = ref('')
-const newTags = ref('')
+  const showCreate = ref(false)
+  const newContent = ref('')
+  const newVerseRef = ref('')
+  const newTags = ref('')
 
-onMounted(() => notes.fetchMyNotes())
+  onMounted(() => notes.fetchMyNotes())
 
-async function createNote() {
-  if (!newContent.value.trim() || !newVerseRef.value.trim()) return
-  await notes.create({
-    verseRef: newVerseRef.value.trim(),
-    content: newContent.value.trim(),
-    tags: newTags.value
-      .split(',')
-      .map((t) => t.trim())
-      .filter(Boolean),
-    isShared: false,
-  })
-  showCreate.value = false
-  newContent.value = ''
-  newVerseRef.value = ''
-  newTags.value = ''
-}
+  async function createNote() {
+    if (!newContent.value.trim() || !newVerseRef.value.trim()) return
+    await notes.create({
+      verseRef: newVerseRef.value.trim(),
+      content: newContent.value.trim(),
+      tags: newTags.value
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
+      isShared: false,
+    })
+    showCreate.value = false
+    newContent.value = ''
+    newVerseRef.value = ''
+    newTags.value = ''
+  }
 </script>
 
 <template>
@@ -80,32 +80,28 @@ async function createNote() {
       </div>
 
       <!-- Empty state -->
-      <div v-else-if="notes.notes.length === 0 && !showCreate" class="text-center text-slate-400 pt-16">
+      <div
+        v-else-if="notes.notes.length === 0 && !showCreate"
+        class="text-center text-slate-400 pt-16"
+      >
         <p class="text-sm">No notes yet. Create your first verse note.</p>
       </div>
 
       <!-- Notes list -->
       <div v-else class="space-y-3">
-        <AppCard
-          v-for="note in notes.notes"
-          :key="note.id"
-          class="relative group"
-        >
+        <AppCard v-for="note in notes.notes" :key="note.id" class="relative group">
           <div class="flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
               <p class="text-xs font-semibold text-primary-600 dark:text-primary-400 mb-1">
                 {{ note.verseRef }}
               </p>
-              <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+              <p
+                class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap"
+              >
                 {{ note.content }}
               </p>
               <div v-if="note.tags.length > 0" class="flex flex-wrap gap-1 mt-2">
-                <AppBadge
-                  v-for="tag in note.tags"
-                  :key="tag"
-                  variant="primary"
-                  size="sm"
-                >
+                <AppBadge v-for="tag in note.tags" :key="tag" variant="primary" size="sm">
                   {{ tag }}
                 </AppBadge>
               </div>

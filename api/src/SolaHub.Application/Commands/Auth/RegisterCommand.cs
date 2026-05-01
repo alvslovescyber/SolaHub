@@ -9,36 +9,48 @@ using SolaHub.Core.Interfaces.Services;
 
 namespace SolaHub.Application.Commands.Auth;
 
-public sealed record RegisterCommand(string Email, string Password, string DisplayName) : ICommand<AuthResponse>;
+public sealed record RegisterCommand(string Email, string Password, string DisplayName)
+    : ICommand<AuthResponse>;
 
 public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 {
     public RegisterCommandValidator()
     {
         RuleFor(x => x.DisplayName)
-            .NotEmpty().WithMessage("Display name is required.")
-            .MaximumLength(100).WithMessage("Display name must not exceed 100 characters.");
+            .NotEmpty()
+            .WithMessage("Display name is required.")
+            .MaximumLength(100)
+            .WithMessage("Display name must not exceed 100 characters.");
 
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("A valid email address is required.")
-            .MaximumLength(254).WithMessage("Email must not exceed 254 characters.");
+            .NotEmpty()
+            .WithMessage("Email is required.")
+            .EmailAddress()
+            .WithMessage("A valid email address is required.")
+            .MaximumLength(254)
+            .WithMessage("Email must not exceed 254 characters.");
 
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required.")
-            .MinimumLength(8).WithMessage("Password must be at least 8 characters.")
-            .MaximumLength(100).WithMessage("Password must not exceed 100 characters.")
-            .Matches("[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
-            .Matches("[a-z]").WithMessage("Password must contain at least one lowercase letter.")
-            .Matches("[0-9]").WithMessage("Password must contain at least one digit.");
+            .NotEmpty()
+            .WithMessage("Password is required.")
+            .MinimumLength(8)
+            .WithMessage("Password must be at least 8 characters.")
+            .MaximumLength(100)
+            .WithMessage("Password must not exceed 100 characters.")
+            .Matches("[A-Z]")
+            .WithMessage("Password must contain at least one uppercase letter.")
+            .Matches("[a-z]")
+            .WithMessage("Password must contain at least one lowercase letter.")
+            .Matches("[0-9]")
+            .WithMessage("Password must contain at least one digit.");
     }
 }
 
 internal sealed class RegisterCommandHandler(
     IUserRepository userRepository,
     IPasswordHasher passwordHasher,
-    ITokenService tokenService)
-    : IRequestHandler<RegisterCommand, Result<AuthResponse>>
+    ITokenService tokenService
+) : IRequestHandler<RegisterCommand, Result<AuthResponse>>
 {
     private static readonly TimeSpan AccessTokenExpiry = TimeSpan.FromMinutes(15);
     private static readonly TimeSpan RefreshTokenExpiry = TimeSpan.FromDays(30);
@@ -47,7 +59,10 @@ internal sealed class RegisterCommandHandler(
     {
         // Check uniqueness before hashing (expensive operation)
         if (await userRepository.ExistsByEmailAsync(request.Email, ct))
-            return Error.Conflict("Auth.EmailTaken", $"An account with email '{request.Email}' already exists.");
+            return Error.Conflict(
+                "Auth.EmailTaken",
+                $"An account with email '{request.Email}' already exists."
+            );
 
         var hash = passwordHasher.Hash(request.Password);
         var userResult = User.Create(request.Email, hash, request.DisplayName);
@@ -69,15 +84,18 @@ internal sealed class RegisterCommandHandler(
             accessToken,
             refreshToken,
             DateTimeOffset.UtcNow.Add(AccessTokenExpiry),
-            MapToUserDto(user));
+            MapToUserDto(user)
+        );
     }
 
-    internal static UserDto MapToUserDto(User user) => new(
-        user.Id.Value,
-        user.DisplayName,
-        user.Email.Value,
-        user.Role.ToString(),
-        user.ChurchId?.Value,
-        user.IsEmailVerified,
-        user.IsActive);
+    internal static UserDto MapToUserDto(User user) =>
+        new(
+            user.Id.Value,
+            user.DisplayName,
+            user.Email.Value,
+            user.Role.ToString(),
+            user.ChurchId?.Value,
+            user.IsEmailVerified,
+            user.IsActive
+        );
 }

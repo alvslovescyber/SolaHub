@@ -39,13 +39,14 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             // Replace the real DB with the test container
             var descriptor = services.SingleOrDefault(d =>
-                d.ServiceType == typeof(DbContextOptions<AppDbContext>));
+                d.ServiceType == typeof(DbContextOptions<AppDbContext>)
+            );
             if (descriptor is not null)
                 services.Remove(descriptor);
 
             services.AddDbContext<AppDbContext>(opts =>
-                opts.UseNpgsql(_postgres.GetConnectionString())
-                    .UseSnakeCaseNamingConvention());
+                opts.UseNpgsql(_postgres.GetConnectionString()).UseSnakeCaseNamingConvention()
+            );
 
             // Run migrations
             var sp = services.BuildServiceProvider();

@@ -13,11 +13,13 @@ internal sealed class ChurchConfiguration : IEntityTypeConfiguration<Church>
 
         builder.HasKey(c => c.Id);
 
-        builder.Property(c => c.Id)
+        builder
+            .Property(c => c.Id)
             .HasConversion(id => id.Value, value => ChurchId.From(value))
             .ValueGeneratedNever();
 
-        builder.Property(c => c.AdminId)
+        builder
+            .Property(c => c.AdminId)
             .HasConversion(id => id.Value, value => UserId.From(value))
             .IsRequired();
 

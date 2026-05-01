@@ -1,23 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { usePresenterStore } from '@/stores/presenter.store'
-import { collaborationService } from '@/services/collaboration.service'
+  import { computed, onMounted } from 'vue'
+  import { usePresenterStore } from '@/stores/presenter.store'
+  import { collaborationService } from '@/services/collaboration.service'
 
-const presenter = usePresenterStore()
-const slide = computed(() => presenter.currentSlide)
+  const presenter = usePresenterStore()
+  const slide = computed(() => presenter.currentSlide)
 
-onMounted(() => {
-  // Listen for verse updates pushed from the control window via collaboration hub
-  collaborationService.on((event) => {
-    if (event.type === 'PresenterVerseChanged') {
-      // Navigate to the pushed slide if it exists in the current deck
-      const idx = presenter.session.slides.findIndex(
-        (s) => s.verseRef === event.verseRef,
-      )
-      if (idx !== -1) presenter.goTo(idx)
-    }
+  onMounted(() => {
+    // Listen for verse updates pushed from the control window via collaboration hub
+    collaborationService.on((event) => {
+      if (event.type === 'PresenterVerseChanged') {
+        // Navigate to the pushed slide if it exists in the current deck
+        const idx = presenter.session.slides.findIndex((s) => s.verseRef === event.verseRef)
+        if (idx !== -1) presenter.goTo(idx)
+      }
+    })
   })
-})
 </script>
 
 <template>

@@ -15,7 +15,12 @@ public sealed class VerseNoteEntityTests
     {
         var verseRef = VerseRef.Parse("JHN.3.16");
 
-        var result = VerseNote.Create(_userId, verseRef, "For God so loved the world...", ["love", "salvation"]);
+        var result = VerseNote.Create(
+            _userId,
+            verseRef,
+            "For God so loved the world...",
+            ["love", "salvation"]
+        );
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Content.Should().Be("For God so loved the world...");

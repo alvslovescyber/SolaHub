@@ -7,7 +7,8 @@ public interface IHasDomainEvents
     void ClearDomainEvents();
 }
 
-public abstract class BaseEntity<TId> : IHasDomainEvents where TId : notnull
+public abstract class BaseEntity<TId> : IHasDomainEvents
+    where TId : notnull
 {
     private readonly List<IDomainEvent> _domainEvents = [];
 
@@ -20,7 +21,9 @@ public abstract class BaseEntity<TId> : IHasDomainEvents where TId : notnull
     public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
     protected void RaiseDomainEvent(IDomainEvent domainEvent) => _domainEvents.Add(domainEvent);
+
     public void ClearDomainEvents() => _domainEvents.Clear();
+
     protected void MarkUpdated() => UpdatedAt = DateTimeOffset.UtcNow;
 }
 

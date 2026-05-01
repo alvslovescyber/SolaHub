@@ -10,9 +10,7 @@ export const useNotesStore = defineStore('notes', () => {
   const error = ref<string | null>(null)
   const activeNoteId = ref<string | null>(null)
 
-  const activeNote = computed(
-    () => notes.value.find((n) => n.id === activeNoteId.value) ?? null,
-  )
+  const activeNote = computed(() => notes.value.find((n) => n.id === activeNoteId.value) ?? null)
 
   const notesByVerseRef = computed(() => {
     const map = new Map<string, VerseNote[]>()

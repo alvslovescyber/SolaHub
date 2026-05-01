@@ -1,61 +1,108 @@
-# Dependencies
+# ─── Dependencies ─────────────────────────────────────────────────────────────
 node_modules/
 .pnp
 .pnp.js
 
-# Build outputs
+# ─── Build outputs ────────────────────────────────────────────────────────────
 dist/
 dist-ssr/
 *.local
 
-# TypeScript
+# ─── TypeScript ───────────────────────────────────────────────────────────────
 *.tsbuildinfo
 
-# Vite
+# ─── Vite ─────────────────────────────────────────────────────────────────────
 .vite/
 
-# Tauri
+# ─── Tauri / Rust ─────────────────────────────────────────────────────────────
 src-tauri/target/
 src-tauri/WixTools/
-
-# Rust
-Cargo.lock
+src-tauri/gen/           # Tauri auto-generated Android/iOS scaffolding
 **/*.rs.bk
+# Cargo.lock is intentionally committed for binary applications (ensures
+# reproducible builds). Do NOT add it back to this ignore list.
 
-# Environment
+# ─── Environment / Secrets ────────────────────────────────────────────────────
 .env
 .env.local
 .env.*.local
 !.env.example
+# ASP.NET Core user secrets
+**/secrets.json
+appsettings.Production.json
 
-# IDE
-.vscode/
+# ─── IDE: VS Code ─────────────────────────────────────────────────────────────
+# Shared project configs are tracked; personal overrides are not.
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ─── IDE: JetBrains / Visual Studio ──────────────────────────────────────────
 .idea/
+.vs/
 *.suo
+*.user
+*.userosscache
+*.sln.docstates
 *.ntvs*
 *.njsproj
+*.swp
 
-# macOS
+# ─── macOS ────────────────────────────────────────────────────────────────────
 .DS_Store
 .AppleDouble
 .LSOverride
 Icon
+._*
+.Spotlight-V100
+.Trashes
 
-# Logs
+# ─── Linux ────────────────────────────────────────────────────────────────────
+*~
+
+# ─── Windows ──────────────────────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
 logs/
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Testing
-coverage/
-playwright-report/
-
-# API
+# ─── .NET: Build artifacts ────────────────────────────────────────────────────
 api/src/*/bin/
 api/src/*/obj/
-api/*.user
+api/tests/*/bin/
+api/tests/*/obj/
 
-# SQLite
+# ─── .NET: Test results ───────────────────────────────────────────────────────
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# ─── .NET: NuGet ─────────────────────────────────────────────────────────────
+*.nupkg
+*.snupkg
+.nuget/packages/
+
+# ─── .NET: Publish output ─────────────────────────────────────────────────────
+api/publish/
+
+# ─── Testing ──────────────────────────────────────────────────────────────────
+coverage/
+playwright-report/
+test-results/
+
+# ─── SQLite ───────────────────────────────────────────────────────────────────
 *.db
 *.sqlite
+*.db-shm
+*.db-wal
 !src-tauri/resources/*.db

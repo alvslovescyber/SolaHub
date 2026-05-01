@@ -1,0 +1,68 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    // ─── API: attach debugger to running `dotnet watch` process ───────────────
+    {
+      "name": "API: Attach (dotnet)",
+      "type": "coreclr",
+      "request": "attach",
+      "processName": "SolaHub.API"
+    },
+
+    // ─── API: launch directly (no hot-reload) ─────────────────────────────────
+    {
+      "name": "API: Launch (Debug)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "api: build",
+      "program": "${workspaceFolder}/api/src/SolaHub.API/bin/Debug/net10.0/SolaHub.API.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/api/src/SolaHub.API",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "stopAtEntry": false,
+      "console": "internalConsole",
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "Now listening on: (https?://\\S+)"
+      }
+    },
+
+    // ─── Frontend: Vue devserver via Chrome DevTools ───────────────────────────
+    {
+      "name": "Frontend: Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:1420",
+      "webRoot": "${workspaceFolder}/src",
+      "preLaunchTask": "frontend: dev",
+      "sourceMapPathOverrides": {
+        "webpack:///./src/*": "${webRoot}/*"
+      }
+    },
+
+    // ─── Tauri: full app (requires API running separately) ───────────────────
+    {
+      "name": "Tauri: Dev",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/src-tauri/target/debug/sola-hub",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "tauri: dev",
+      "sourceMap": {
+        "/rustc/*": "${env:HOME}/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/*"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack: API + Tauri",
+      "configurations": ["API: Launch (Debug)", "Tauri: Dev"],
+      "preLaunchTask": "api: build",
+      "stopAll": true
+    }
+  ]
+}

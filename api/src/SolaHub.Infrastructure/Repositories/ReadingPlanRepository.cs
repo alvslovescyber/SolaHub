@@ -8,28 +8,32 @@ namespace SolaHub.Infrastructure.Repositories;
 
 public sealed class ReadingPlanRepository(AppDbContext db) : IReadingPlanRepository
 {
-    public Task<ReadingPlan?> GetByIdAsync(ReadingPlanId id, CancellationToken ct)
-        => db.ReadingPlans
-            .Include(p => p.Days)
+    public Task<ReadingPlan?> GetByIdAsync(ReadingPlanId id, CancellationToken ct) =>
+        db
+            .ReadingPlans.Include(p => p.Days)
             .Include(p => p.Participants)
             .FirstOrDefaultAsync(p => p.Id == id, ct);
 
-    public async Task<IReadOnlyList<ReadingPlan>> GetByUserAsync(UserId userId, CancellationToken ct)
+    public async Task<IReadOnlyList<ReadingPlan>> GetByUserAsync(
+        UserId userId,
+        CancellationToken ct
+    )
     {
-        var plans = await db.ReadingPlans
-            .Include(p => p.Participants)
-            .Where(p =>
-                p.CreatedBy == userId ||
-                p.Participants.Any(pp => pp.UserId == userId))
+        var plans = await db
+            .ReadingPlans.Include(p => p.Participants)
+            .Where(p => p.CreatedBy == userId || p.Participants.Any(pp => pp.UserId == userId))
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync(ct);
         return plans.AsReadOnly();
     }
 
-    public async Task<IReadOnlyList<ReadingPlan>> GetByChurchAsync(ChurchId churchId, CancellationToken ct)
+    public async Task<IReadOnlyList<ReadingPlan>> GetByChurchAsync(
+        ChurchId churchId,
+        CancellationToken ct
+    )
     {
-        var plans = await db.ReadingPlans
-            .Where(p => p.ChurchId == churchId)
+        var plans = await db
+            .ReadingPlans.Where(p => p.ChurchId == churchId)
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync(ct);
         return plans.AsReadOnly();
@@ -49,8 +53,6 @@ public sealed class ReadingPlanRepository(AppDbContext db) : IReadingPlanReposit
 
     public async Task DeleteAsync(ReadingPlanId id, CancellationToken ct)
     {
-        await db.ReadingPlans
-            .Where(p => p.Id == id)
-            .ExecuteDeleteAsync(ct);
+        await db.ReadingPlans.Where(p => p.Id == id).ExecuteDeleteAsync(ct);
     }
 }

@@ -24,7 +24,7 @@ export const useBibleStore = defineStore('bible', () => {
   })
 
   const currentBook = computed(
-    () => books.value.find((b) => b.shortName === selectedBook.value) ?? null,
+    () => books.value.find((b) => b.shortName === selectedBook.value) ?? null
   )
 
   async function loadBooks(): Promise<void> {

@@ -15,7 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => user.value !== null && !!tokenStorage.getAccess())
   const isAdmin = computed(() => user.value?.role === 'Admin')
   const isPresenter = computed(
-    () => user.value?.role === 'Presenter' || user.value?.role === 'Pastor' || isAdmin.value,
+    () => user.value?.role === 'Presenter' || user.value?.role === 'Pastor' || isAdmin.value
   )
 
   async function register(email: string, password: string, displayName: string): Promise<void> {
@@ -57,7 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
   function handleSessionExpired(): void {
     user.value = null
     tokenStorage.clear()
-    router.push({ name: 'login', query: { reason: 'session-expired' } })
+    void router.push({ name: 'login', query: { reason: 'session-expired' } })
   }
 
   return {

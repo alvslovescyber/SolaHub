@@ -14,7 +14,7 @@ export const usePresenterStore = defineStore('presenter', () => {
   })
 
   const currentSlide = computed<PresenterSlide | null>(
-    () => session.value.slides[session.value.currentIndex] ?? null,
+    () => session.value.slides[session.value.currentIndex] ?? null
   )
 
   const hasNext = computed(() => session.value.currentIndex < session.value.slides.length - 1)
@@ -22,7 +22,7 @@ export const usePresenterStore = defineStore('presenter', () => {
   const progress = computed(() =>
     session.value.slides.length > 0
       ? ((session.value.currentIndex + 1) / session.value.slides.length) * 100
-      : 0,
+      : 0
   )
 
   function loadSlides(slides: PresenterSlide[], planId: string | null = null): void {

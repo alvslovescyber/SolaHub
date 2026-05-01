@@ -6,10 +6,8 @@ using SolaHub.Core.ValueObjects;
 
 namespace SolaHub.Application.Commands.Plans;
 
-public sealed record RecordProgressCommand(
-    ReadingPlanId PlanId,
-    UserId UserId,
-    int DayNumber) : ICommand;
+public sealed record RecordProgressCommand(ReadingPlanId PlanId, UserId UserId, int DayNumber)
+    : ICommand;
 
 internal sealed class RecordProgressCommandHandler(IReadingPlanRepository planRepository)
     : IRequestHandler<RecordProgressCommand, Result>
