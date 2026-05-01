@@ -144,7 +144,9 @@ try
         });
     }
 
-    app.UseHttpsRedirection();
+    if (!app.Environment.IsDevelopment())
+        app.UseHttpsRedirection();
+
     app.UseCors("TauriApp");
     app.UseAuthentication();
     app.UseAuthorization();

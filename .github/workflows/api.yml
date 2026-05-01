@@ -13,7 +13,7 @@ on:
       - '.github/workflows/api.yml'
 
 env:
-  DOTNET_VERSION: '9.0.x'
+  DOTNET_VERSION: '10.0.x'
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
   DOTNET_NOLOGO: true
 
@@ -30,10 +30,12 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Install CSharpier
-        run: dotnet tool install --global csharpier
+        run: |
+          dotnet tool install --global csharpier
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
 
       - name: Check formatting
-        run: dotnet csharpier --check api/
+        run: csharpier --check api/
 
   build:
     name: Build & Unit Tests

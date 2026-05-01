@@ -158,6 +158,7 @@
       "type": "shell",
       "command": "npm",
       "args": ["run", "tauri", "dev"],
+      "options": { "env": { "PATH": "${env:HOME}/.cargo/bin:${env:PATH}" } },
       "group": "build",
       "isBackground": true,
       "presentation": { "reveal": "always", "panel": "dedicated", "group": "tauri" },
@@ -168,6 +169,7 @@
       "type": "shell",
       "command": "npm",
       "args": ["run", "tauri", "build"],
+      "options": { "env": { "PATH": "${env:HOME}/.cargo/bin:${env:PATH}" } },
       "group": "build",
       "presentation": { "reveal": "always", "panel": "shared" },
       "problemMatcher": []
@@ -218,6 +220,30 @@
       "dependsOn": ["docker: up", "api: watch", "tauri: dev"],
       "dependsOrder": "sequence",
       "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always" }
+    },
+    {
+      "label": "frontend: dev (web)",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev:web"],
+      "group": "build",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated", "group": "frontend" },
+      "problemMatcher": {
+        "base": "$eslint-stylish",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE",
+          "endsPattern": "ready in"
+        }
+      }
+    },
+    {
+      "label": "full: start (docker + api + web)",
+      "dependsOn": ["docker: up", "api: watch", "frontend: dev (web)"],
+      "dependsOrder": "sequence",
+      "group": "build",
       "presentation": { "reveal": "always" }
     }
   ],

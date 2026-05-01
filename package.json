@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:web": "VITE_WEB_ONLY=true vite",
     "build": "vue-tsc --noEmit && vite build",
+    "build:web": "vue-tsc --noEmit && VITE_WEB_ONLY=true vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "lint": "eslint .",
@@ -33,6 +35,7 @@
   "devDependencies": {
     "@playwright/test": "^1.49.1",
     "@tauri-apps/cli": "^2.1.0",
+    "@tsconfig/node22": "^22.0.5",
     "@types/node": "^22.9.0",
     "@vitejs/plugin-vue": "^5.2.0",
     "@vue/eslint-config-typescript": "^14.2.0",

@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { invoke } from '@tauri-apps/api/core'
+import { isTauri } from '@/lib/platform'
 import type { PresenterSlide, PresenterSession } from '@/types/presenter.types'
 import { collaborationService } from '@/services/collaboration.service'
 
@@ -12,6 +13,9 @@ export const usePresenterStore = defineStore('presenter', () => {
     isFullscreen: false,
     displayWindowOpen: false,
   })
+
+  // Reference to the browser popup opened in web mode
+  let webDisplayWindow: Window | null = null
 
   const currentSlide = computed<PresenterSlide | null>(
     () => session.value.slides[session.value.currentIndex] ?? null
@@ -56,18 +60,40 @@ export const usePresenterStore = defineStore('presenter', () => {
   }
 
   async function openDisplayWindow(): Promise<void> {
-    await invoke('open_presenter_window')
+    if (isTauri) {
+      await invoke('open_presenter_window', { url: '/presenter-display' })
+    } else {
+      webDisplayWindow?.close()
+      webDisplayWindow = window.open(
+        '/#/presenter-display',
+        'solahub-presenter',
+        'width=1280,height=800,menubar=no,toolbar=no,location=no,status=no'
+      )
+    }
     session.value.displayWindowOpen = true
   }
 
   async function closeDisplayWindow(): Promise<void> {
-    await invoke('close_presenter_window')
+    if (isTauri) {
+      await invoke('close_presenter_window')
+    } else {
+      webDisplayWindow?.close()
+      webDisplayWindow = null
+    }
     session.value.displayWindowOpen = false
   }
 
   async function toggleFullscreen(): Promise<void> {
     const next = !session.value.isFullscreen
-    await invoke('set_fullscreen', { fullscreen: next })
+    if (isTauri) {
+      await invoke('set_fullscreen', { fullscreen: next })
+    } else {
+      if (next) {
+        await document.documentElement.requestFullscreen?.()
+      } else {
+        await document.exitFullscreen?.()
+      }
+    }
     session.value.isFullscreen = next
   }
 

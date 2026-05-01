@@ -4,7 +4,9 @@
     "vite.config.*",
     "tailwind.config.*",
     "postcss.config.*",
-    "eslint.config.*"
+    "eslint.config.*",
+    "playwright.config.*",
+    "e2e/**/*"
   ],
   "compilerOptions": {
     "composite": true,

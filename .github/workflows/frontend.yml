@@ -7,7 +7,7 @@ on:
       - 'src/**'
       - 'src-tauri/**'
       - 'package.json'
-      - 'pnpm-lock.yaml'
+      - 'package-lock.json'
       - 'vite.config.ts'
       - 'tsconfig*.json'
       - 'eslint.config.ts'
@@ -17,11 +17,10 @@ on:
     paths:
       - 'src/**'
       - 'package.json'
-      - 'pnpm-lock.yaml'
+      - 'package-lock.json'
       - '.github/workflows/frontend.yml'
 
 env:
-  PNPM_VERSION: '9'
   NODE_VERSION: '22'
 
 jobs:
@@ -31,26 +30,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: ESLint
-        run: pnpm lint
+        run: npm run lint
 
       - name: Prettier check
-        run: pnpm exec prettier --check "src/**/*.{ts,vue}"
+        run: npm run format:check
 
       - name: TypeScript type check
-        run: pnpm exec vue-tsc --noEmit
+        run: npm run type-check
 
   build:
     name: Build
@@ -58,20 +53,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Build
-        run: pnpm build
+        run: npm run build
         env:
           VITE_API_URL: http://localhost:5000
 
@@ -89,23 +80,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
-        run: pnpm exec playwright test
+        run: npm run test:e2e
         env:
           VITE_API_URL: http://localhost:5000
           CI: true
