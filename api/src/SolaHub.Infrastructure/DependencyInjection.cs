@@ -46,6 +46,7 @@ public static class DependencyInjection
         // ─── Auth Services ─────────────────────────────────────────────────────
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
+        services.AddSingleton<IRefreshTokenHasher, RefreshTokenHasher>();
 
         // ─── Distributed Cache ─────────────────────────────────────────────────
         var redisConn = config.GetConnectionString("Redis");

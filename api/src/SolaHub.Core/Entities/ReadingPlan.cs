@@ -152,9 +152,10 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
         var participant = _participants.FirstOrDefault(p => p.UserId == userId);
         if (participant is null)
             return Result.Failure(
-                Error.NotFound(
+                new Error(
                     "Plans.NotParticipant",
-                    $"User {userId.Value} is not a participant in this plan."
+                    "You are not a participant in this plan.",
+                    ErrorType.Forbidden
                 )
             );
 

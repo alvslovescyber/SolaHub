@@ -20,7 +20,8 @@ public sealed class RefreshTokenCommandValidator : AbstractValidator<RefreshToke
 
 internal sealed class RefreshTokenCommandHandler(
     IUserRepository userRepository,
-    ITokenService tokenService
+    ITokenService tokenService,
+    IRefreshTokenHasher refreshTokenHasher
 ) : IRequestHandler<RefreshTokenCommand, Result<AuthResponse>>
 {
     private static readonly TimeSpan AccessTokenExpiry = TimeSpan.FromMinutes(15);
@@ -31,9 +32,10 @@ internal sealed class RefreshTokenCommandHandler(
         CancellationToken ct
     )
     {
-        var user = await userRepository.GetByRefreshTokenAsync(request.RefreshToken, ct);
+        var refreshHash = refreshTokenHasher.Hash(request.RefreshToken);
+        var user = await userRepository.GetByRefreshTokenHashAsync(refreshHash, ct);
 
-        if (user is null || !user.HasValidRefreshToken(request.RefreshToken))
+        if (user is null || !user.HasValidRefreshTokenHash(refreshHash))
             return Error.Unauthorized("Auth.InvalidToken", "Invalid or expired refresh token.");
 
         if (!user.IsActive)
@@ -45,8 +47,9 @@ internal sealed class RefreshTokenCommandHandler(
         // Rotate refresh token on every use — prevents stolen-token reuse
         var newAccessToken = tokenService.GenerateAccessToken(user);
         var newRefreshToken = tokenService.GenerateRefreshToken();
+        var newHash = refreshTokenHasher.Hash(newRefreshToken);
         var tokenResult = user.UpdateRefreshToken(
-            newRefreshToken,
+            newHash,
             DateTimeOffset.UtcNow.Add(RefreshTokenExpiry)
         );
         if (tokenResult.IsFailure)

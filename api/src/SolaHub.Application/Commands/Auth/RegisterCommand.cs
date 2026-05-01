@@ -49,7 +49,8 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
 internal sealed class RegisterCommandHandler(
     IUserRepository userRepository,
     IPasswordHasher passwordHasher,
-    ITokenService tokenService
+    ITokenService tokenService,
+    IRefreshTokenHasher refreshTokenHasher
 ) : IRequestHandler<RegisterCommand, Result<AuthResponse>>
 {
     private static readonly TimeSpan AccessTokenExpiry = TimeSpan.FromMinutes(15);
@@ -74,7 +75,10 @@ internal sealed class RegisterCommandHandler(
         var refreshToken = tokenService.GenerateRefreshToken();
         var refreshExpiry = DateTimeOffset.UtcNow.Add(RefreshTokenExpiry);
 
-        var tokenResult = user.UpdateRefreshToken(refreshToken, refreshExpiry);
+        var tokenResult = user.UpdateRefreshToken(
+            refreshTokenHasher.Hash(refreshToken),
+            refreshExpiry
+        );
         if (tokenResult.IsFailure)
             return tokenResult.Error;
 

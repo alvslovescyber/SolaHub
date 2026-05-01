@@ -102,19 +102,14 @@ try
     // ─── OpenAPI / Scalar ──────────────────────────────────────────────────────
     builder.Services.AddOpenApi();
 
-    // ─── CORS (Tauri desktop app uses tauri:// scheme) ─────────────────────────
+    // ─── CORS (origins from Cors:AllowedOrigins or dev defaults) ─────────────────
+    var corsOrigins = ResolveCorsOrigins(builder.Configuration, builder.Environment);
     builder.Services.AddCors(opts =>
         opts.AddPolicy(
             "TauriApp",
             policy =>
                 policy
-                    .WithOrigins(
-                        "tauri://localhost",
-                        "https://tauri.localhost",
-                        "http://localhost:1420", // Vite dev (Tauri)
-                        "http://localhost:3000", // Vite dev (web)
-                        "http://localhost:5173"
-                    )
+                    .WithOrigins(corsOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials()
@@ -129,10 +124,19 @@ try
 
     // ─── Middleware Pipeline ───────────────────────────────────────────────────
     app.UseMiddleware<GlobalExceptionMiddleware>();
+    app.UseMiddleware<SecurityHeadersMiddleware>();
+    app.UseMiddleware<AuthRateLimitMiddleware>();
     app.UseSerilogRequestLogging(opts =>
     {
         opts.MessageTemplate =
             "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+        // RequestPath does not include query string — avoids logging SignalR access_token.
+        opts.GetLevel = (ctx, _, ex) =>
+            ex is not null || ctx.Response.StatusCode >= 500
+                ? LogEventLevel.Error
+                : ctx.Request.Path.StartsWithSegments("/hubs")
+                    ? LogEventLevel.Debug
+                    : LogEventLevel.Information;
     });
 
     if (app.Environment.IsDevelopment())
@@ -152,11 +156,14 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    // ─── Auto-migrate on startup (dev only) ────────────────────────────────────
-    if (app.Environment.IsDevelopment())
-    {
+    // ─── Database migrations (dev/test by default; prod opt-in via config) ─────
+    var applyMigrations =
+        app.Environment.IsDevelopment()
+        || app.Environment.IsEnvironment("Test")
+        || app.Configuration.GetValue("Database:ApplyMigrationsOnStartup", false);
+
+    if (applyMigrations)
         await MigrateWithRetryAsync(app);
-    }
 
     app.MapControllers();
     app.MapHub<CollaborationHub>("/hubs/collaboration");
@@ -219,3 +226,29 @@ static async Task MigrateWithRetryAsync(WebApplication app)
 
 // Expose Program for WebApplicationFactory in integration tests
 public partial class Program { }
+
+static string[] ResolveCorsOrigins(IConfiguration configuration, IHostEnvironment environment)
+{
+    var configured = configuration["Cors:AllowedOrigins"];
+    if (!string.IsNullOrWhiteSpace(configured))
+    {
+        return configured
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+
+    if (environment.IsDevelopment() || environment.IsEnvironment("Test"))
+    {
+        return
+        [
+            "tauri://localhost",
+            "https://tauri.localhost",
+            "http://localhost:1420",
+            "http://localhost:3000",
+            "http://localhost:5173",
+        ];
+    }
+
+    throw new InvalidOperationException(
+        "Cors:AllowedOrigins must be configured (comma-separated) for this environment."
+    );
+}

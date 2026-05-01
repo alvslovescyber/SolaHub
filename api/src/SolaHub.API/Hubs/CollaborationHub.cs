@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.ValueObjects;
 
 namespace SolaHub.API.Hubs;
@@ -10,21 +11,37 @@ namespace SolaHub.API.Hubs;
 /// Clients join plan-specific groups to receive targeted updates.
 /// </summary>
 [Authorize]
-public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
+public sealed class CollaborationHub(IServiceScopeFactory scopeFactory, ILogger<CollaborationHub> logger)
+    : Hub
 {
-    // ─── Group helpers ─────────────────────────────────────────────────────────
     private static string PlanGroup(Guid planId) => $"plan:{planId}";
 
-    private UserId CurrentUserId =>
-        UserId.From(Guid.Parse(Context.User!.FindFirstValue(ClaimTypes.NameIdentifier)!));
+    private UserId RequireUserId()
+    {
+        var sub = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var guid))
+            throw new HubException("Missing or invalid user identity.");
+        return UserId.From(guid);
+    }
+
+    private async Task EnsurePlanParticipantAsync(Guid planId, CancellationToken ct)
+    {
+        var userId = RequireUserId();
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var repo = scope.ServiceProvider.GetRequiredService<IReadingPlanRepository>();
+        var plan = await repo.GetByIdAsync(ReadingPlanId.From(planId), ct);
+        if (plan is null || !plan.Participants.Any(p => p.UserId == userId))
+            throw new HubException("You are not a participant in this plan.");
+    }
 
     // ─── Connection lifecycle ──────────────────────────────────────────────────
 
     public override async Task OnConnectedAsync()
     {
+        var userId = RequireUserId();
         logger.LogDebug(
             "User {UserId} connected (connection={ConnectionId})",
-            CurrentUserId.Value,
+            userId.Value,
             Context.ConnectionId
         );
         await base.OnConnectedAsync();
@@ -32,14 +49,20 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        if (exception is not null)
-            logger.LogWarning(
-                exception,
-                "User {UserId} disconnected with error",
-                CurrentUserId.Value
-            );
-        else
-            logger.LogDebug("User {UserId} disconnected cleanly", CurrentUserId.Value);
+        var sub = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (Guid.TryParse(sub, out var guid))
+        {
+            if (exception is not null)
+                logger.LogWarning(
+                    exception,
+                    "User {UserId} disconnected with error",
+                    guid
+                );
+            else
+                logger.LogDebug("User {UserId} disconnected cleanly", guid);
+        }
+        else if (exception is not null)
+            logger.LogWarning(exception, "Connection disconnected with error");
 
         await base.OnDisconnectedAsync(exception);
     }
@@ -49,33 +72,36 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
     /// <summary>Subscribe to real-time updates for a specific reading plan.</summary>
     public async Task JoinPlan(Guid planId)
     {
+        await EnsurePlanParticipantAsync(planId, Context.ConnectionAborted);
+        var userId = RequireUserId();
         var group = PlanGroup(planId);
         await Groups.AddToGroupAsync(Context.ConnectionId, group);
 
-        logger.LogDebug("User {UserId} joined plan group {PlanId}", CurrentUserId.Value, planId);
+        logger.LogDebug("User {UserId} joined plan group {PlanId}", userId.Value, planId);
 
-        // Notify others in the group that this user is now active
         await Clients
             .OthersInGroup(group)
             .SendAsync(
                 "UserJoined",
-                new { UserId = CurrentUserId.Value, JoinedAt = DateTimeOffset.UtcNow }
+                new { UserId = userId.Value, JoinedAt = DateTimeOffset.UtcNow }
             );
     }
 
     /// <summary>Unsubscribe from real-time updates for a plan.</summary>
     public async Task LeavePlan(Guid planId)
     {
+        await EnsurePlanParticipantAsync(planId, Context.ConnectionAborted);
+        var userId = RequireUserId();
         var group = PlanGroup(planId);
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, group);
 
-        logger.LogDebug("User {UserId} left plan group {PlanId}", CurrentUserId.Value, planId);
+        logger.LogDebug("User {UserId} left plan group {PlanId}", userId.Value, planId);
 
         await Clients
             .OthersInGroup(group)
             .SendAsync(
                 "UserLeft",
-                new { UserId = CurrentUserId.Value, LeftAt = DateTimeOffset.UtcNow }
+                new { UserId = userId.Value, LeftAt = DateTimeOffset.UtcNow }
             );
     }
 
@@ -87,6 +113,8 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
     /// </summary>
     public async Task BroadcastProgress(Guid planId, int dayNumber)
     {
+        await EnsurePlanParticipantAsync(planId, Context.ConnectionAborted);
+        var userId = RequireUserId();
         var group = PlanGroup(planId);
 
         await Clients
@@ -96,7 +124,7 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
                 new
                 {
                     PlanId = planId,
-                    UserId = CurrentUserId.Value,
+                    UserId = userId.Value,
                     DayNumber = dayNumber,
                     UpdatedAt = DateTimeOffset.UtcNow,
                 }
@@ -104,7 +132,7 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
 
         logger.LogDebug(
             "User {UserId} broadcast progress day={Day} for plan {PlanId}",
-            CurrentUserId.Value,
+            userId.Value,
             dayNumber,
             planId
         );
@@ -115,10 +143,11 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
     /// <summary>Share a live verse annotation with plan participants during a study session.</summary>
     public async Task BroadcastAnnotation(Guid planId, string verseRef, string content)
     {
+        await EnsurePlanParticipantAsync(planId, Context.ConnectionAborted);
+        var userId = RequireUserId();
         if (string.IsNullOrWhiteSpace(verseRef) || string.IsNullOrWhiteSpace(content))
             return;
 
-        // Truncate to avoid abusive payloads (max 1,000 chars for live annotations)
         var truncated = content.Length > 1_000 ? content[..1_000] : content;
         var group = PlanGroup(planId);
 
@@ -129,7 +158,7 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
                 new
                 {
                     PlanId = planId,
-                    UserId = CurrentUserId.Value,
+                    UserId = userId.Value,
                     VerseRef = verseRef,
                     Content = truncated,
                     SentAt = DateTimeOffset.UtcNow,
@@ -142,6 +171,8 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
     /// <summary>Push the current verse reference to all attendees in presenter mode.</summary>
     public async Task PushPresenterVerse(Guid planId, string verseRef)
     {
+        await EnsurePlanParticipantAsync(planId, Context.ConnectionAborted);
+        var userId = RequireUserId();
         if (string.IsNullOrWhiteSpace(verseRef))
             return;
 
@@ -153,7 +184,7 @@ public sealed class CollaborationHub(ILogger<CollaborationHub> logger) : Hub
                 new
                 {
                     PlanId = planId,
-                    PresenterUserId = CurrentUserId.Value,
+                    PresenterUserId = userId.Value,
                     VerseRef = verseRef,
                     PushedAt = DateTimeOffset.UtcNow,
                 }

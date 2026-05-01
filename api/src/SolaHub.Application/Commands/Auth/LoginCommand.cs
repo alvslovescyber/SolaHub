@@ -22,7 +22,8 @@ public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
 internal sealed class LoginCommandHandler(
     IUserRepository userRepository,
     IPasswordHasher passwordHasher,
-    ITokenService tokenService
+    ITokenService tokenService,
+    IRefreshTokenHasher refreshTokenHasher
 ) : IRequestHandler<LoginCommand, Result<AuthResponse>>
 {
     private static readonly TimeSpan AccessTokenExpiry = TimeSpan.FromMinutes(15);
@@ -50,8 +51,9 @@ internal sealed class LoginCommandHandler(
         user.RecordLogin();
         var accessToken = tokenService.GenerateAccessToken(user);
         var newRefreshToken = tokenService.GenerateRefreshToken();
+        var refreshHash = refreshTokenHasher.Hash(newRefreshToken);
         var tokenResult = user.UpdateRefreshToken(
-            newRefreshToken,
+            refreshHash,
             DateTimeOffset.UtcNow.Add(RefreshTokenExpiry)
         );
         if (tokenResult.IsFailure)

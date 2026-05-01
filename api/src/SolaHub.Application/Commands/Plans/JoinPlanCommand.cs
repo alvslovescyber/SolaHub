@@ -17,6 +17,12 @@ internal sealed class JoinPlanCommandHandler(IReadingPlanRepository planReposito
         if (plan is null)
             return Error.NotFound("Plans.NotFound", $"Plan {request.PlanId.Value} was not found.");
 
+        if (!plan.IsPublic)
+            return Error.Forbidden(
+                "Plans.PrivatePlan",
+                "This plan is private. You cannot join without an invitation."
+            );
+
         var addResult = plan.AddParticipant(request.UserId);
         if (addResult.IsFailure)
             return addResult.Error;

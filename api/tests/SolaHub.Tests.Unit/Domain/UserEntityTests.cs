@@ -65,31 +65,31 @@ public sealed class UserEntityTests
         result.IsFailure.Should().BeTrue();
     }
 
-    // ─── HasValidRefreshToken ──────────────────────────────────────────────────
+    // ─── HasValidRefreshTokenHash ──────────────────────────────────────────────
 
     [Fact]
-    public void HasValidRefreshToken_WithMatchingNonExpiredToken_ReturnsTrue()
+    public void HasValidRefreshTokenHash_WithMatchingNonExpiredHash_ReturnsTrue()
     {
         var user = CreateValidUser();
-        user.UpdateRefreshToken("valid-token", DateTimeOffset.UtcNow.AddDays(7));
+        user.UpdateRefreshToken("stored-hash", DateTimeOffset.UtcNow.AddDays(7));
 
-        user.HasValidRefreshToken("valid-token").Should().BeTrue();
+        user.HasValidRefreshTokenHash("stored-hash").Should().BeTrue();
     }
 
     [Fact]
-    public void HasValidRefreshToken_WithNullToken_ReturnsFalse()
+    public void HasValidRefreshTokenHash_WithNullHash_ReturnsFalse()
     {
         var user = CreateValidUser();
-        user.HasValidRefreshToken(null).Should().BeFalse();
+        user.HasValidRefreshTokenHash(null).Should().BeFalse();
     }
 
     [Fact]
-    public void HasValidRefreshToken_WithWrongToken_ReturnsFalse()
+    public void HasValidRefreshTokenHash_WithWrongHash_ReturnsFalse()
     {
         var user = CreateValidUser();
-        user.UpdateRefreshToken("correct-token", DateTimeOffset.UtcNow.AddDays(7));
+        user.UpdateRefreshToken("correct-hash", DateTimeOffset.UtcNow.AddDays(7));
 
-        user.HasValidRefreshToken("wrong-token").Should().BeFalse();
+        user.HasValidRefreshTokenHash("wrong-hash").Should().BeFalse();
     }
 
     // ─── RevokeRefreshToken ────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ public sealed class UserEntityTests
         user.RevokeRefreshToken();
 
         user.RefreshToken.Should().BeNull();
-        user.HasValidRefreshToken("token").Should().BeFalse();
+        user.HasValidRefreshTokenHash("token").Should().BeFalse();
     }
 
     // ─── VerifyEmail ───────────────────────────────────────────────────────────

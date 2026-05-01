@@ -42,7 +42,7 @@ public sealed class NotesController(ISender sender) : ControllerBase
         CancellationToken ct = default
     )
     {
-        var query = new GetVerseNotesQuery(verseRef, sharedOnly);
+        var query = new GetVerseNotesQuery(CurrentUserId, verseRef, sharedOnly);
         var result = await sender.Send(query, ct);
 
         return result.Match<IActionResult>(

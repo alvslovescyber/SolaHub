@@ -99,6 +99,93 @@ public sealed class PlansController(ISender sender) : ControllerBase
                 error.Type switch
                 {
                     ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Forbidden => Forbid(),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
+    }
+
+    /// <summary>Add a day to a draft plan (creator only).</summary>
+    [HttpPost("{id:guid}/days")]
+    [ProducesResponseType(typeof(ReadingPlanDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> AddPlanDay(
+        [FromRoute] Guid id,
+        [FromBody] AddPlanDayRequest request,
+        CancellationToken ct
+    )
+    {
+        var command = new AddPlanDayCommand(
+            ReadingPlanId.From(id),
+            CurrentUserId,
+            request.DayNumber,
+            request.Title,
+            request.VerseRefs
+        );
+        var result = await sender.Send(command, ct);
+
+        return result.Match<IActionResult>(
+            Ok,
+            error =>
+                error.Type switch
+                {
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Forbidden => Forbid(),
+                    ErrorType.Validation => UnprocessableEntity(
+                        new { error.Code, error.Description }
+                    ),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
+    }
+
+    /// <summary>Publish a draft plan (creator only).</summary>
+    [HttpPost("{id:guid}/publish")]
+    [ProducesResponseType(typeof(ReadingPlanDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> PublishPlan([FromRoute] Guid id, CancellationToken ct)
+    {
+        var command = new PublishPlanCommand(ReadingPlanId.From(id), CurrentUserId);
+        var result = await sender.Send(command, ct);
+
+        return result.Match<IActionResult>(
+            Ok,
+            error =>
+                error.Type switch
+                {
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Forbidden => Forbid(),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
+        );
+    }
+
+    /// <summary>Archive a plan (creator only).</summary>
+    [HttpPost("{id:guid}/archive")]
+    [ProducesResponseType(typeof(ReadingPlanDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ArchivePlan([FromRoute] Guid id, CancellationToken ct)
+    {
+        var command = new ArchivePlanCommand(ReadingPlanId.From(id), CurrentUserId);
+        var result = await sender.Send(command, ct);
+
+        return result.Match<IActionResult>(
+            Ok,
+            error =>
+                error.Type switch
+                {
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Forbidden => Forbid(),
                     ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
                     _ => StatusCode(500, new { error.Code, error.Description }),
                 }
@@ -109,6 +196,7 @@ public sealed class PlansController(ISender sender) : ControllerBase
     [HttpPost("{id:guid}/progress")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> RecordProgress(
         [FromRoute] Guid id,
         [FromBody] RecordProgressRequest request,
@@ -159,5 +247,7 @@ public sealed class PlansController(ISender sender) : ControllerBase
 
 // ─── Request records ───────────────────────────────────────────────────────────
 public sealed record CreatePlanRequest(string Title, string? Description, bool IsPublic);
+
+public sealed record AddPlanDayRequest(int DayNumber, string Title, IReadOnlyList<string> VerseRefs);
 
 public sealed record RecordProgressRequest(int DayNumber);

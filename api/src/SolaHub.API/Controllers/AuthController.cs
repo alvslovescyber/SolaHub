@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolaHub.Application.Commands.Auth;
 using SolaHub.Application.DTOs;
+using SolaHub.Core.ValueObjects;
 
 namespace SolaHub.API.Controllers;
 
@@ -95,12 +97,27 @@ public sealed class AuthController(ISender sender) : ControllerBase
         CancellationToken ct
     )
     {
-        var command = new RevokeTokenCommand(request.RefreshToken);
+        var userId = UserId.From(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!));
+        var command = new RevokeTokenCommand(userId, request.RefreshToken);
         var result = await sender.Send(command, ct);
 
         return result.Match<IActionResult>(
             () => NoContent(),
-            error => Unauthorized(new { error.Code, error.Description })
+            error =>
+                error.Type switch
+                {
+                    Core.Common.ErrorType.Forbidden => Forbid(),
+                    Core.Common.ErrorType.Unauthorized => Unauthorized(
+                        new { error.Code, error.Description }
+                    ),
+                    Core.Common.ErrorType.Validation => UnprocessableEntity(
+                        new { error.Code, error.Description }
+                    ),
+                    _ => StatusCode(
+                        StatusCodes.Status500InternalServerError,
+                        new { error.Code, error.Description }
+                    ),
+                }
         );
     }
 }

@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using FluentAssertions;
 using SolaHub.Tests.Integration.Fixtures;
@@ -195,6 +196,43 @@ public sealed class AuthEndpointTests(ApiFactory factory)
         );
 
         second.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    // ─── Logout ────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Logout_WithRefreshTokenFromAnotherUser_Returns403()
+    {
+        var userA = await RegisterAuthUser(
+            $"logout_a_{Guid.NewGuid():N}@example.com",
+            "User A"
+        );
+        var userB = await RegisterAuthUser(
+            $"logout_b_{Guid.NewGuid():N}@example.com",
+            "User B"
+        );
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userA.AccessToken);
+        req.Content = JsonContent.Create(new { refreshToken = userB.RefreshToken });
+        var response = await _client.SendAsync(req);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    private async Task<AuthResponseDto> RegisterAuthUser(string email, string displayName)
+    {
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email,
+                password = "SecureP@ss1",
+                displayName,
+            }
+        );
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        return (await response.Content.ReadFromJsonAsync<AuthResponseDto>())!;
     }
 }
 

@@ -22,6 +22,7 @@ public sealed class VerseNoteRepository(AppDbContext db) : IVerseNoteRepository
 
     public async Task<IReadOnlyList<VerseNote>> GetByVerseRefAsync(
         VerseRef verseRef,
+        UserId requestingUserId,
         bool sharedOnly,
         CancellationToken ct
     )
@@ -34,6 +35,8 @@ public sealed class VerseNoteRepository(AppDbContext db) : IVerseNoteRepository
 
         if (sharedOnly)
             query = query.Where(n => n.IsShared);
+        else
+            query = query.Where(n => n.UserId == requestingUserId || n.IsShared);
 
         var notes = await query.OrderByDescending(n => n.CreatedAt).ToListAsync(ct);
         return notes.AsReadOnly();

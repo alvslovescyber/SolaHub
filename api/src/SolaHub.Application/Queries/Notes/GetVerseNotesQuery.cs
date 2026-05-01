@@ -8,7 +8,7 @@ using SolaHub.Core.ValueObjects;
 
 namespace SolaHub.Application.Queries.Notes;
 
-public sealed record GetVerseNotesQuery(string VerseRef, bool SharedOnly)
+public sealed record GetVerseNotesQuery(UserId RequestingUserId, string VerseRef, bool SharedOnly)
     : IQuery<IReadOnlyList<NoteDto>>;
 
 internal sealed class GetVerseNotesQueryHandler(IVerseNoteRepository noteRepository)
@@ -25,7 +25,12 @@ internal sealed class GetVerseNotesQueryHandler(IVerseNoteRepository noteReposit
                 $"'{request.VerseRef}' is not a valid verse reference."
             );
 
-        var notes = await noteRepository.GetByVerseRefAsync(verseRef, request.SharedOnly, ct);
+        var notes = await noteRepository.GetByVerseRefAsync(
+            verseRef,
+            request.RequestingUserId,
+            request.SharedOnly,
+            ct
+        );
         return notes.Select(CreateNoteCommandHandler.MapToDto).ToList().AsReadOnly();
     }
 }

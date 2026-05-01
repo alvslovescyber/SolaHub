@@ -17,8 +17,8 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
         return db.Users.FirstOrDefaultAsync(u => u.Email.Value == normalized, ct);
     }
 
-    public Task<User?> GetByRefreshTokenAsync(string refreshToken, CancellationToken ct) =>
-        db.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken, ct);
+    public Task<User?> GetByRefreshTokenHashAsync(string refreshTokenHash, CancellationToken ct) =>
+        db.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshTokenHash, ct);
 
     public Task<bool> ExistsByEmailAsync(string email, CancellationToken ct)
     {

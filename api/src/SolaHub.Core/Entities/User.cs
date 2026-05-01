@@ -90,9 +90,10 @@ public sealed class User : BaseEntity<UserId>
         return Result.Ok;
     }
 
-    public Result UpdateRefreshToken(string token, DateTimeOffset expiry)
+    /// <param name="refreshTokenHash">Hashed refresh token (never store the raw token).</param>
+    public Result UpdateRefreshToken(string refreshTokenHash, DateTimeOffset expiry)
     {
-        if (string.IsNullOrWhiteSpace(token))
+        if (string.IsNullOrWhiteSpace(refreshTokenHash))
             return Result.Failure(
                 Error.Validation("User.InvalidToken", "Refresh token cannot be empty.")
             );
@@ -102,7 +103,7 @@ public sealed class User : BaseEntity<UserId>
                 Error.Validation("User.InvalidExpiry", "Token expiry must be in the future.")
             );
 
-        RefreshToken = token;
+        RefreshToken = refreshTokenHash;
         RefreshTokenExpiry = expiry;
         MarkUpdated();
         return Result.Ok;
@@ -115,9 +116,10 @@ public sealed class User : BaseEntity<UserId>
         MarkUpdated();
     }
 
-    public bool HasValidRefreshToken(string? token) =>
-        token is not null
-        && RefreshToken == token
+    /// <param name="refreshTokenHash">HMAC hash of the client-supplied refresh token.</param>
+    public bool HasValidRefreshTokenHash(string? refreshTokenHash) =>
+        refreshTokenHash is not null
+        && RefreshToken == refreshTokenHash
         && RefreshTokenExpiry.HasValue
         && RefreshTokenExpiry.Value > DateTimeOffset.UtcNow;
 
