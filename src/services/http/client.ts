@@ -40,8 +40,22 @@ http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config
 })
 
-// Track whether a token refresh is in flight to avoid duplicate refreshes
+// ─── Refresh mutex ─────────────────────────────────────────────────────────────
+// Ensures that at most one token refresh is in-flight at any time.
+// All concurrent 401s queue behind the single refresh promise and retry with
+// the rotated token once it resolves — preventing double-rotation failures.
 let refreshPromise: Promise<string> | null = null
+
+type QueueEntry = { resolve: (token: string) => void; reject: (err: unknown) => void }
+const waitQueue: QueueEntry[] = []
+
+function flushQueue(err: unknown, token?: string): void {
+  while (waitQueue.length) {
+    const entry = waitQueue.shift()!
+    if (err) entry.reject(err)
+    else entry.resolve(token!)
+  }
+}
 
 // Response: handle 401 with token rotation
 http.interceptors.response.use(
@@ -61,29 +75,38 @@ http.interceptors.response.use(
 
     original._retry = true
 
+    // If a refresh is already in-flight, queue this request behind it rather
+    // than firing a second refresh with the already-rotated (now invalid) token.
+    if (refreshPromise) {
+      return new Promise<string>((resolve, reject) => {
+        waitQueue.push({ resolve, reject })
+      }).then((newToken) => {
+        original.headers.Authorization = `Bearer ${newToken}`
+        return http(original)
+      })
+    }
+
     try {
-      if (!refreshPromise) {
-        refreshPromise = axios
-          .post<{ accessToken: string; refreshToken: string }>(`${API_BASE_URL}/api/auth/refresh`, {
-            refreshToken,
-          })
-          .then((res) => {
-            tokenStorage.set(res.data.accessToken, res.data.refreshToken)
-            return res.data.accessToken
-          })
-          .finally(() => {
-            refreshPromise = null
-          })
-      }
+      refreshPromise = axios
+        .post<{ accessToken: string; refreshToken: string }>(`${API_BASE_URL}/api/auth/refresh`, {
+          refreshToken,
+        })
+        .then((res) => {
+          tokenStorage.set(res.data.accessToken, res.data.refreshToken)
+          return res.data.accessToken
+        })
 
       const newToken = await refreshPromise
+      flushQueue(null, newToken)
       original.headers.Authorization = `Bearer ${newToken}`
       return http(original)
-    } catch {
+    } catch (err) {
+      flushQueue(err)
       tokenStorage.clear()
-      // Redirect to login — the auth store will handle this via its watcher
       window.dispatchEvent(new CustomEvent('auth:session-expired'))
       return Promise.reject(error as Error)
+    } finally {
+      refreshPromise = null
     }
   }
 )

@@ -37,4 +37,8 @@ export const authService = {
     tokenStorage.set(res.data.accessToken, res.data.refreshToken)
     return res.data
   },
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await http.post('/api/auth/change-password', { currentPassword, newPassword })
+  },
 }

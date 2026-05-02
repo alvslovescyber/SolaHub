@@ -66,7 +66,6 @@ export const routes: RouteRecordRaw[] = [
         path: 'presenter',
         name: 'presenter',
         component: () => import('@/views/PresenterView.vue'),
-        meta: { requiresPresenter: true },
       },
       {
         path: 'community',

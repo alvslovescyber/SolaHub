@@ -34,7 +34,7 @@
 
   const itemClass = computed(() => {
     const lines = [
-      'flex items-center gap-2.5 rounded-lg text-[13px] font-normal transition-colors duration-100 select-none w-full',
+      'flex items-center gap-2.5 rounded-lg text-[13px] font-medium font-sans tracking-[-0.005em] transition-colors duration-100 select-none w-full',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40',
       props.collapsed ? 'justify-center h-9 w-9 mx-auto px-0' : 'h-8 px-2',
     ]

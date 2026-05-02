@@ -18,6 +18,7 @@ internal static class UserMapper
             user.Role.ToString(),
             user.ChurchId?.Value,
             user.IsEmailVerified,
-            user.IsActive
+            user.IsActive,
+            user.CreatedAt
         );
 }

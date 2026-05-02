@@ -9,6 +9,8 @@
 
   const { placement = 'top', delay = 200 } = defineProps<Props>()
 
+  defineOptions({ inheritAttrs: false })
+
   const triggerRef = ref<HTMLElement | null>(null)
   const visible = ref(false)
   const tooltipStyle = ref<Record<string, string>>({})
@@ -121,6 +123,7 @@
   <span
     ref="triggerRef"
     class="inline-flex"
+    v-bind="$attrs"
     @mouseenter="show"
     @mouseleave="hide"
     @focusin="show"

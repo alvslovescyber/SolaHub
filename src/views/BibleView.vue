@@ -1,12 +1,25 @@
 <script setup lang="ts">
   import { computed, onBeforeUnmount, ref, watch } from 'vue'
+  import { storeToRefs } from 'pinia'
   import { ChevronLeft, ChevronRight, Search, BookOpenText, X } from 'lucide-vue-next'
   import { useBible } from '@/composables/useBible'
   import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
   import { useBiblePreferencesStore } from '@/stores/biblePreferences.store'
+  import { useVerseAnnotationsStore } from '@/stores/verseAnnotations.store'
   import { CANONICAL_BOOKS } from '@/services/bible.service'
   import { resolveBookShortCode } from '@/lib/bibleReference'
-  import { SIconButton, SInput, SSpinner, STopBar, SDropdownMenu, SButton } from '@/components/s'
+  import {
+    SButton,
+    SContextMenu,
+    SDropdownMenu,
+    SIconButton,
+    SInput,
+    SModal,
+    SSpinner,
+    STextarea,
+    STopBar,
+  } from '@/components/s'
+  import type { VerseResult } from '@/types/bible.types'
 
   const {
     books,
@@ -25,10 +38,32 @@
   } = useBible()
 
   const biblePrefs = useBiblePreferencesStore()
+  const annotations = useVerseAnnotationsStore()
+  const { highlights: verseHighlights } = storeToRefs(annotations)
   const { isCompact } = useResponsiveLayout()
   const searchInput = ref('')
   const showSearch = ref(false)
   const showBookList = ref(true)
+
+  // ── Context menu state ────────────────────────────────────────────────────────
+  const ctxMenu = ref<{
+    visible: boolean
+    x: number
+    y: number
+    verse: VerseResult | null
+  }>({ visible: false, x: 0, y: 0, verse: null })
+
+  // ── Note modal state ──────────────────────────────────────────────────────────
+  const noteModal = ref({ open: false, verse: null as VerseResult | null, text: '' })
+
+  // ── Highlight colour map ──────────────────────────────────────────────────────
+  const HIGHLIGHT_BG: Record<string, string> = {
+    yellow: 'rgba(250, 204, 21, 0.30)',
+    green: 'rgba(74, 222, 128, 0.30)',
+    blue: 'rgba(96, 165, 250, 0.30)',
+    pink: 'rgba(244, 114, 182, 0.30)',
+    purple: 'rgba(167, 139, 250, 0.30)',
+  }
 
   let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -49,10 +84,19 @@
     }
   })
 
-  const groupedBooks = computed(() => ({
-    OT: books.value.filter((b) => b.testament === 'OT'),
-    NT: books.value.filter((b) => b.testament === 'NT'),
-  }))
+  const bookFilter = ref('')
+
+  const filteredGroupedBooks = computed(() => {
+    const q = bookFilter.value.trim().toLowerCase()
+    const filterGroup = (arr: typeof books.value) =>
+      q ? arr.filter((b) => b.longName.toLowerCase().includes(q)) : arr
+    const OT = filterGroup(books.value.filter((b) => b.testament === 'OT'))
+    const NT = filterGroup(books.value.filter((b) => b.testament === 'NT'))
+    const result: Record<string, typeof OT> = {}
+    if (OT.length) result['OT'] = OT
+    if (NT.length) result['NT'] = NT
+    return result
+  })
 
   const canPrevChapter = computed(() => selectedChapter.value > 1)
   const canNextChapter = computed(() =>
@@ -88,6 +132,66 @@
     await loadChapter(code, chapter)
     if (typeof verse === 'number') selectVerse(verse)
     showSearch.value = false
+  }
+
+  // ── Verse context menu ────────────────────────────────────────────────────────
+
+  function openContextMenu(event: MouseEvent, verse: VerseResult) {
+    event.preventDefault()
+    ctxMenu.value = { visible: true, x: event.clientX, y: event.clientY, verse }
+  }
+
+  function closeContextMenu() {
+    ctxMenu.value = { ...ctxMenu.value, visible: false, verse: null }
+  }
+
+  function onHighlight(colorId: string) {
+    if (!ctxMenu.value.verse) return
+    const v = ctxMenu.value.verse
+    const key = annotations.verseKey(v.book, v.chapter, v.verse)
+    const current = annotations.highlights[key]
+    annotations.setHighlight(key, current === colorId ? '' : colorId)
+    closeContextMenu()
+  }
+
+  function onClearHighlight() {
+    if (!ctxMenu.value.verse) return
+    const v = ctxMenu.value.verse
+    annotations.setHighlight(annotations.verseKey(v.book, v.chapter, v.verse), '')
+    closeContextMenu()
+  }
+
+  function onOpenNote() {
+    if (!ctxMenu.value.verse) return
+    const v = ctxMenu.value.verse
+    const key = annotations.verseKey(v.book, v.chapter, v.verse)
+    noteModal.value = { open: true, verse: v, text: annotations.notes[key] ?? '' }
+    closeContextMenu()
+  }
+
+  function onSaveVerse() {
+    if (!ctxMenu.value.verse) return
+    annotations.saveVerse(ctxMenu.value.verse)
+    closeContextMenu()
+  }
+
+  function saveNote() {
+    if (!noteModal.value.verse) return
+    const v = noteModal.value.verse
+    annotations.setNote(annotations.verseKey(v.book, v.chapter, v.verse), noteModal.value.text)
+    noteModal.value.open = false
+  }
+
+  function verseHighlightStyle(verse: VerseResult): Record<string, string> {
+    const key = annotations.verseKey(verse.book, verse.chapter, verse.verse)
+    const colorId = verseHighlights.value[key]
+    if (!colorId || !HIGHLIGHT_BG[colorId]) return {}
+    return { backgroundColor: HIGHLIGHT_BG[colorId], borderRadius: '3px', padding: '0 2px' }
+  }
+
+  function verseCurrentHighlight(verse: VerseResult): string | undefined {
+    const key = annotations.verseKey(verse.book, verse.chapter, verse.verse)
+    return verseHighlights.value[key]
   }
 </script>
 
@@ -153,6 +257,8 @@
                 <SButton
                   size="sm"
                   variant="secondary"
+                  class="flex-1 !px-2"
+                  :class="biblePrefs.readerLineHeight === 'compact' && 'ring-2 ring-brand-500/40'"
                   @click="biblePrefs.setReaderLineHeight('compact')"
                 >
                   Compact
@@ -160,6 +266,8 @@
                 <SButton
                   size="sm"
                   variant="secondary"
+                  class="flex-1 !px-2"
+                  :class="biblePrefs.readerLineHeight === 'normal' && 'ring-2 ring-brand-500/40'"
                   @click="biblePrefs.setReaderLineHeight('normal')"
                 >
                   Normal
@@ -167,6 +275,8 @@
                 <SButton
                   size="sm"
                   variant="secondary"
+                  class="flex-1 !px-2"
+                  :class="biblePrefs.readerLineHeight === 'relaxed' && 'ring-2 ring-brand-500/40'"
                   @click="biblePrefs.setReaderLineHeight('relaxed')"
                 >
                   Relaxed
@@ -181,6 +291,8 @@
                 <SButton
                   size="sm"
                   variant="secondary"
+                  class="flex-1 !px-2"
+                  :class="biblePrefs.readerPaper === 'white' && 'ring-2 ring-brand-500/40'"
                   @click="biblePrefs.setReaderPaper('white')"
                 >
                   White
@@ -188,6 +300,8 @@
                 <SButton
                   size="sm"
                   variant="secondary"
+                  class="flex-1 !px-2"
+                  :class="biblePrefs.readerPaper === 'sepia' && 'ring-2 ring-brand-500/40'"
                   @click="biblePrefs.setReaderPaper('sepia')"
                 >
                   Sepia
@@ -195,6 +309,8 @@
                 <SButton
                   size="sm"
                   variant="secondary"
+                  class="flex-1 !px-2"
+                  :class="biblePrefs.readerPaper === 'muted' && 'ring-2 ring-brand-500/40'"
                   @click="biblePrefs.setReaderPaper('muted')"
                 >
                   Soft grey
@@ -227,36 +343,46 @@
           v-if="showBookList"
           class="w-52 shrink-0 border-r border-line-subtle bg-surface-base/60 backdrop-blur-xl overflow-hidden flex flex-col"
         >
-          <header
-            class="px-3 py-2.5 border-b border-line-subtle flex items-center justify-between sticky top-0"
-          >
-            <p class="text-2xs font-medium uppercase tracking-wider text-ink-subtle">
-              Books · {{ books.length }}
-            </p>
-            <SIconButton
-              v-if="isCompact"
-              label="Hide"
-              size="xs"
-              @click="showBookList = false"
-            >
-              <X class="h-3.5 w-3.5" />
-            </SIconButton>
-          </header>
-          <div class="flex-1 overflow-y-auto py-2">
+          <!-- Fixed header — not sticky (aside doesn't scroll) -->
+          <div class="px-3 pt-2.5 pb-2 border-b border-line-subtle shrink-0 flex flex-col gap-2">
+            <div class="flex items-center justify-between">
+              <p class="text-2xs font-medium uppercase tracking-wider text-ink-subtle">
+                Books · {{ books.length }}
+              </p>
+              <SIconButton
+                v-if="isCompact"
+                label="Hide"
+                size="xs"
+                @click="showBookList = false"
+              >
+                <X class="h-3.5 w-3.5" />
+              </SIconButton>
+            </div>
+            <!-- Book filter -->
+            <div class="relative">
+              <Search class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-ink-subtle" />
+              <input
+                v-model="bookFilter"
+                type="text"
+                class="w-full rounded-md bg-surface-canvas pl-6 pr-2 py-1 text-[12px] text-ink placeholder:text-ink-subtle focus:outline-none focus:ring-1 focus:ring-brand-500/40 transition-shadow"
+                placeholder="Search books…"
+              />
+            </div>
+          </div>
+          <!-- Scrollable book list — section headers are inline (no sticky) -->
+          <div class="flex-1 overflow-y-auto py-1">
             <template
-              v-for="(group, label) in groupedBooks"
+              v-for="(group, label) in filteredGroupedBooks"
               :key="label"
             >
-              <p
-                class="sticky top-0 z-10 px-3 py-1.5 text-2xs font-medium uppercase tracking-wider text-ink-subtle bg-surface-base/85 backdrop-blur"
-              >
+              <p class="px-3 pt-2.5 pb-0.5 text-2xs font-medium uppercase tracking-wider text-ink-subtle">
                 {{ label === 'OT' ? 'Old Testament' : 'New Testament' }}
               </p>
               <button
                 v-for="book in group"
                 :key="book.shortName"
                 :class="[
-                  'group flex items-center justify-between w-full text-left px-3 py-1.5 text-[13px] font-normal transition-colors rounded-md mx-1',
+                  'group flex items-center justify-between w-full text-left px-3 py-1.5 text-[13px] font-normal font-sans transition-colors rounded-md mx-1',
                   selectedBook === book.shortName
                     ? 'text-brand-600 bg-brand-500/[0.06]'
                     : 'text-ink hover:bg-surface-canvas',
@@ -412,7 +538,9 @@
                   'hover:bg-amber-50 dark:hover:bg-amber-500/10',
                   selectedVerse === verse.verse && 'verse-highlight',
                 ]"
+                :style="verseHighlightStyle(verse)"
                 @click="selectVerse(verse.verse)"
+                @contextmenu.prevent="openContextMenu($event, verse)"
               >
                 <sup>{{ verse.verse }}</sup>{{ verse.text }}{{ ' ' }}
               </span>
@@ -428,6 +556,61 @@
         </div>
       </div>
     </div>
+
+    <!-- Verse context menu -->
+    <SContextMenu
+      :x="ctxMenu.x"
+      :y="ctxMenu.y"
+      :verse="ctxMenu.verse"
+      :current-highlight="ctxMenu.verse ? verseCurrentHighlight(ctxMenu.verse) : undefined"
+      @highlight="onHighlight"
+      @clear-highlight="onClearHighlight"
+      @note="onOpenNote"
+      @save="onSaveVerse"
+      @close="closeContextMenu"
+    />
+
+    <!-- Note modal -->
+    <SModal
+      :open="noteModal.open"
+      :title="
+        noteModal.verse
+          ? `Note — ${noteModal.verse.book} ${noteModal.verse.chapter}:${noteModal.verse.verse}`
+          : 'Note'
+      "
+      size="sm"
+      @close="noteModal.open = false"
+    >
+      <div class="space-y-3">
+        <p
+          v-if="noteModal.verse"
+          class="text-sm text-ink-muted italic leading-relaxed border-l-2 border-brand-300 pl-3"
+        >
+          {{ noteModal.verse.text }}
+        </p>
+        <STextarea
+          v-model="noteModal.text"
+          placeholder="Write your reflection or note here…"
+          :rows="4"
+          autoresize
+        />
+      </div>
+      <template #footer>
+        <SButton
+          variant="secondary"
+          size="sm"
+          @click="noteModal.open = false"
+        >
+          Cancel
+        </SButton>
+        <SButton
+          size="sm"
+          @click="saveNote"
+        >
+          Save note
+        </SButton>
+      </template>
+    </SModal>
   </div>
 </template>
 

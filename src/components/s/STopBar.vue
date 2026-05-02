@@ -1,10 +1,10 @@
 <script setup lang="ts">
-  import { computed } from 'vue'
-  import { Bell, BellOff } from 'lucide-vue-next'
+  import { computed, ref } from 'vue'
+  import { Bell } from 'lucide-vue-next'
   import { useUiStore } from '@/stores/ui.store'
   import { isMac } from '@/lib/platform'
   import SIconButton from './SIconButton.vue'
-  import SDropdownMenu from './SDropdownMenu.vue'
+  import SNotificationPanel from './SNotificationPanel.vue'
 
   interface Props {
     title?: string
@@ -14,6 +14,7 @@
 
   const { showBell = true } = defineProps<Props>()
   const ui = useUiStore()
+  const notifOpen = ref(false)
 
   const sidebarPad = computed(() =>
     isMac && ui.sidebarCollapsed ? 'pl-[var(--s-traffic-light-pad)]' : 'pl-4'
@@ -55,43 +56,19 @@
       data-no-drag
     >
       <slot name="actions" />
-      <SDropdownMenu
+      <SIconButton
         v-if="showBell"
-        placement="bottom-end"
+        label="Notifications"
+        size="sm"
+        @click="notifOpen = !notifOpen"
       >
-        <template #trigger>
-          <SIconButton
-            label="Notifications"
-            size="sm"
-          >
-            <Bell class="h-4 w-4" />
-          </SIconButton>
-        </template>
-        <div
-          class="w-72 px-3 py-3"
-          @click.stop
-        >
-          <div class="flex items-center justify-between mb-2">
-            <p class="text-[13px] font-semibold text-ink-strong">
-              Notifications
-            </p>
-            <span class="text-[11px] text-ink-subtle">All caught up</span>
-          </div>
-          <div class="flex flex-col items-center text-center py-6 text-ink-muted">
-            <span
-              class="h-8 w-8 inline-flex items-center justify-center rounded-md bg-surface-canvas mb-2"
-            >
-              <BellOff class="h-4 w-4" />
-            </span>
-            <p class="text-[13px] text-ink-strong">
-              You're all clear
-            </p>
-            <p class="text-xs mt-0.5 leading-relaxed">
-              Mentions, prayer requests, and church updates will appear here.
-            </p>
-          </div>
-        </div>
-      </SDropdownMenu>
+        <Bell class="h-4 w-4" />
+      </SIconButton>
     </div>
   </header>
+
+  <SNotificationPanel
+    :open="notifOpen"
+    @close="notifOpen = false"
+  />
 </template>

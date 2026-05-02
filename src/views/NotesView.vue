@@ -1,7 +1,8 @@
 <script setup lang="ts">
   import { computed, onMounted, ref } from 'vue'
-  import { Plus, Search, StickyNote, Trash2 } from 'lucide-vue-next'
+  import { Pencil, Plus, Search, StickyNote, Trash2 } from 'lucide-vue-next'
   import { useNotesStore } from '@/stores/notes.store'
+  import type { VerseNote } from '@/types/notes.types'
   import {
     SButton,
     SCard,
@@ -14,14 +15,31 @@
     SSpinner,
     STextarea,
     STopBar,
+    useSToast,
   } from '@/components/s'
 
   const notes = useNotesStore()
+  const toast = useSToast()
 
+  // Minimal verse ref pattern: BOOK.CHAPTER[.VERSE] e.g. JHN.3 or JHN.3.16
+  const VERSE_REF_PATTERN = /^[A-Za-z]{2,4}\.\d+(\.\d+)?$/
+
+  // ── Create modal ──────────────────────────────────────────────────────────────
   const showCreate = ref(false)
   const newContent = ref('')
   const newVerseRef = ref('')
   const newTags = ref('')
+  const newVerseRefError = ref('')
+
+  // ── Edit modal ────────────────────────────────────────────────────────────────
+  const editNote = ref<VerseNote | null>(null)
+  const editContent = ref('')
+  const editTags = ref('')
+  const editIsShared = ref(false)
+
+  // ── Delete confirm ────────────────────────────────────────────────────────────
+  const pendingDeleteId = ref<string | null>(null)
+
   const search = ref('')
 
   onMounted(() => notes.fetchMyNotes())
@@ -37,25 +55,76 @@
     )
   })
 
+  function openEdit(note: VerseNote) {
+    editNote.value = note
+    editContent.value = note.content
+    editTags.value = note.tags.join(', ')
+    editIsShared.value = note.isShared
+  }
+
+  function closeEdit() {
+    editNote.value = null
+  }
+
+  async function saveEdit() {
+    if (!editNote.value || !editContent.value.trim()) return
+    try {
+      await notes.update(editNote.value.id, {
+        content: editContent.value.trim(),
+        tags: editTags.value
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean),
+        isShared: editIsShared.value,
+      })
+      toast.success('Note updated')
+      closeEdit()
+    } catch {
+      toast.error('Could not update note', notes.error ?? undefined)
+    }
+  }
+
   function confirmDelete(id: string) {
-    if (window.confirm('Delete this note?')) void notes.remove(id)
+    pendingDeleteId.value = id
+  }
+
+  async function executeDelete() {
+    if (!pendingDeleteId.value) return
+    try {
+      await notes.remove(pendingDeleteId.value)
+      pendingDeleteId.value = null
+      toast.success('Note deleted')
+    } catch {
+      pendingDeleteId.value = null
+      toast.error('Could not delete note', notes.error ?? undefined)
+    }
   }
 
   async function createNote() {
+    newVerseRefError.value = ''
     if (!newContent.value.trim() || !newVerseRef.value.trim()) return
-    await notes.create({
-      verseRef: newVerseRef.value.trim(),
-      content: newContent.value.trim(),
-      tags: newTags.value
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
-      isShared: false,
-    })
-    showCreate.value = false
-    newContent.value = ''
-    newVerseRef.value = ''
-    newTags.value = ''
+    if (!VERSE_REF_PATTERN.test(newVerseRef.value.trim())) {
+      newVerseRefError.value = 'Use format BOOK.CHAPTER or BOOK.CHAPTER.VERSE (e.g. JHN.3.16)'
+      return
+    }
+    try {
+      await notes.create({
+        verseRef: newVerseRef.value.trim(),
+        content: newContent.value.trim(),
+        tags: newTags.value
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean),
+        isShared: false,
+      })
+      toast.success('Note saved')
+      showCreate.value = false
+      newContent.value = ''
+      newVerseRef.value = ''
+      newTags.value = ''
+    } catch {
+      toast.error('Could not save note', notes.error ?? undefined)
+    }
   }
 </script>
 
@@ -156,7 +225,14 @@
                 </SChip>
               </div>
             </div>
-            <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+            <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+              <SIconButton
+                size="sm"
+                label="Edit note"
+                @click="openEdit(note)"
+              >
+                <Pencil class="h-3.5 w-3.5 text-ink-muted" />
+              </SIconButton>
               <SIconButton
                 size="sm"
                 label="Delete note"
@@ -177,6 +253,7 @@
       </div>
     </SPageContainer>
 
+    <!-- Create modal -->
     <SModal
       :open="showCreate"
       title="New note"
@@ -184,12 +261,24 @@
       @close="showCreate = false"
     >
       <div class="space-y-3">
-        <SInput
-          v-model="newVerseRef"
-          label="Verse reference"
-          placeholder="JHN.3.16"
-          required
-        />
+        <div>
+          <SInput
+            v-model="newVerseRef"
+            label="Verse reference"
+            placeholder="JHN.3.16"
+            required
+          />
+          <p
+            v-if="newVerseRefError"
+            class="mt-1 text-xs text-red-600 dark:text-red-400"
+          >{{ newVerseRefError }}</p>
+          <p
+            v-else
+            class="mt-1 text-[11px] text-ink-subtle"
+          >
+            Format: <code class="font-mono bg-surface-canvas px-0.5 rounded text-[10px]">BOOK.CHAPTER</code> or <code class="font-mono bg-surface-canvas px-0.5 rounded text-[10px]">BOOK.CHAPTER.VERSE</code>
+          </p>
+        </div>
         <STextarea
           v-model="newContent"
           label="Reflection"
@@ -218,6 +307,63 @@
         >
           Save note
         </SButton>
+      </template>
+    </SModal>
+
+    <!-- Edit modal -->
+    <SModal
+      :open="!!editNote"
+      title="Edit note"
+      size="md"
+      @close="closeEdit"
+    >
+      <div class="space-y-3">
+        <p class="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">
+          {{ editNote?.verseRef }}
+        </p>
+        <STextarea
+          v-model="editContent"
+          label="Reflection"
+          placeholder="Your note…"
+          :rows="5"
+          required
+        />
+        <SInput
+          v-model="editTags"
+          label="Tags"
+          placeholder="faith, grace (comma separated)"
+        />
+      </div>
+      <template #footer>
+        <SButton
+          variant="secondary"
+          size="sm"
+          @click="closeEdit"
+        >
+          Cancel
+        </SButton>
+        <SButton
+          size="sm"
+          :loading="notes.isSaving"
+          :disabled="!editContent.trim()"
+          @click="saveEdit"
+        >
+          Save changes
+        </SButton>
+      </template>
+    </SModal>
+
+    <!-- Delete confirm modal -->
+    <SModal
+      :open="!!pendingDeleteId"
+      title="Delete note?"
+      size="sm"
+      @close="pendingDeleteId = null"
+    >
+      <p class="text-sm text-ink-muted">This note will be permanently deleted. This cannot be undone.</p>
+      <template #footer>
+        <SButton variant="secondary" size="sm" @click="pendingDeleteId = null">Cancel</SButton>
+        <SButton variant="danger" size="sm" @click="executeDelete">Delete</SButton>
       </template>
     </SModal>
   </div>

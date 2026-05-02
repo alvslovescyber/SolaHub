@@ -1,5 +1,5 @@
 import { http } from './http/client'
-import type { CreatePlanPayload, ReadingPlan } from '@/types/plans.types'
+import type { AddPlanDayPayload, CreatePlanPayload, ReadingPlan } from '@/types/plans.types'
 
 export const plansService = {
   async getMyPlans(): Promise<ReadingPlan[]> {
@@ -23,6 +23,21 @@ export const plansService = {
 
   async recordProgress(id: string, dayNumber: number): Promise<void> {
     await http.post(`/api/plans/${id}/progress`, { dayNumber })
+  },
+
+  async addDay(id: string, payload: AddPlanDayPayload): Promise<ReadingPlan> {
+    const res = await http.post<ReadingPlan>(`/api/plans/${id}/days`, payload)
+    return res.data
+  },
+
+  async publish(id: string): Promise<ReadingPlan> {
+    const res = await http.post<ReadingPlan>(`/api/plans/${id}/publish`)
+    return res.data
+  },
+
+  async archive(id: string): Promise<ReadingPlan> {
+    const res = await http.post<ReadingPlan>(`/api/plans/${id}/archive`)
+    return res.data
   },
 
   async delete(id: string): Promise<void> {

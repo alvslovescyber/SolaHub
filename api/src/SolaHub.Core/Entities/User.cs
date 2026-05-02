@@ -147,6 +147,16 @@ public sealed class User : BaseEntity<UserId>
         MarkUpdated();
     }
 
+    public void ChangePassword(string newPasswordHash)
+    {
+        if (string.IsNullOrWhiteSpace(newPasswordHash))
+            throw new ArgumentException("Password hash cannot be empty.", nameof(newPasswordHash));
+        PasswordHash = newPasswordHash;
+        // Revoke active session so all devices must re-authenticate after a password change
+        RevokeRefreshToken();
+        MarkUpdated();
+    }
+
     public void Deactivate()
     {
         IsActive = false;

@@ -14,5 +14,6 @@ public sealed record UserDto(
     string Role,
     Guid? ChurchId,
     bool IsEmailVerified,
-    bool IsActive
+    bool IsActive,
+    DateTimeOffset CreatedAt
 );

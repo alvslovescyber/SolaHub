@@ -11,7 +11,7 @@
   <div class="flex flex-col">
     <p
       v-if="label && !collapsed"
-      class="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-subtle"
+      class="px-3 pt-3 pb-1 text-[10px] font-semibold font-sans uppercase tracking-[0.08em] text-ink-subtle"
     >
       {{ label }}
     </p>

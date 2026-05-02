@@ -11,9 +11,11 @@
     Music,
   } from 'lucide-vue-next'
   import { useAuth } from '@/composables/useAuth'
+  import { useAuthStore } from '@/stores/auth.store'
   import { useTheme } from '@/composables/useTheme'
   import { BIBLE_TRANSLATION_CATALOG } from '@/constants/bibleTranslations'
   import { useBiblePreferencesStore } from '@/stores/biblePreferences.store'
+  import { authService } from '@/services/auth.service'
   import type {
     PresenterBackground,
     PresenterFontScale,
@@ -39,6 +41,7 @@
   const { theme, setTheme } = useTheme()
   const toast = useSToast()
   const biblePrefs = useBiblePreferencesStore()
+  const authStore = useAuthStore()
 
   const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -49,10 +52,11 @@
   function onAvatarFile(e: Event) {
     const file = (e.target as HTMLInputElement).files?.[0]
     if (!file) return
-    toast.success(
-      'Avatar selected',
-      `${file.name} will be uploaded the next time we sync your profile.`
-    )
+    // Avatar upload requires a media storage backend (S3/blob) which is not yet configured.
+    // The file picker is kept for UX continuity; upload will be enabled in a future release.
+    toast.info('Avatar upload coming soon', 'Full media storage support is on the roadmap.')
+    // Reset the input so the same file can be selected again after the message
+    ;(e.target as HTMLInputElement).value = ''
   }
 
   const initialDisplayName = user.value?.displayName ?? ''
@@ -62,6 +66,23 @@
     displayName.value = initialDisplayName
     email.value = initialEmail
     bio.value = ''
+  }
+
+  const profileSaving = ref(false)
+
+  async function saveProfile() {
+    if (!displayName.value.trim()) return
+    profileSaving.value = true
+    try {
+      const { usersService } = await import('@/services/users.service')
+      const updated = await usersService.updateProfile(displayName.value.trim())
+      authStore.updateUser({ displayName: updated.displayName })
+      toast.success('Profile saved', 'Your display name has been updated.')
+    } catch {
+      toast.error('Could not save profile', 'Please try again.')
+    } finally {
+      profileSaving.value = false
+    }
   }
 
   const currentPassword = ref('')
@@ -80,20 +101,24 @@
       passwordError.value = 'New password must be at least 8 characters.'
       return
     }
+    if (!/[A-Z]/.test(newPassword.value) || !/[a-z]/.test(newPassword.value) || !/[0-9]/.test(newPassword.value)) {
+      passwordError.value = 'Password must contain uppercase, lowercase, and a digit.'
+      return
+    }
     if (newPassword.value !== confirmPassword.value) {
       passwordError.value = 'New password and confirmation do not match.'
       return
     }
     passwordSubmitting.value = true
     try {
-      await new Promise((resolve) => setTimeout(resolve, 400))
-      toast.success(
-        'Password change queued',
-        'When the password endpoint ships, your request will go through automatically.'
-      )
+      await authService.changePassword(currentPassword.value, newPassword.value)
+      toast.success('Password updated', 'You have been signed out of all other sessions.')
       currentPassword.value = ''
       newPassword.value = ''
       confirmPassword.value = ''
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { description?: string } } })?.response?.data?.description
+      passwordError.value = msg ?? 'Could not update password. Please try again.'
     } finally {
       passwordSubmitting.value = false
     }
@@ -153,10 +178,6 @@
     }
     return map[activeId.value] ?? 'Settings'
   })
-
-  function saveProfile() {
-    toast.success('Profile saved', 'Your display name and bio were updated.')
-  }
 
   const catalogAvailable = computed(() =>
     BIBLE_TRANSLATION_CATALOG.filter((t) => !biblePrefs.installedTranslationIds.includes(t.id))
@@ -241,7 +262,7 @@
         :sections="sections"
       />
 
-      <div class="flex-1 overflow-y-auto">
+      <div class="flex-1 overflow-y-auto relative z-[1]">
         <div class="max-w-2xl mx-auto p-8">
           <header class="mb-6">
             <h2 class="text-lg font-semibold text-ink-strong">
@@ -350,6 +371,7 @@
                 </SButton>
                 <SButton
                   size="sm"
+                  :loading="profileSaving"
                   @click="saveProfile"
                 >
                   Save changes

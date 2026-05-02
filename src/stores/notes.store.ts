@@ -1,14 +1,17 @@
-import { ref, shallowRef, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { notesService } from '@/services/notes.service'
 import type { CreateNotePayload, UpdateNotePayload, VerseNote } from '@/types/notes.types'
 
+const CACHE_TTL = 5 * 60_000 // 5 minutes
+
 export const useNotesStore = defineStore('notes', () => {
-  const notes = shallowRef<VerseNote[]>([])
+  const notes = ref<VerseNote[]>([])
   const isLoading = ref(false)
   const isSaving = ref(false)
   const error = ref<string | null>(null)
   const activeNoteId = ref<string | null>(null)
+  let lastFetchedAt = 0
 
   const activeNote = computed(() => notes.value.find((n) => n.id === activeNoteId.value) ?? null)
 
@@ -22,16 +25,22 @@ export const useNotesStore = defineStore('notes', () => {
     return map
   })
 
-  async function fetchMyNotes(): Promise<void> {
+  async function fetchMyNotes(force = false): Promise<void> {
+    if (!force && notes.value.length > 0 && Date.now() - lastFetchedAt < CACHE_TTL) return
     isLoading.value = true
     error.value = null
     try {
       notes.value = await notesService.getMyNotes()
+      lastFetchedAt = Date.now()
     } catch {
       error.value = 'Failed to load notes.'
     } finally {
       isLoading.value = false
     }
+  }
+
+  function invalidateCache(): void {
+    lastFetchedAt = 0
   }
 
   async function create(payload: CreateNotePayload): Promise<VerseNote> {
@@ -41,6 +50,7 @@ export const useNotesStore = defineStore('notes', () => {
       const note = await notesService.create(payload)
       notes.value = [note, ...notes.value]
       activeNoteId.value = note.id
+      lastFetchedAt = Date.now()
       return note
     } catch (e) {
       error.value = 'Failed to create note.'
@@ -56,6 +66,7 @@ export const useNotesStore = defineStore('notes', () => {
     try {
       const updated = await notesService.update(id, payload)
       notes.value = notes.value.map((n) => (n.id === id ? updated : n))
+      invalidateCache()
     } catch (e) {
       error.value = 'Failed to update note.'
       throw e
@@ -69,6 +80,7 @@ export const useNotesStore = defineStore('notes', () => {
       await notesService.delete(id)
       notes.value = notes.value.filter((n) => n.id !== id)
       if (activeNoteId.value === id) activeNoteId.value = null
+      invalidateCache()
     } catch (e) {
       error.value = 'Failed to delete note.'
       throw e
@@ -92,5 +104,6 @@ export const useNotesStore = defineStore('notes', () => {
     update,
     remove,
     setActiveNote,
+    invalidateCache,
   }
 })

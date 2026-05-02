@@ -10,7 +10,12 @@ namespace SolaHub.Application.Mappers;
 /// </summary>
 internal static class ReadingPlanMapper
 {
+    /// <summary>Map without enriched participant display names (display name will be empty string).</summary>
     public static ReadingPlanDto ToDto(ReadingPlan plan) =>
+        ToDto(plan, null);
+
+    /// <summary>Map with an optional dictionary of UserId → DisplayName for participant enrichment.</summary>
+    public static ReadingPlanDto ToDto(ReadingPlan plan, IReadOnlyDictionary<Guid, string>? displayNames) =>
         new(
             plan.Id.Value,
             plan.Title,
@@ -27,6 +32,7 @@ internal static class ReadingPlanMapper
                 .ToList(),
             plan.Participants.Select(p => new PlanParticipantDto(
                     p.UserId.Value,
+                    displayNames?.GetValueOrDefault(p.UserId.Value) ?? string.Empty,
                     p.CurrentDay,
                     p.JoinedAt
                 ))

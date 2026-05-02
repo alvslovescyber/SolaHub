@@ -1,7 +1,5 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { invoke } from '@tauri-apps/api/core'
-import { isTauri } from '@/lib/platform'
 import type { PresenterSlide, PresenterSession } from '@/types/presenter.types'
 import { collaborationService } from '@/services/collaboration.service'
 
@@ -12,10 +10,10 @@ export const usePresenterStore = defineStore('presenter', () => {
     currentIndex: 0,
     isFullscreen: false,
     displayWindowOpen: false,
+    overlayOpen: false,
   })
 
-  // Reference to the browser popup opened in web mode
-  let webDisplayWindow: Window | null = null
+  const isBlanked = ref(false)
 
   const currentSlide = computed<PresenterSlide | null>(
     () => session.value.slides[session.value.currentIndex] ?? null
@@ -36,9 +34,14 @@ export const usePresenterStore = defineStore('presenter', () => {
       currentIndex: 0,
       planId,
     }
+    isBlanked.value = false
   }
 
   function next(): void {
+    if (isBlanked.value) {
+      isBlanked.value = false
+      return
+    }
     if (hasNext.value) {
       session.value.currentIndex++
       broadcastCurrentVerse()
@@ -48,6 +51,7 @@ export const usePresenterStore = defineStore('presenter', () => {
   function prev(): void {
     if (hasPrev.value) {
       session.value.currentIndex--
+      isBlanked.value = false
       broadcastCurrentVerse()
     }
   }
@@ -55,58 +59,53 @@ export const usePresenterStore = defineStore('presenter', () => {
   function goTo(index: number): void {
     if (index >= 0 && index < session.value.slides.length) {
       session.value.currentIndex = index
+      isBlanked.value = false
       broadcastCurrentVerse()
     }
   }
 
-  async function openDisplayWindow(): Promise<void> {
-    if (isTauri) {
-      await invoke('open_presenter_window', { url: '/presenter-display' })
-    } else {
-      webDisplayWindow?.close()
-      webDisplayWindow = window.open(
-        '/#/presenter-display',
-        'solahub-presenter',
-        'width=1280,height=800,menubar=no,toolbar=no,location=no,status=no'
-      )
-    }
-    session.value.displayWindowOpen = true
+  function toggleBlank(): void {
+    isBlanked.value = !isBlanked.value
   }
 
-  async function closeDisplayWindow(): Promise<void> {
-    if (isTauri) {
-      await invoke('close_presenter_window')
-    } else {
-      webDisplayWindow?.close()
-      webDisplayWindow = null
-    }
+  async function openDisplayWindow(_monitorIndex = 0): Promise<void> {
+    isBlanked.value = false
+    session.value.overlayOpen = true
+  }
+
+  function closeDisplayWindow(): void {
+    session.value.overlayOpen = false
     session.value.displayWindowOpen = false
+    isBlanked.value = false
+  }
+
+  function closeOverlay(): void {
+    session.value.overlayOpen = false
+    isBlanked.value = false
   }
 
   async function toggleFullscreen(): Promise<void> {
-    const next = !session.value.isFullscreen
-    if (isTauri) {
-      await invoke('set_fullscreen', { fullscreen: next })
-    } else {
-      if (next) {
+    const entering = !session.value.isFullscreen
+    try {
+      if (entering) {
         await document.documentElement.requestFullscreen?.()
       } else {
         await document.exitFullscreen?.()
       }
-    }
-    session.value.isFullscreen = next
+      session.value.isFullscreen = entering
+    } catch { /* fullscreen not supported or blocked */ }
   }
 
   function broadcastCurrentVerse(): void {
     const slide = currentSlide.value
     const planId = session.value.planId
     if (!slide || !planId) return
-
     void collaborationService.pushPresenterVerse(planId, slide.verseRef)
   }
 
   return {
     session,
+    isBlanked,
     currentSlide,
     hasNext,
     hasPrev,
@@ -115,8 +114,10 @@ export const usePresenterStore = defineStore('presenter', () => {
     next,
     prev,
     goTo,
+    toggleBlank,
     openDisplayWindow,
     closeDisplayWindow,
+    closeOverlay,
     toggleFullscreen,
   }
 })

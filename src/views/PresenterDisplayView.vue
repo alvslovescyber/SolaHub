@@ -2,6 +2,7 @@
   import { computed, onBeforeUnmount, onMounted } from 'vue'
   import { usePresenterStore } from '@/stores/presenter.store'
   import { useBiblePreferencesStore } from '@/stores/biblePreferences.store'
+  import { SPresenterSlide } from '@/components/s'
   import { collaborationService } from '@/services/collaboration.service'
 
   const presenter = usePresenterStore()
@@ -33,34 +34,32 @@
     ]"
   >
     <Transition
-      name="fade"
+      name="presenter-fade"
       mode="out-in"
     >
-      <div
+      <SPresenterSlide
         v-if="slide"
-        :key="slide.verseRef"
-        class="text-center px-12 max-w-5xl"
-      >
-        <p
-          class="presenter-slide text-white"
-          :style="{ fontSize: biblePrefs.presenterVerseFontSize }"
-        >
-          {{ slide.text }}
-        </p>
-        <p
-          v-if="biblePrefs.presenterShowVerseRef"
-          class="text-slate-400 font-medium mt-8"
-          :style="{ fontSize: biblePrefs.presenterRefFontSize }"
-        >
-          {{ slide.book }} {{ slide.chapter }}:{{ slide.verse }}
-        </p>
-      </div>
+        :slide="slide"
+        :slide-key="slide.verseRef"
+      />
       <div
         v-else
-        class="text-slate-600 text-xl"
+        :key="'waiting'"
+        class="text-slate-600 text-xl font-sans"
       >
         Waiting for presenter…
       </div>
     </Transition>
   </div>
 </template>
+
+<style scoped>
+.presenter-fade-enter-active,
+.presenter-fade-leave-active {
+  transition: opacity 0.12s ease;
+}
+.presenter-fade-enter-from,
+.presenter-fade-leave-to {
+  opacity: 0;
+}
+</style>

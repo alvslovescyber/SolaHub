@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'node:path'
@@ -45,6 +46,17 @@ export default defineConfig({
           'vendor-icons': ['lucide-vue-next'],
         },
       },
+    },
+  },
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    setupFiles: ['./src/__tests__/setup.ts'],
+    include: ['src/**/__tests__/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['src/composables/**', 'src/stores/**', 'src/utils/**'],
     },
   },
 })

@@ -1,8 +1,6 @@
 <script setup lang="ts">
-  import { useRouter } from 'vue-router'
+  import { RouterLink } from 'vue-router'
   import { SBrandMark, SButton } from '@/components/s'
-
-  const router = useRouter()
 </script>
 
 <template>
@@ -19,12 +17,10 @@
     <p class="text-sm text-ink-muted">
       The page you're looking for doesn't exist.
     </p>
-    <SButton
-      variant="primary"
-      size="sm"
-      @click="router.push({ name: 'dashboard' })"
-    >
-      Back to dashboard
-    </SButton>
+    <RouterLink :to="{ name: 'dashboard' }" class="no-underline hover:no-underline">
+      <SButton variant="primary" size="sm">
+        Back to dashboard
+      </SButton>
+    </RouterLink>
   </div>
 </template>

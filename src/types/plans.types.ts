@@ -8,6 +8,7 @@ export interface PlanDay {
 
 export interface PlanParticipant {
   userId: string
+  displayName: string
   currentDay: number
   joinedAt: string
 }
@@ -28,4 +29,10 @@ export interface CreatePlanPayload {
   title: string
   description: string | null
   isPublic: boolean
+}
+
+export interface AddPlanDayPayload {
+  dayNumber: number
+  title: string
+  verseRefs: string[]
 }

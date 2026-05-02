@@ -52,6 +52,12 @@ export const useAuthStore = defineStore('auth', () => {
     await router.push({ name: 'login' })
   }
 
+  function updateUser(partial: Partial<import('@/types/user.types').User>): void {
+    if (user.value) {
+      user.value = { ...user.value, ...partial }
+    }
+  }
+
   function handleSessionExpired(): void {
     user.value = null
     tokenStorage.clear()
@@ -84,6 +90,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     login,
     logout,
+    updateUser,
     handleSessionExpired,
     rehydrate,
   }

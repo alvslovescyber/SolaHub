@@ -347,6 +347,16 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
       })[presenterBackground.value]
   )
 
+  // Pixel-based font sizes for the 1920×1080 scale-transform canvas preview.
+  // Not viewport-relative so text renders crisply at any container size.
+  const presenterCanvasFontPx = computed(
+    () => ({ comfortable: 64, large: 80, auditorium: 96 })[presenterFontScale.value]
+  )
+  const presenterCanvasRefPx = computed(
+    () => ({ comfortable: 28, large: 34, auditorium: 40 })[presenterFontScale.value]
+  )
+  const presenterCanvasLabelPx = 24 // section label / song footer — fixed
+
   return {
     defaultTranslationId,
     installedTranslationIds,
@@ -384,5 +394,8 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
     presenterVerseFontSize,
     presenterRefFontSize,
     presenterRootClass,
+    presenterCanvasFontPx,
+    presenterCanvasRefPx,
+    presenterCanvasLabelPx,
   }
 })

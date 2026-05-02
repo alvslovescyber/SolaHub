@@ -46,7 +46,7 @@
     // ─── Tauri: full app (requires API running separately) ───────────────────
     {
       "name": "Tauri: Dev",
-      "type": "lldb",
+      "type": "lldb-dap",
       "request": "launch",
       "program": "${workspaceFolder}/src-tauri/target/debug/sola-hub",
       "args": [],

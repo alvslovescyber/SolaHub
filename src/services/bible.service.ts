@@ -236,7 +236,11 @@ export const bibleService = {
     const ck = webChapterCacheKey(book, chapter, translation)
     const cached = readWebChapterCache(ck)
     if (cached) return cached
-    const verses = await bibleApiFetch(`${slug}+${chapter}`, translation, signal)
+    // Single-chapter books: appending "+1" makes bible-api.com treat it as verse 1, not chapter 1
+    const singleChapter =
+      CANONICAL_BOOKS.find((b) => b.shortName === book.toUpperCase())?.chapters === 1
+    const apiPath = singleChapter ? slug : `${slug}+${chapter}`
+    const verses = await bibleApiFetch(apiPath, translation, signal)
     const result = { book, chapter, verses: verses.map(mapVerse) }
     writeWebChapterCache(ck, result)
     return result

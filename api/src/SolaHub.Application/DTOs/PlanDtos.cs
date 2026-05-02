@@ -14,4 +14,4 @@ public sealed record ReadingPlanDto(
 
 public sealed record PlanDayDto(int DayNumber, string Title, IReadOnlyList<string> VerseRefs);
 
-public sealed record PlanParticipantDto(Guid UserId, int CurrentDay, DateTimeOffset JoinedAt);
+public sealed record PlanParticipantDto(Guid UserId, string DisplayName, int CurrentDay, DateTimeOffset JoinedAt);

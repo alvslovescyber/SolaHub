@@ -56,11 +56,12 @@ internal sealed class RegisterCommandHandler(
 {
     public async Task<Result<AuthResponse>> Handle(RegisterCommand request, CancellationToken ct)
     {
-        // Check uniqueness before hashing (expensive operation)
+        // Check uniqueness before hashing (expensive operation).
+        // Generic message prevents email enumeration by attackers.
         if (await userRepository.ExistsByEmailAsync(request.Email, ct))
             return Error.Conflict(
                 "Auth.EmailTaken",
-                $"An account with email '{request.Email}' already exists."
+                "An account with this email already exists."
             );
 
         var hash = passwordHasher.Hash(request.Password);

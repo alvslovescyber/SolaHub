@@ -16,7 +16,6 @@
 
   onMounted(() => {
     ui.initTheme()
-    void auth.rehydrate()
     window.addEventListener('auth:session-expired', onSessionExpired)
   })
 

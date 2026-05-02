@@ -29,7 +29,7 @@
         primary:
           'bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700 shadow-xs disabled:bg-brand-300',
         secondary:
-          'bg-white text-ink-strong border border-line hover:bg-surface-canvas active:bg-surface-sunken dark:bg-surface-raised dark:text-ink-strong dark:hover:bg-white/5',
+          'bg-surface-raised text-ink-strong border border-line hover:border-line-strong hover:bg-surface-canvas active:bg-surface-sunken dark:bg-surface-raised dark:border-line dark:hover:border-line-strong dark:hover:bg-white/[0.04]',
         ghost:
           'bg-transparent text-ink hover:bg-black/[0.04] dark:hover:bg-white/[0.06] active:bg-black/[0.07]',
         subtle:

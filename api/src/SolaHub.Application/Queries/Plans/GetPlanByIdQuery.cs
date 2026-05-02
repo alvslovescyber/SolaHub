@@ -11,8 +11,10 @@ namespace SolaHub.Application.Queries.Plans;
 public sealed record GetPlanByIdQuery(ReadingPlanId PlanId, UserId RequestingUserId)
     : IQuery<ReadingPlanDto>;
 
-internal sealed class GetPlanByIdQueryHandler(IReadingPlanRepository planRepository)
-    : IRequestHandler<GetPlanByIdQuery, Result<ReadingPlanDto>>
+internal sealed class GetPlanByIdQueryHandler(
+    IReadingPlanRepository planRepository,
+    IUserRepository userRepository
+) : IRequestHandler<GetPlanByIdQuery, Result<ReadingPlanDto>>
 {
     public async Task<Result<ReadingPlanDto>> Handle(GetPlanByIdQuery request, CancellationToken ct)
     {
@@ -24,6 +26,16 @@ internal sealed class GetPlanByIdQueryHandler(IReadingPlanRepository planReposit
         if (!plan.IsPublic && plan.CreatedBy != request.RequestingUserId && !isParticipant)
             return Error.Forbidden("Plans.Forbidden", "You do not have access to this plan.");
 
-        return ReadingPlanMapper.ToDto(plan);
+        var displayNames = await BuildDisplayNameMapAsync(plan.Participants.Select(p => p.UserId), ct);
+        return ReadingPlanMapper.ToDto(plan, displayNames);
+    }
+
+    private async Task<IReadOnlyDictionary<Guid, string>> BuildDisplayNameMapAsync(
+        IEnumerable<UserId> userIds,
+        CancellationToken ct
+    )
+    {
+        var users = await userRepository.GetByIdsAsync(userIds, ct);
+        return users.ToDictionary(u => u.Id.Value, u => u.DisplayName);
     }
 }

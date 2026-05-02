@@ -13,6 +13,15 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
     public Task<User?> GetByIdAsync(UserId id, CancellationToken ct) =>
         db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
 
+    public async Task<IReadOnlyList<User>> GetByIdsAsync(IEnumerable<UserId> ids, CancellationToken ct)
+    {
+        var guidIds = ids.Select(id => id.Value).ToList();
+        if (guidIds.Count == 0) return [];
+        return await db.Users.AsNoTracking()
+            .Where(u => guidIds.Contains(u.Id.Value))
+            .ToListAsync(ct);
+    }
+
     public Task<User?> GetByEmailAsync(string email, CancellationToken ct)
     {
         var normalized = email.Trim().ToLowerInvariant();

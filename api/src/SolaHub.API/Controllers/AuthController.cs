@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SolaHub.API.Extensions;
 using SolaHub.Application.Commands.Auth;
 using SolaHub.Application.DTOs;
+using SolaHub.Core.Common;
 using SolaHub.Core.ValueObjects;
 
 namespace SolaHub.API.Controllers;
@@ -30,16 +31,9 @@ public sealed class AuthController(ISender sender) : ControllerBase
             error =>
                 error.Type switch
                 {
-                    Core.Common.ErrorType.Conflict => Conflict(
-                        new { error.Code, error.Description }
-                    ),
-                    Core.Common.ErrorType.Validation => UnprocessableEntity(
-                        new { error.Code, error.Description }
-                    ),
-                    _ => StatusCode(
-                        StatusCodes.Status500InternalServerError,
-                        new { error.Code, error.Description }
-                    ),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
+                    ErrorType.Validation => UnprocessableEntity(new { error.Code, error.Description }),
+                    _ => StatusCode(StatusCodes.Status500InternalServerError, new { error.Code, error.Description }),
                 }
         );
     }
@@ -58,13 +52,8 @@ public sealed class AuthController(ISender sender) : ControllerBase
             error =>
                 error.Type switch
                 {
-                    Core.Common.ErrorType.Unauthorized => Unauthorized(
-                        new { error.Code, error.Description }
-                    ),
-                    _ => StatusCode(
-                        StatusCodes.Status500InternalServerError,
-                        new { error.Code, error.Description }
-                    ),
+                    ErrorType.Unauthorized => Unauthorized(new { error.Code, error.Description }),
+                    _ => StatusCode(StatusCodes.Status500InternalServerError, new { error.Code, error.Description }),
                 }
         );
     }
@@ -106,17 +95,38 @@ public sealed class AuthController(ISender sender) : ControllerBase
             error =>
                 error.Type switch
                 {
-                    Core.Common.ErrorType.Forbidden => Forbid(),
-                    Core.Common.ErrorType.Unauthorized => Unauthorized(
-                        new { error.Code, error.Description }
-                    ),
-                    Core.Common.ErrorType.Validation => UnprocessableEntity(
-                        new { error.Code, error.Description }
-                    ),
-                    _ => StatusCode(
-                        StatusCodes.Status500InternalServerError,
-                        new { error.Code, error.Description }
-                    ),
+                    ErrorType.Forbidden => Forbid(),
+                    ErrorType.Unauthorized => Unauthorized(new { error.Code, error.Description }),
+                    ErrorType.Validation => UnprocessableEntity(new { error.Code, error.Description }),
+                    _ => StatusCode(StatusCodes.Status500InternalServerError, new { error.Code, error.Description }),
+                }
+        );
+    }
+
+    /// <summary>Change the authenticated user's password. Revokes all active sessions on success.</summary>
+    [HttpPost("change-password")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ChangePassword(
+        [FromBody] ChangePasswordRequest request,
+        CancellationToken ct
+    )
+    {
+        var userId = User.GetRequiredUserId();
+        var command = new ChangePasswordCommand(userId, request.CurrentPassword, request.NewPassword);
+        var result = await sender.Send(command, ct);
+
+        return result.Match<IActionResult>(
+            () => NoContent(),
+            error =>
+                error.Type switch
+                {
+                    ErrorType.Unauthorized => Unauthorized(new { error.Code, error.Description }),
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Validation => UnprocessableEntity(new { error.Code, error.Description }),
+                    _ => StatusCode(StatusCodes.Status500InternalServerError, new { error.Code, error.Description }),
                 }
         );
     }
@@ -128,3 +138,5 @@ public sealed record RegisterRequest(string Email, string Password, string Displ
 public sealed record LoginRequest(string Email, string Password);
 
 public sealed record RefreshTokenRequest(string RefreshToken);
+
+public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
