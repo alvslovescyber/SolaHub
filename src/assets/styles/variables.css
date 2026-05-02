@@ -17,12 +17,14 @@
 
   /* ─── Surface (light) ────────────────────────────────────────────────────── */
   --s-surface-base: #ffffff;
-  --s-surface-canvas: #fafafb;
-  --s-surface-sunken: #f5f6f8;
+  --s-surface-canvas: #fafafa;
+  --s-surface-sunken: #f4f4f5;
   --s-surface-raised: #ffffff;
-  --s-surface-overlay: rgba(255, 255, 255, 0.94);
-  --s-surface-sidebar: rgba(249, 250, 252, 0.92);
-  --s-surface-vibrancy: rgba(255, 255, 255, 0.6);
+  --s-surface-overlay: rgba(255, 255, 255, 0.96);
+  --s-surface-sidebar: #f7f7f8;
+  --s-surface-vibrancy: rgba(255, 255, 255, 0.72);
+
+  --s-titlebar-pad: 0px;
 
   /* ─── Aurora (very subtle ambient washes, used sparingly) ────────────────── */
   --s-aurora-peach: rgba(255, 180, 160, 0.18);
@@ -89,6 +91,10 @@
   --s-z-sticky: 100;
   --s-z-modal: 1000;
   --s-z-toast: 1100;
+}
+
+html.is-tauri.is-mac {
+  --s-titlebar-pad: 28px;
 }
 
 .dark {

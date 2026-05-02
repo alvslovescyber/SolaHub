@@ -20,8 +20,9 @@ public sealed class AuthRateLimitMiddleware(
         if (ShouldLimit(context))
         {
             var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-            var key =
-                $"solahub:ratelimit:auth:{ip}:{context.Request.Path.Value ?? ""}:{Window.Ticks}";
+            var minuteBucket = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute;
+            var path = context.Request.Path.Value ?? "";
+            var key = $"solahub:ratelimit:auth:{ip}:{path}:{minuteBucket}";
 
             var count = 0;
             try

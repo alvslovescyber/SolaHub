@@ -1,7 +1,7 @@
-using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SolaHub.API.Extensions;
 using SolaHub.Application.Commands.Plans;
 using SolaHub.Application.DTOs;
 using SolaHub.Application.Queries.Plans;
@@ -15,8 +15,7 @@ namespace SolaHub.API.Controllers;
 [Authorize]
 public sealed class PlansController(ISender sender) : ControllerBase
 {
-    private UserId CurrentUserId =>
-        UserId.From(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!));
+    private UserId CurrentUserId => User.GetRequiredUserId();
 
     /// <summary>Get all reading plans the authenticated user is part of.</summary>
     [HttpGet]

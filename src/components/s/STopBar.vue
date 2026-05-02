@@ -23,15 +23,15 @@
 <template>
   <header
     :class="[
-      'h-topbar shrink-0 flex items-center justify-between gap-3 pr-3 border-b border-line-subtle',
-      'bg-surface-base/90 backdrop-blur-xl',
+      'topbar-chrome-pad h-topbar shrink-0 flex items-center justify-between gap-3 pr-3 border-b border-line-subtle',
+      'bg-surface-base/92 backdrop-blur-xl',
       sidebarPad,
     ]"
     data-tauri-drag-region
   >
     <div class="flex items-center min-w-0 gap-3">
       <div v-if="title || subtitle" class="min-w-0">
-        <h1 v-if="title" class="text-[13px] font-semibold text-ink-strong truncate leading-tight">
+        <h1 v-if="title" class="text-[13px] font-medium text-ink-strong truncate leading-tight">
           {{ title }}
         </h1>
         <p v-if="subtitle" class="text-[11px] text-ink-muted truncate leading-tight mt-0.5">

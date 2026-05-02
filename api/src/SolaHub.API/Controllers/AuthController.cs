@@ -1,7 +1,7 @@
-using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SolaHub.API.Extensions;
 using SolaHub.Application.Commands.Auth;
 using SolaHub.Application.DTOs;
 using SolaHub.Core.ValueObjects;
@@ -97,7 +97,7 @@ public sealed class AuthController(ISender sender) : ControllerBase
         CancellationToken ct
     )
     {
-        var userId = UserId.From(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!));
+        var userId = User.GetRequiredUserId();
         var command = new RevokeTokenCommand(userId, request.RefreshToken);
         var result = await sender.Send(command, ct);
 

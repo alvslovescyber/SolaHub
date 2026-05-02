@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.Interfaces.Services;
@@ -14,7 +15,8 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration config
+        IConfiguration config,
+        IHostEnvironment environment
     )
     {
         // ─── JWT Options (validated at startup, fail-fast on misconfig) ────────
@@ -35,7 +37,8 @@ public static class DependencyInjection
             config.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("DefaultConnection is required.");
 
-        services.AddDbContext<AppDbContext>(opts =>
+        void ConfigureNpgsql(DbContextOptionsBuilder opts)
+        {
             opts.UseNpgsql(
                     connectionString,
                     pg =>
@@ -49,8 +52,15 @@ public static class DependencyInjection
                         pg.CommandTimeout(30);
                     }
                 )
-                .UseSnakeCaseNamingConvention()
-        );
+                .UseSnakeCaseNamingConvention();
+        }
+
+        // Pool contexts in real deployments — cuts allocation churn under concurrent requests.
+        // Integration tests run as environment "Test" and keep a plain DbContext for WebApplicationFactory swaps.
+        if (environment.IsEnvironment("Test"))
+            services.AddDbContext<AppDbContext>(ConfigureNpgsql);
+        else
+            services.AddDbContextPool<AppDbContext>(ConfigureNpgsql);
 
         // ─── Repositories ──────────────────────────────────────────────────────
         services.AddScoped<IUserRepository, UserRepository>();

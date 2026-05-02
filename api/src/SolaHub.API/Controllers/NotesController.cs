@@ -1,7 +1,7 @@
-using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SolaHub.API.Extensions;
 using SolaHub.Application.Commands.Notes;
 using SolaHub.Application.DTOs;
 using SolaHub.Application.Queries.Notes;
@@ -15,8 +15,7 @@ namespace SolaHub.API.Controllers;
 [Authorize]
 public sealed class NotesController(ISender sender) : ControllerBase
 {
-    private UserId CurrentUserId =>
-        UserId.From(Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!));
+    private UserId CurrentUserId => User.GetRequiredUserId();
 
     /// <summary>Get all notes for the authenticated user.</summary>
     [HttpGet]

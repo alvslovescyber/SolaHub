@@ -27,7 +27,7 @@
       :class="[
         'relative inline-flex items-center gap-1.5 py-2.5 text-[13px] transition-colors',
         modelValue === tab.id
-          ? 'text-brand-600 font-semibold'
+          ? 'text-brand-600 font-medium'
           : 'text-ink-muted hover:text-ink-strong',
         tab.disabled && 'opacity-50 cursor-not-allowed',
       ]"

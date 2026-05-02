@@ -10,7 +10,7 @@
         "projectUniqueName": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Application/SolaHub.Application.csproj",
         "projectName": "SolaHub.Application",
         "projectPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Application/SolaHub.Application.csproj",
-        "packagesPath": "/var/folders/bd/j_sv3yn12l7bvkfsqjj9mx6r0000gn/T/cursor-sandbox-cache/5e171a5c05470e331575a19a969374c9/nuget",
+        "packagesPath": "/Users/alvsabel/.nuget/packages/",
         "outputPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Application/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
@@ -370,7 +370,7 @@
         "projectUniqueName": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Core/SolaHub.Core.csproj",
         "projectName": "SolaHub.Core",
         "projectPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Core/SolaHub.Core.csproj",
-        "packagesPath": "/var/folders/bd/j_sv3yn12l7bvkfsqjj9mx6r0000gn/T/cursor-sandbox-cache/5e171a5c05470e331575a19a969374c9/nuget",
+        "packagesPath": "/Users/alvsabel/.nuget/packages/",
         "outputPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Core/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
@@ -704,7 +704,7 @@
         "projectUniqueName": "/Users/alvsabel/Documents/GitHub/SolaHub/api/tests/SolaHub.Tests.Unit/SolaHub.Tests.Unit.csproj",
         "projectName": "SolaHub.Tests.Unit",
         "projectPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/tests/SolaHub.Tests.Unit/SolaHub.Tests.Unit.csproj",
-        "packagesPath": "/var/folders/bd/j_sv3yn12l7bvkfsqjj9mx6r0000gn/T/cursor-sandbox-cache/5e171a5c05470e331575a19a969374c9/nuget",
+        "packagesPath": "/Users/alvsabel/.nuget/packages/",
         "outputPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/tests/SolaHub.Tests.Unit/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [

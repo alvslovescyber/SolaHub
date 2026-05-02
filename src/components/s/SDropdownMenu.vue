@@ -3,9 +3,11 @@
 
   interface Props {
     placement?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end'
+    /** Use full width for triggers that should stretch (e.g. sidebar profile). */
+    fullWidth?: boolean
   }
 
-  const { placement = 'bottom-start' } = defineProps<Props>()
+  const { placement = 'bottom-start', fullWidth = false } = defineProps<Props>()
 
   const open = ref(false)
   const root = ref<HTMLElement | null>(null)
@@ -41,8 +43,8 @@
 </script>
 
 <template>
-  <div ref="root" class="relative inline-flex">
-    <span @click="toggle">
+  <div ref="root" :class="fullWidth ? 'relative block w-full' : 'relative inline-flex'">
+    <span :class="fullWidth ? 'block w-full' : ''" @click="toggle">
       <slot name="trigger" :open="open" />
     </span>
     <Transition name="fade">

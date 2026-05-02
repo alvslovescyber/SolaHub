@@ -16,6 +16,7 @@ public sealed class CollaborationHub(
     ILogger<CollaborationHub> logger
 ) : Hub
 {
+    private const int MaxVerseRefLength = 128;
     private static string PlanGroup(Guid planId) => $"plan:{planId}";
 
     private UserId RequireUserId()
@@ -35,6 +36,21 @@ public sealed class CollaborationHub(
         var isParticipant = await repo.IsParticipantAsync(ReadingPlanId.From(planId), userId, ct);
         if (!isParticipant)
             throw new HubException("You are not a participant in this plan.");
+    }
+
+    /// <summary>
+    /// Normalizes and validates verse references pushed over SignalR (length / abuse guardrails).
+    /// </summary>
+    private static string? NormalizeVerseRefOrNull(string? verseRef)
+    {
+        if (verseRef is null)
+            return null;
+        var trimmed = verseRef.Trim();
+        if (trimmed.Length == 0)
+            return null;
+        if (trimmed.Length > MaxVerseRefLength)
+            throw new HubException($"Verse reference must not exceed {MaxVerseRefLength} characters.");
+        return trimmed;
     }
 
     // ─── Connection lifecycle ──────────────────────────────────────────────────
@@ -110,6 +126,9 @@ public sealed class CollaborationHub(
     public async Task BroadcastProgress(Guid planId, int dayNumber)
     {
         await EnsurePlanParticipantAsync(planId, Context.ConnectionAborted);
+        if (dayNumber < 1 || dayNumber > 10_000)
+            throw new HubException("Day number is out of allowed range.");
+
         var userId = RequireUserId();
         var group = PlanGroup(planId);
 
@@ -141,7 +160,8 @@ public sealed class CollaborationHub(
     {
         await EnsurePlanParticipantAsync(planId, Context.ConnectionAborted);
         var userId = RequireUserId();
-        if (string.IsNullOrWhiteSpace(verseRef) || string.IsNullOrWhiteSpace(content))
+        var normalizedRef = NormalizeVerseRefOrNull(verseRef);
+        if (normalizedRef is null || string.IsNullOrWhiteSpace(content))
             return;
 
         var truncated = content.Length > 1_000 ? content[..1_000] : content;
@@ -155,7 +175,7 @@ public sealed class CollaborationHub(
                 {
                     PlanId = planId,
                     UserId = userId.Value,
-                    VerseRef = verseRef,
+                    VerseRef = normalizedRef,
                     Content = truncated,
                     SentAt = DateTimeOffset.UtcNow,
                 }
@@ -169,7 +189,8 @@ public sealed class CollaborationHub(
     {
         await EnsurePlanParticipantAsync(planId, Context.ConnectionAborted);
         var userId = RequireUserId();
-        if (string.IsNullOrWhiteSpace(verseRef))
+        var normalizedRef = NormalizeVerseRefOrNull(verseRef);
+        if (normalizedRef is null)
             return;
 
         var group = PlanGroup(planId);
@@ -181,7 +202,7 @@ public sealed class CollaborationHub(
                 {
                     PlanId = planId,
                     PresenterUserId = userId.Value,
-                    VerseRef = verseRef,
+                    VerseRef = normalizedRef,
                     PushedAt = DateTimeOffset.UtcNow,
                 }
             );

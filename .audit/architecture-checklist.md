@@ -24,6 +24,7 @@ Severities:
 | B2  | `Application/Commands/Auth/{Login,Register,RefreshToken}Command.cs`                 | Hard-coded `AccessTokenExpiry`/`RefreshTokenExpiry` ignore `Jwt:AccessTokenExpiryMinutes` and `Jwt:RefreshTokenExpiryDays` config. The signed JWT lifetime drifts from the `ExpiresAt` returned to clients. | Centralize in a `JwtOptions` (IOptions) bound from configuration; consume in handlers + token svc.   |
 | B3  | `Infrastructure/Auth/JwtTokenService.cs:23-36` + `Program.cs:53-58`                 | JWT secret length validation duplicated in two places; manual `IConfiguration` parsing instead of options pattern.                                                                                          | Single `JwtOptions` with validation on bind; remove duplicate guard.                                 |
 | B4  | `Application/DTOs/NoteDtos.cs:3-14` vs `API/Controllers/NotesController.cs:148-156` | Two `CreateNoteRequest`/`UpdateNoteRequest` records exist (DTO file + controller file). Only the controller-defined ones are used; DTO copies are dead.                                                     | Delete the dead DTO records (kept inside controller as transport contracts; canonical copy is one). |
+| B14 | `Infrastructure/Repositories/ReadingPlanRepository.cs:UpdateAsync`                  | `db.ReadingPlans.Update(plan)` on a tracked aggregate marks newly added owned children (`ReadingPlanDay`, `PlanParticipant`) as **Modified** instead of **Added** because their composite key is non-default. Result: every `AddDay`/`Publish` request hit `DbUpdateConcurrencyException` (UPDATE 0 rows). 2 integration tests were red. | Stop forcing `Update()` on already-tracked aggregates, run `DetectChanges`, and promote `Modified` owned children that don't actually exist in the DB to `Added` via `GetDatabaseValuesAsync`. |
 
 ### P1
 
@@ -82,6 +83,17 @@ Severities:
 ## Process
 
 1. ✅ Walk the codebase and produce this checklist.
-2. Apply P0 fixes and re-run `dotnet build` / `npm run type-check`.
-3. Apply P1 fixes and re-run.
-4. Final: `npm run lint && npm run type-check && npm run build && cd api && dotnet test`.
+2. ✅ Apply P0 fixes and re-run `dotnet build` / `npm run type-check`.
+3. ✅ Apply P1 fixes and re-run.
+4. ✅ Final: `npm run lint && npm run type-check && npm run build && cd api && dotnet test`.
+
+## Final verification (2026-05-02)
+
+| Check                     | Status | Notes                                                                                                |
+| ------------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| `npm run lint`            | ✅     | 0 errors. 421 pre-existing Vue template formatting warnings (unrelated to audit changes).            |
+| `npm run type-check`      | ✅     | 0 errors.                                                                                            |
+| `npm run build`           | ✅     | Vite production bundle succeeded.                                                                    |
+| `dotnet build` (solution) | ✅     | 0 errors. Standard EF Core relational version-conflict warning on integration test project.         |
+| `dotnet test` (unit)      | ✅     | 61/61 passing.                                                                                       |
+| `dotnet test` (integ.)    | ✅     | 15/15 passing (after fixing pre-existing P0 owned-collection bug — see B14).                        |

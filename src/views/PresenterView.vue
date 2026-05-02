@@ -1,27 +1,47 @@
 <script setup lang="ts">
-  import { computed } from 'vue'
+  import { computed, ref } from 'vue'
   import { Monitor, ChevronLeft, ChevronRight, Maximize2, ExternalLink } from 'lucide-vue-next'
   import { usePresenterStore } from '@/stores/presenter.store'
   import { useBibleStore } from '@/stores/bible.store'
-  import { SButton, SCard, SEmptyState, SPageContainer, STopBar } from '@/components/s'
+  import { useBiblePreferencesStore } from '@/stores/biblePreferences.store'
+  import { bibleService } from '@/services/bible.service'
+  import { catalogMeta } from '@/constants/bibleTranslations'
+  import { SButton, SCard, SEmptyState, SPageContainer, STopBar, useSToast } from '@/components/s'
   import type { PresenterSlide } from '@/types/presenter.types'
 
   const presenter = usePresenterStore()
   const bible = useBibleStore()
+  const biblePrefs = useBiblePreferencesStore()
+  const toast = useSToast()
+  const loadingSlides = ref(false)
 
   const slide = computed(() => presenter.currentSlide)
   const progress = computed(() => presenter.progress)
 
-  function loadCurrentChapterAsSlides() {
-    if (!bible.currentChapter) return
-    const slides: PresenterSlide[] = bible.currentChapter.verses.map((v) => ({
-      verseRef: `${v.book}.${v.chapter}.${v.verse}`,
-      text: v.text,
-      book: v.book,
-      chapter: v.chapter,
-      verse: v.verse,
-    }))
-    presenter.loadSlides(slides)
+  const presenterTranslationHint = computed(() => {
+    const id = biblePrefs.effectivePresenterTranslationId()
+    return catalogMeta(id)?.name ?? id.toUpperCase()
+  })
+
+  async function loadCurrentChapterAsSlides() {
+    loadingSlides.value = true
+    try {
+      const t = biblePrefs.translationApiCode(biblePrefs.effectivePresenterTranslationId())
+      const chapter = await bibleService.getChapter(bible.selectedBook, bible.selectedChapter, t)
+      const slides: PresenterSlide[] = chapter.verses.map((v) => ({
+        verseRef: `${v.book}.${v.chapter}.${v.verse}`,
+        text: v.text,
+        book: v.book,
+        chapter: v.chapter,
+        verse: v.verse,
+      }))
+      presenter.loadSlides(slides)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Try another translation in Settings.'
+      toast.error('Could not load chapter', msg)
+    } finally {
+      loadingSlides.value = false
+    }
   }
 </script>
 
@@ -51,11 +71,17 @@
         <div>
           <p class="text-sm font-semibold text-ink-strong">Load from Bible</p>
           <p class="text-xs text-ink-muted mt-0.5">
-            Load the current chapter ({{ bible.selectedBook }} {{ bible.selectedChapter }}) as
-            slides
+            Loads {{ bible.selectedBook }} {{ bible.selectedChapter }} using
+            <span class="text-ink-strong">{{ presenterTranslationHint }}</span>
+            — adjust translations and slide styling in Settings.
           </p>
         </div>
-        <SButton size="sm" variant="secondary" @click="loadCurrentChapterAsSlides">
+        <SButton
+          size="sm"
+          variant="secondary"
+          :loading="loadingSlides"
+          @click="loadCurrentChapterAsSlides()"
+        >
           <template #leading>
             <Monitor class="h-3.5 w-3.5" />
           </template>
@@ -65,13 +91,24 @@
 
       <div v-if="presenter.session.slides.length > 0" class="mt-6">
         <div
-          class="rounded-xl bg-slate-950 dark:bg-black aspect-video flex flex-col items-center justify-center p-8 shadow-modal"
+          :class="[
+            'rounded-xl aspect-video flex flex-col items-center justify-center p-8 shadow-modal',
+            biblePrefs.presenterRootClass,
+          ]"
         >
-          <div v-if="slide" class="presenter-slide">
+          <div
+            v-if="slide"
+            class="presenter-slide max-w-5xl px-4"
+            :style="{ fontSize: biblePrefs.presenterVerseFontSize }"
+          >
             {{ slide.text }}
           </div>
           <div v-else class="text-slate-400 text-sm">No slide selected</div>
-          <p v-if="slide" class="text-slate-400 text-sm mt-6">
+          <p
+            v-if="slide && biblePrefs.presenterShowVerseRef"
+            class="text-slate-400 font-medium mt-6"
+            :style="{ fontSize: biblePrefs.presenterRefFontSize }"
+          >
             {{ slide.book }} {{ slide.chapter }}:{{ slide.verse }}
           </p>
         </div>

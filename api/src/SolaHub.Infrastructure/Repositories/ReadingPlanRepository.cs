@@ -10,7 +10,8 @@ public sealed class ReadingPlanRepository(AppDbContext db) : IReadingPlanReposit
 {
     public Task<ReadingPlan?> GetByIdAsync(ReadingPlanId id, CancellationToken ct) =>
         db
-            .ReadingPlans.Include(p => p.Days)
+            .ReadingPlans.AsSplitQuery()
+            .Include(p => p.Days)
             .Include(p => p.Participants)
             .FirstOrDefaultAsync(p => p.Id == id, ct);
 
@@ -23,6 +24,7 @@ public sealed class ReadingPlanRepository(AppDbContext db) : IReadingPlanReposit
         // and use AsNoTracking since we never mutate these entities here.
         var plans = await db
             .ReadingPlans.AsNoTracking()
+            .AsSplitQuery()
             .Include(p => p.Days)
             .Include(p => p.Participants)
             .Where(p => p.CreatedBy == userId || p.Participants.Any(pp => pp.UserId == userId))
@@ -38,6 +40,7 @@ public sealed class ReadingPlanRepository(AppDbContext db) : IReadingPlanReposit
     {
         var plans = await db
             .ReadingPlans.AsNoTracking()
+            .AsSplitQuery()
             .Include(p => p.Days)
             .Include(p => p.Participants)
             .Where(p => p.ChurchId == churchId)
@@ -70,11 +73,12 @@ public sealed class ReadingPlanRepository(AppDbContext db) : IReadingPlanReposit
         if (db.Entry(plan).State == EntityState.Detached)
             db.ReadingPlans.Update(plan);
 
-        // EF Core's snapshot change tracking treats newly-added owned entities with
-        // explicit/natural primary keys (e.g. ReadingPlanDay.DayNumber) as Modified
-        // because the key is non-default. That generates UPDATE for rows that don't
-        // exist yet → DbUpdateConcurrencyException. Walk the owned collections and
-        // promote Modified entries that aren't actually in the DB to Added.
+        // EF Core's owned-collection change tracking with natural composite keys
+        // (e.g. ReadingPlanDay keyed on plan_id + DayNumber) marks newly added
+        // children as Modified, because their key value is non-default and EF
+        // assumes the row already exists. That issues UPDATE for a row that was
+        // never inserted → DbUpdateConcurrencyException ("expected 1, affected 0").
+        // Detect children that aren't in the DB yet and promote them to Added.
         db.ChangeTracker.DetectChanges();
 
         var planEntry = db.Entry(plan);
@@ -87,21 +91,11 @@ public sealed class ReadingPlanRepository(AppDbContext db) : IReadingPlanReposit
                 if (item is null)
                     continue;
                 var entry = db.Entry(item);
-                Console.WriteLine(
-                    $"[DBG2] {entry.Entity.GetType().Name} state={entry.State} props_modified=["
-                        + string.Join(
-                            ",",
-                            entry.Properties.Select(p =>
-                                p.IsModified ? p.Metadata.Name + "*" : p.Metadata.Name
-                            )
-                        )
-                        + "]"
-                );
-                if (entry.State == EntityState.Modified && !entry.Properties.Any(p => p.IsModified))
-                {
-                    Console.WriteLine($"[DBG2] -> promoting to Added");
+                if (entry.State != EntityState.Modified)
+                    continue;
+                var inDb = await entry.GetDatabaseValuesAsync(ct);
+                if (inDb is null)
                     entry.State = EntityState.Added;
-                }
             }
         }
 

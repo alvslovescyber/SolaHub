@@ -3,6 +3,16 @@ import { defineStore } from 'pinia'
 import { plansService } from '@/services/plans.service'
 import type { CreatePlanPayload, ReadingPlan } from '@/types/plans.types'
 
+function extractApiError(e: unknown): string | null {
+  const err = e as { response?: { data?: unknown } }
+  const data = err.response?.data
+  if (!data || typeof data !== 'object') return null
+  const d = data as { description?: unknown; title?: unknown }
+  if (typeof d.description === 'string') return d.description
+  if (typeof d.title === 'string') return d.title
+  return null
+}
+
 export const usePlansStore = defineStore('plans', () => {
   const plans = shallowRef<ReadingPlan[]>([])
   const activePlan = ref<ReadingPlan | null>(null)
@@ -45,7 +55,7 @@ export const usePlansStore = defineStore('plans', () => {
       plans.value = [plan, ...plans.value]
       return plan
     } catch (e) {
-      error.value = 'Failed to create plan.'
+      error.value = extractApiError(e) ?? 'Failed to create reading plan.'
       throw e
     } finally {
       isSaving.value = false

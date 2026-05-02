@@ -10,7 +10,7 @@
         "projectUniqueName": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.API/SolaHub.API.csproj",
         "projectName": "SolaHub.API",
         "projectPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.API/SolaHub.API.csproj",
-        "packagesPath": "/var/folders/bd/j_sv3yn12l7bvkfsqjj9mx6r0000gn/T/cursor-sandbox-cache/5e171a5c05470e331575a19a969374c9/nuget",
+        "packagesPath": "/Users/alvsabel/.nuget/packages/",
         "outputPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.API/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
@@ -58,6 +58,10 @@
               "version": "[10.0.7, )"
             },
             "Microsoft.AspNetCore.OpenApi": {
+              "target": "Package",
+              "version": "[10.0.7, )"
+            },
+            "Microsoft.AspNetCore.SignalR.StackExchangeRedis": {
               "target": "Package",
               "version": "[10.0.7, )"
             },
@@ -535,7 +539,7 @@
         "projectUniqueName": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Application/SolaHub.Application.csproj",
         "projectName": "SolaHub.Application",
         "projectPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Application/SolaHub.Application.csproj",
-        "packagesPath": "/var/folders/bd/j_sv3yn12l7bvkfsqjj9mx6r0000gn/T/cursor-sandbox-cache/5e171a5c05470e331575a19a969374c9/nuget",
+        "packagesPath": "/Users/alvsabel/.nuget/packages/",
         "outputPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Application/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
@@ -895,7 +899,7 @@
         "projectUniqueName": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Core/SolaHub.Core.csproj",
         "projectName": "SolaHub.Core",
         "projectPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Core/SolaHub.Core.csproj",
-        "packagesPath": "/var/folders/bd/j_sv3yn12l7bvkfsqjj9mx6r0000gn/T/cursor-sandbox-cache/5e171a5c05470e331575a19a969374c9/nuget",
+        "packagesPath": "/Users/alvsabel/.nuget/packages/",
         "outputPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Core/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
@@ -1229,7 +1233,7 @@
         "projectUniqueName": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Infrastructure/SolaHub.Infrastructure.csproj",
         "projectName": "SolaHub.Infrastructure",
         "projectPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Infrastructure/SolaHub.Infrastructure.csproj",
-        "packagesPath": "/var/folders/bd/j_sv3yn12l7bvkfsqjj9mx6r0000gn/T/cursor-sandbox-cache/5e171a5c05470e331575a19a969374c9/nuget",
+        "packagesPath": "/Users/alvsabel/.nuget/packages/",
         "outputPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/src/SolaHub.Infrastructure/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
@@ -1614,7 +1618,7 @@
         "projectUniqueName": "/Users/alvsabel/Documents/GitHub/SolaHub/api/tests/SolaHub.Tests.Integration/SolaHub.Tests.Integration.csproj",
         "projectName": "SolaHub.Tests.Integration",
         "projectPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/tests/SolaHub.Tests.Integration/SolaHub.Tests.Integration.csproj",
-        "packagesPath": "/var/folders/bd/j_sv3yn12l7bvkfsqjj9mx6r0000gn/T/cursor-sandbox-cache/5e171a5c05470e331575a19a969374c9/nuget",
+        "packagesPath": "/Users/alvsabel/.nuget/packages/",
         "outputPath": "/Users/alvsabel/Documents/GitHub/SolaHub/api/tests/SolaHub.Tests.Integration/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
@@ -1661,6 +1665,10 @@
               "version": "[6.12.2, )"
             },
             "Microsoft.AspNetCore.Mvc.Testing": {
+              "target": "Package",
+              "version": "[10.0.7, )"
+            },
+            "Microsoft.EntityFrameworkCore.Relational": {
               "target": "Package",
               "version": "[10.0.7, )"
             },

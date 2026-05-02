@@ -28,10 +28,8 @@
         </p>
       </div>
 
-      <div
-        class="rounded-xl border border-white/60 bg-white/70 backdrop-blur-2xl shadow-modal p-6 dark:bg-surface-raised/70 dark:border-line"
-      >
-        <form class="space-y-3.5" @submit.prevent="handleSubmit">
+      <div class="s-auth-card">
+        <form class="s-auth-card-fields space-y-3.5" @submit.prevent="handleSubmit">
           <SInput
             v-model="displayName"
             label="Display name"
@@ -76,3 +74,13 @@
     </div>
   </div>
 </template>
+
+<style scoped>
+  .s-auth-card-fields :deep(input) {
+    background-color: var(--s-surface-base);
+  }
+
+  .s-auth-card-fields :deep(input::placeholder) {
+    color: var(--s-text-subtle);
+  }
+</style>

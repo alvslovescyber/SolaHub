@@ -2,7 +2,7 @@
   import { ref } from 'vue'
   import { RouterLink, useRoute } from 'vue-router'
   import { useAuth } from '@/composables/useAuth'
-  import { SBrandMark, SButton, SDivider, SInput } from '@/components/s'
+  import { SBrandMark, SButton, SInput } from '@/components/s'
 
   const route = useRoute()
   const { login, isLoading, error } = useAuth()
@@ -28,9 +28,7 @@
         <p class="text-sm text-ink-muted mt-1">Sign in to continue your Bible study</p>
       </div>
 
-      <div
-        class="rounded-xl border border-white/60 bg-white/70 backdrop-blur-2xl shadow-modal p-6 dark:bg-surface-raised/70 dark:border-line"
-      >
+      <div class="s-auth-card">
         <div
           v-if="sessionExpired"
           class="mb-4 px-3 py-2 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-200"
@@ -38,7 +36,7 @@
           Your session has expired. Please sign in again.
         </div>
 
-        <form class="space-y-3.5" @submit.prevent="handleSubmit">
+        <form class="s-auth-card-fields space-y-3.5" @submit.prevent="handleSubmit">
           <SInput
             v-model="email"
             label="Email"
@@ -65,22 +63,6 @@
             Sign in with email
           </SButton>
         </form>
-
-        <div class="my-4">
-          <SDivider label="or sign in with" />
-        </div>
-
-        <SButton variant="secondary" full-width disabled>
-          <template #leading>
-            <svg viewBox="0 0 24 24" class="h-4 w-4" aria-hidden="true">
-              <path fill="#F25022" d="M3 3h8.5v8.5H3z" />
-              <path fill="#7FBA00" d="M12.5 3H21v8.5h-8.5z" />
-              <path fill="#00A4EF" d="M3 12.5h8.5V21H3z" />
-              <path fill="#FFB900" d="M12.5 12.5H21V21h-8.5z" />
-            </svg>
-          </template>
-          Microsoft
-        </SButton>
       </div>
 
       <p class="text-center text-xs text-ink-muted mt-5">
@@ -92,3 +74,14 @@
     </div>
   </div>
 </template>
+
+<style scoped>
+  /* Recessed fields on the auth panel so inputs stay legible on frosted light / raised dark. */
+  .s-auth-card-fields :deep(input) {
+    background-color: var(--s-surface-base);
+  }
+
+  .s-auth-card-fields :deep(input::placeholder) {
+    color: var(--s-text-subtle);
+  }
+</style>

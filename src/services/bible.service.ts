@@ -76,7 +76,7 @@ const BOOK_SLUG: Record<string, string> = {
   REV: 'revelation',
 }
 
-const CANONICAL_BOOKS: BookInfo[] = [
+export const CANONICAL_BOOKS: BookInfo[] = [
   { shortName: 'GEN', longName: 'Genesis', chapters: 50, testament: 'OT' },
   { shortName: 'EXO', longName: 'Exodus', chapters: 40, testament: 'OT' },
   { shortName: 'LEV', longName: 'Leviticus', chapters: 27, testament: 'OT' },
@@ -145,6 +145,43 @@ const CANONICAL_BOOKS: BookInfo[] = [
   { shortName: 'REV', longName: 'Revelation', chapters: 22, testament: 'NT' },
 ]
 
+const WEB_CHAPTER_CACHE_TTL_MS = 180_000
+const WEB_CHAPTER_CACHE_MAX = 80
+
+const webChapterCache = new Map<string, { fetchedAt: number; chapter: BibleChapter }>()
+
+function webChapterCacheKey(book: string, chapter: number, translation: string): string {
+  return `${book.toUpperCase()}|${chapter}|${translation.toUpperCase()}`
+}
+
+/** Clone so callers can't mutate cached verses by reference. */
+function cloneChapter(ch: BibleChapter): BibleChapter {
+  return {
+    book: ch.book,
+    chapter: ch.chapter,
+    verses: ch.verses.map((v) => ({ ...v })),
+  }
+}
+
+function readWebChapterCache(key: string): BibleChapter | null {
+  const row = webChapterCache.get(key)
+  if (!row) return null
+  if (Date.now() - row.fetchedAt > WEB_CHAPTER_CACHE_TTL_MS) {
+    webChapterCache.delete(key)
+    return null
+  }
+  return cloneChapter(row.chapter)
+}
+
+function writeWebChapterCache(key: string, chapter: BibleChapter): void {
+  while (webChapterCache.size >= WEB_CHAPTER_CACHE_MAX) {
+    const oldest = webChapterCache.keys().next().value as string | undefined
+    if (oldest === undefined) break
+    webChapterCache.delete(oldest)
+  }
+  webChapterCache.set(key, { fetchedAt: Date.now(), chapter: cloneChapter(chapter) })
+}
+
 interface BibleApiVerse {
   book_id: string
   book_name: string
@@ -153,9 +190,14 @@ interface BibleApiVerse {
   text: string
 }
 
-async function bibleApiFetch(slug: string, translation: string): Promise<BibleApiVerse[]> {
+async function bibleApiFetch(
+  slug: string,
+  translation: string,
+  signal?: AbortSignal
+): Promise<BibleApiVerse[]> {
   const t = translation.toLowerCase()
-  const res = await fetch(`https://bible-api.com/${slug}?translation=${t}`)
+  const url = `https://bible-api.com/${slug}?translation=${encodeURIComponent(t)}`
+  const res = await fetch(url, { signal })
   if (!res.ok) throw new Error(`bible-api.com error ${res.status}`)
   const data = (await res.json()) as { verses: BibleApiVerse[] }
   return data.verses
@@ -178,7 +220,8 @@ export const bibleService = {
   async getChapter(
     book: string,
     chapter: number,
-    translation = DEFAULT_TRANSLATION
+    translation = DEFAULT_TRANSLATION,
+    signal?: AbortSignal
   ): Promise<BibleChapter> {
     if (isTauri) {
       const verses = await invoke<VerseResult[]>('get_chapter', { book, chapter, translation })
@@ -186,22 +229,28 @@ export const bibleService = {
     }
     const slug = BOOK_SLUG[book.toUpperCase()]
     if (!slug) throw new Error(`Unknown book: ${book}`)
-    const verses = await bibleApiFetch(`${slug}+${chapter}`, translation)
-    return { book, chapter, verses: verses.map(mapVerse) }
+    const ck = webChapterCacheKey(book, chapter, translation)
+    const cached = readWebChapterCache(ck)
+    if (cached) return cached
+    const verses = await bibleApiFetch(`${slug}+${chapter}`, translation, signal)
+    const result = { book, chapter, verses: verses.map(mapVerse) }
+    writeWebChapterCache(ck, result)
+    return result
   },
 
   async getVerse(
     book: string,
     chapter: number,
     verse: number,
-    translation = DEFAULT_TRANSLATION
+    translation = DEFAULT_TRANSLATION,
+    signal?: AbortSignal
   ): Promise<VerseResult> {
     if (isTauri) {
       return invoke<VerseResult>('get_verse', { book, chapter, verse, translation })
     }
     const slug = BOOK_SLUG[book.toUpperCase()]
     if (!slug) throw new Error(`Unknown book: ${book}`)
-    const verses = await bibleApiFetch(`${slug}+${chapter}:${verse}`, translation)
+    const verses = await bibleApiFetch(`${slug}+${chapter}:${verse}`, translation, signal)
     if (!verses.length) throw new Error(`Verse not found: ${book} ${chapter}:${verse}`)
     return mapVerse(verses[0])
   },
@@ -210,9 +259,6 @@ export const bibleService = {
     if (isTauri) {
       return invoke<VerseResult[]>('search_verses', { query, translation })
     }
-    // bible-api.com does not expose a search endpoint; fall back to empty until
-    // a /bible/search endpoint is added to the .NET API.
-    console.warn('[bibleService] search() is unavailable in web mode')
     return []
   },
 }

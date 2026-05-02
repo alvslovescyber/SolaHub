@@ -25,6 +25,28 @@ public sealed class GlobalExceptionMiddleware(
             // Client disconnected — not an error worth logging
             context.Response.StatusCode = 499; // Client Closed Request (nginx convention)
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Unauthorized access for {Method} {Path}",
+                context.Request.Method,
+                context.Request.Path
+            );
+
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+            var response = new
+            {
+                title = "Unauthorized",
+                status = 401,
+                detail = ex.Message,
+                traceId = context.TraceIdentifier,
+            };
+
+            await context.Response.WriteAsync(JsonSerializer.Serialize(response, JsonOptions));
+        }
         catch (Exception ex)
         {
             logger.LogError(

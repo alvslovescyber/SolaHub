@@ -1,11 +1,13 @@
 using System.Text;
 using HealthChecks.NpgSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
+using StackExchange.Redis;
 using SolaHub.API.Hubs;
 using SolaHub.API.Middleware;
 using SolaHub.Application;
@@ -49,7 +51,15 @@ try
     // ─── Application + Infrastructure ─────────────────────────────────────────
     // Infrastructure registers JwtOptions and validates it at startup.
     builder.Services.AddApplication();
-    builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
+
+    builder
+        .Services.AddResponseCompression(opts =>
+        {
+            opts.EnableForHttps = true;
+            opts.Providers.Add<BrotliCompressionProvider>();
+            opts.Providers.Add<GzipCompressionProvider>();
+        });
 
     // ─── JWT Authentication ────────────────────────────────────────────────────
     // Bind a snapshot of JwtOptions so JwtBearer middleware sees the same source
@@ -104,11 +114,20 @@ try
 
     // ─── Controllers + SignalR ─────────────────────────────────────────────────
     builder.Services.AddControllers();
-    builder.Services.AddSignalR(opts =>
+    var signalRBuilder = builder.Services.AddSignalR(opts =>
     {
         opts.EnableDetailedErrors = builder.Environment.IsDevelopment();
         opts.MaximumReceiveMessageSize = 64 * 1024; // 64 KB
     });
+
+    var redisConnForSignalR = builder.Configuration.GetConnectionString("Redis");
+    if (!string.IsNullOrWhiteSpace(redisConnForSignalR))
+    {
+        signalRBuilder.AddStackExchangeRedis(
+            redisConnForSignalR,
+            opts => opts.Configuration.ChannelPrefix = RedisChannel.Literal("solahub")
+        );
+    }
 
     // ─── OpenAPI / Scalar ──────────────────────────────────────────────────────
     builder.Services.AddOpenApi();
@@ -160,6 +179,7 @@ try
     app.UseCors("TauriApp");
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseResponseCompression();
 
     // ─── Database migrations (dev/test by default; prod opt-in via config) ─────
     var applyMigrations =

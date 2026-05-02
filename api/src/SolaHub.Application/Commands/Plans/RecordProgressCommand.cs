@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using SolaHub.Application.Common;
 using SolaHub.Core.Common;
@@ -8,6 +9,18 @@ namespace SolaHub.Application.Commands.Plans;
 
 public sealed record RecordProgressCommand(ReadingPlanId PlanId, UserId UserId, int DayNumber)
     : ICommand;
+
+internal sealed class RecordProgressCommandValidator : AbstractValidator<RecordProgressCommand>
+{
+    public const int MaxDayNumber = 10_000;
+
+    public RecordProgressCommandValidator()
+    {
+        RuleFor(x => x.DayNumber)
+            .InclusiveBetween(1, MaxDayNumber)
+            .WithMessage($"Day number must be between 1 and {MaxDayNumber:N0}.");
+    }
+}
 
 internal sealed class RecordProgressCommandHandler(IReadingPlanRepository planRepository)
     : IRequestHandler<RecordProgressCommand, Result>

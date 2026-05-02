@@ -93,6 +93,23 @@
     radial-gradient(45% 38% at 86% 90%, rgba(16, 185, 129, 0.1) 0%, transparent 70%), #0b0d12;
 }
 
+/* Login / register card: light frosted vibrancy; dark solid raised (no light-card mismatch). */
+.s-auth-card {
+  padding: 1.5rem;
+  border-radius: var(--s-radius-xl);
+  border: 1px solid var(--s-border-default);
+  box-shadow: var(--s-shadow-modal);
+  background: var(--s-surface-vibrancy);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.dark .s-auth-card {
+  background: var(--s-surface-raised);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
 /* ─── Modal overlay (blurs entire window incl. sidebar) ──────────────────── */
 .s-modal-backdrop {
   position: fixed;
@@ -106,9 +123,15 @@
   background: rgba(0, 0, 0, 0.55);
 }
 
-/* ─── Sidebar item (Kinabase-style: soft blue tint + blue text, no shadow) ─ */
+/* ─── Sidebar item (Kinabase: slate icon + label color; icon sits in faint tile) ─ */
 .s-sidebar-item-active {
-  background: rgba(59, 107, 255, 0.08);
+  background: transparent;
+  color: var(--s-brand-600);
+  font-weight: 400;
+}
+
+.s-sidebar-item-active-icon-ring {
+  background: rgba(59, 107, 255, 0.1);
   color: var(--s-brand-600);
 }
 
@@ -117,7 +140,11 @@
 }
 
 .dark .s-sidebar-item-active {
-  background: rgba(99, 136, 255, 0.14);
+  color: #c0d0ff;
+}
+
+.dark .s-sidebar-item-active-icon-ring {
+  background: rgba(99, 136, 255, 0.16);
   color: #c0d0ff;
 }
 
@@ -125,11 +152,17 @@
   color: #c0d0ff;
 }
 
+.sidebar-chrome-pad {
+  padding-top: max(0.5rem, var(--s-titlebar-pad));
+}
+
+.topbar-chrome-pad {
+  padding-top: var(--s-titlebar-pad);
+}
+
 /* ─── Bible prose ────────────────────────────────────────────────────────── */
 .bible-verse {
   font-family: 'Source Serif 4', 'Source Serif Pro', 'Iowan Old Style', 'Georgia', serif;
-  font-size: 1.05rem;
-  line-height: 1.9;
   color: var(--s-text-default);
   font-feature-settings: 'liga', 'dlig', 'onum';
 }
@@ -138,7 +171,7 @@
   font-family: 'Inter', sans-serif;
   font-size: 0.62em;
   color: var(--s-brand-600);
-  font-weight: 600;
+  font-weight: 500;
   margin-right: 4px;
   vertical-align: baseline;
   position: relative;

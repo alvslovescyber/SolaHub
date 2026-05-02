@@ -15,7 +15,7 @@
     >
       {{ label }}
     </p>
-    <div :class="['flex flex-col gap-0.5', collapsed ? 'px-2' : 'px-2']">
+    <div :class="['flex flex-col gap-0.5 px-2', collapsed && 'items-center px-1 gap-1']">
       <slot />
     </div>
   </div>

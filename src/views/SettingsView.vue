@@ -1,8 +1,24 @@
 <script setup lang="ts">
-  import { ref, computed } from 'vue'
-  import { User as UserIcon, Shield, Bell, Palette, KeyRound } from 'lucide-vue-next'
+  import { computed, ref } from 'vue'
+  import {
+    User as UserIcon,
+    Shield,
+    Bell,
+    Palette,
+    KeyRound,
+    Languages,
+    MonitorPlay,
+    Music,
+  } from 'lucide-vue-next'
   import { useAuth } from '@/composables/useAuth'
   import { useTheme } from '@/composables/useTheme'
+  import { BIBLE_TRANSLATION_CATALOG } from '@/constants/bibleTranslations'
+  import { useBiblePreferencesStore } from '@/stores/biblePreferences.store'
+  import type {
+    PresenterBackground,
+    PresenterFontScale,
+    SongsIntegrationPlaceholder,
+  } from '@/stores/biblePreferences.store'
   import {
     SAvatar,
     SButton,
@@ -10,6 +26,7 @@
     SDivider,
     SInput,
     SLabel,
+    SSelect,
     SSettingsList,
     SSwitch,
     STextarea,
@@ -21,6 +38,7 @@
   const { user, logout } = useAuth()
   const { theme, setTheme } = useTheme()
   const toast = useSToast()
+  const biblePrefs = useBiblePreferencesStore()
 
   const fileInput = ref<HTMLInputElement | null>(null)
 
@@ -68,8 +86,6 @@
     }
     passwordSubmitting.value = true
     try {
-      // Backend endpoint is not yet implemented; surface a friendly message
-      // rather than silently doing nothing.
       await new Promise((resolve) => setTimeout(resolve, 400))
       toast.success(
         'Password change queued',
@@ -90,6 +106,14 @@
         { id: 'profile', label: 'Profile', icon: UserIcon },
         { id: 'security', label: 'Security', icon: Shield },
         { id: 'notifications', label: 'Notifications', icon: Bell },
+      ],
+    },
+    {
+      label: 'Scripture',
+      items: [
+        { id: 'bible-translations', label: 'Bible & translations', icon: Languages },
+        { id: 'presenter-prefs', label: 'Presenter', icon: MonitorPlay },
+        { id: 'songs-media', label: 'Songs & media', icon: Music },
       ],
     },
     {
@@ -121,6 +145,9 @@
       profile: 'Profile',
       security: 'Security',
       notifications: 'Notifications',
+      'bible-translations': 'Bible & translations',
+      'presenter-prefs': 'Presenter',
+      'songs-media': 'Songs & media',
       appearance: 'Appearance',
       tokens: 'API tokens',
     }
@@ -129,6 +156,75 @@
 
   function saveProfile() {
     toast.success('Profile saved', 'Your display name and bio were updated.')
+  }
+
+  const catalogAvailable = computed(() =>
+    BIBLE_TRANSLATION_CATALOG.filter((t) => !biblePrefs.installedTranslationIds.includes(t.id))
+  )
+
+  const parallelOptions = computed(() => {
+    const rows = biblePrefs.installedTranslationIds
+      .filter((id) => id !== biblePrefs.defaultTranslationId)
+      .map((id) => {
+        const row = BIBLE_TRANSLATION_CATALOG.find((t) => t.id === id)
+        return { label: row ? `${row.name} (${row.language})` : id.toUpperCase(), value: id }
+      })
+    return [{ label: 'None', value: '' }, ...rows]
+  })
+
+  function onParallelSelect(value: string) {
+    biblePrefs.setParallelTranslation(value === '' ? null : value)
+  }
+
+  const presenterTranslationOptions = computed(() =>
+    biblePrefs.installedTranslationIds.map((id) => {
+      const row = BIBLE_TRANSLATION_CATALOG.find((t) => t.id === id)
+      return { label: row ? `${row.name}` : id.toUpperCase(), value: id }
+    })
+  )
+
+  function installTranslation(id: string) {
+    biblePrefs.installTranslation(id)
+    toast.success('Translation added', 'You can now choose it as your default or for presenting.')
+  }
+
+  function removeInstalled(id: string) {
+    const before = biblePrefs.installedTranslationIds.length
+    biblePrefs.removeTranslation(id)
+    if (biblePrefs.installedTranslationIds.length === before) {
+      toast.error(
+        'Cannot remove',
+        'Switch default translation first, or keep at least one installed.'
+      )
+      return
+    }
+    toast.success('Translation removed', 'It can be added again from the catalog below.')
+  }
+
+  const presenterFontOptions: { label: string; value: PresenterFontScale }[] = [
+    { label: 'Comfortable', value: 'comfortable' },
+    { label: 'Large hall', value: 'large' },
+    { label: 'Auditorium', value: 'auditorium' },
+  ]
+
+  const presenterBgOptions: { label: string; value: PresenterBackground }[] = [
+    { label: 'Black', value: 'black' },
+    { label: 'Navy', value: 'navy' },
+    { label: 'Gradient', value: 'gradient' },
+  ]
+
+  const songsIntegrationOptions = [
+    { label: 'Not connected', value: 'none' },
+    { label: 'Planning Center (coming soon)', value: 'planning_center', disabled: true },
+    { label: 'CCLI SongSelect (coming soon)', value: 'song_select', disabled: true },
+    { label: 'OpenLP bridge (coming soon)', value: 'openlp', disabled: true },
+  ]
+
+  function onSongsIntegration(value: string) {
+    if (value !== 'none') {
+      toast.info('Integration preview', 'OAuth and set lists will ship in a later release.')
+    }
+    biblePrefs.setSongsIntegration(value as SongsIntegrationPlaceholder)
   }
 </script>
 
@@ -158,10 +254,23 @@
               <template v-else-if="activeId === 'notifications'">
                 Choose what we email or push to you.
               </template>
+              <template v-else-if="activeId === 'bible-translations'">
+                Choose defaults, add translations to your library, and prepare parallel reading.
+              </template>
+              <template v-else-if="activeId === 'presenter-prefs'">
+                Projection backdrop, type size, and optional translation override for Sunday
+                worship.
+              </template>
+              <template v-else-if="activeId === 'songs-media'">
+                Lyrics, copyright lines, and integrations for presenting worship alongside
+                Scripture.
+              </template>
               <template v-else-if="activeId === 'appearance'">
                 Theme and visual preferences.
               </template>
-              <template v-else> Tokens for integrating with the SolaHub API. </template>
+              <template v-else-if="activeId === 'tokens'">
+                Tokens for integrating with the SolaHub API.
+              </template>
             </p>
           </header>
 
@@ -288,6 +397,203 @@
             </SCard>
           </template>
 
+          <!-- Bible & translations -->
+          <template v-else-if="activeId === 'bible-translations'">
+            <SCard padding="lg" class="space-y-6">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <SSelect
+                  :model-value="biblePrefs.defaultTranslationId"
+                  label="Default translation"
+                  helper="Used when you read Scripture and run searches."
+                  :options="biblePrefs.installedSelectOptions"
+                  @update:model-value="biblePrefs.setDefaultTranslation"
+                />
+                <SSelect
+                  :model-value="biblePrefs.parallelTranslationId ?? ''"
+                  label="Parallel translation"
+                  helper="Optional second text for comparison once the parallel reader ships."
+                  :options="parallelOptions"
+                  @update:model-value="onParallelSelect"
+                />
+              </div>
+
+              <SDivider />
+
+              <div>
+                <SLabel>Installed in this app</SLabel>
+                <p class="text-xs text-ink-muted mt-0.5 mb-3">
+                  Remove translations you do not need — you must keep at least one, and you cannot
+                  remove your current default until you choose another.
+                </p>
+                <ul class="space-y-2">
+                  <li
+                    v-for="id in biblePrefs.installedTranslationIds"
+                    :key="id"
+                    class="flex items-center justify-between gap-3 rounded-lg border border-line px-3 py-2"
+                  >
+                    <span class="text-sm text-ink-strong">
+                      {{
+                        BIBLE_TRANSLATION_CATALOG.find((t) => t.id === id)?.name ?? id.toUpperCase()
+                      }}
+                      <span class="text-ink-muted font-normal">
+                        · {{ BIBLE_TRANSLATION_CATALOG.find((t) => t.id === id)?.language ?? '' }}
+                      </span>
+                      <span
+                        v-if="id === biblePrefs.defaultTranslationId"
+                        class="ml-2 text-2xs uppercase tracking-wide text-brand-600 dark:text-brand-300"
+                      >
+                        Default
+                      </span>
+                    </span>
+                    <SButton
+                      v-if="biblePrefs.installedTranslationIds.length > 1"
+                      size="xs"
+                      variant="secondary"
+                      :disabled="id === biblePrefs.defaultTranslationId"
+                      @click="removeInstalled(id)"
+                    >
+                      Remove
+                    </SButton>
+                  </li>
+                </ul>
+              </div>
+
+              <SDivider />
+
+              <div>
+                <SLabel>Add translation</SLabel>
+                <p class="text-xs text-ink-muted mt-0.5 mb-3">
+                  Desktop builds can later bundle additional offline texts; web mode streams from
+                  the configured provider.
+                </p>
+                <div v-if="catalogAvailable.length === 0" class="text-sm text-ink-muted">
+                  Every translation in our catalog is already installed.
+                </div>
+                <div v-else class="space-y-2">
+                  <div
+                    v-for="row in catalogAvailable"
+                    :key="row.id"
+                    class="flex items-center justify-between gap-3 rounded-lg border border-line px-3 py-2"
+                  >
+                    <div>
+                      <p class="text-sm font-medium text-ink-strong">
+                        {{ row.name }}
+                      </p>
+                      <p class="text-xs text-ink-muted">
+                        {{ row.language }}{{ row.notes ? ` · ${row.notes}` : '' }}
+                      </p>
+                    </div>
+                    <SButton size="xs" variant="primary" @click="installTranslation(row.id)">
+                      Add
+                    </SButton>
+                  </div>
+                </div>
+              </div>
+            </SCard>
+          </template>
+
+          <!-- Presenter -->
+          <template v-else-if="activeId === 'presenter-prefs'">
+            <SCard padding="lg" class="space-y-6">
+              <SSwitch
+                :model-value="biblePrefs.presenterUseSeparateTranslation"
+                label="Dedicated translation for projection"
+                description="Use a different translation on screen than your personal reading default — helpful when the congregation prefers formal wording."
+                @update:model-value="biblePrefs.setPresenterUseSeparate"
+              />
+
+              <SSelect
+                v-if="biblePrefs.presenterUseSeparateTranslation"
+                :model-value="biblePrefs.presenterTranslationId ?? biblePrefs.defaultTranslationId"
+                label="Presenter translation"
+                :options="presenterTranslationOptions"
+                @update:model-value="biblePrefs.setPresenterTranslation"
+              />
+
+              <SDivider />
+
+              <div>
+                <SLabel>Verse size</SLabel>
+                <p class="text-xs text-ink-muted mt-0.5 mb-2">
+                  Applies to the projector window and the preview here in Presenter.
+                </p>
+                <div class="grid grid-cols-3 gap-2">
+                  <button
+                    v-for="opt in presenterFontOptions"
+                    :key="opt.value"
+                    type="button"
+                    :class="[
+                      'flex flex-col items-center gap-1 p-3 rounded-lg border text-xs font-medium transition-colors',
+                      biblePrefs.presenterFontScale === opt.value
+                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300'
+                        : 'border-line hover:bg-surface-canvas text-ink-strong',
+                    ]"
+                    @click="biblePrefs.setPresenterFontScale(opt.value)"
+                  >
+                    {{ opt.label }}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <SLabel>Backdrop</SLabel>
+                <div class="grid grid-cols-3 gap-2 mt-2">
+                  <button
+                    v-for="opt in presenterBgOptions"
+                    :key="opt.value"
+                    type="button"
+                    :class="[
+                      'flex flex-col items-center gap-1 p-3 rounded-lg border text-xs font-medium transition-colors',
+                      biblePrefs.presenterBackground === opt.value
+                        ? 'border-brand-500 bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300'
+                        : 'border-line hover:bg-surface-canvas text-ink-strong',
+                    ]"
+                    @click="biblePrefs.setPresenterBackground(opt.value)"
+                  >
+                    {{ opt.label }}
+                  </button>
+                </div>
+              </div>
+
+              <SDivider />
+
+              <SSwitch
+                :model-value="biblePrefs.presenterShowVerseRef"
+                label="Show verse reference on slides"
+                description="Display book / chapter / verse beneath the projected text."
+                @update:model-value="biblePrefs.setPresenterShowVerseRef"
+              />
+            </SCard>
+          </template>
+
+          <!-- Songs & media -->
+          <template v-else-if="activeId === 'songs-media'">
+            <SCard padding="lg" class="space-y-6">
+              <SSelect
+                :model-value="biblePrefs.songsIntegration"
+                label="Lyrics source"
+                helper="Pick where slide-ready lyrics should sync from once integrations launch."
+                :options="songsIntegrationOptions"
+                @update:model-value="onSongsIntegration"
+              />
+
+              <SSwitch
+                :model-value="biblePrefs.songsShowCopyright"
+                label="Include copyright / CCLI line on slides"
+                description="Shows attribution lines when projecting lyrics — recommended for public services."
+                @update:model-value="biblePrefs.setSongsShowCopyright"
+              />
+
+              <SDivider />
+
+              <p class="text-sm text-ink-muted leading-relaxed">
+                Song sequences, chord charts, and scripture-and-song layouts will plug into
+                Presenter so worship leaders can run everything from one hub. Connect your
+                organisation above when those OAuth flows are enabled.
+              </p>
+            </SCard>
+          </template>
+
           <!-- Appearance -->
           <template v-else-if="activeId === 'appearance'">
             <SCard padding="lg">
@@ -320,7 +626,7 @@
           </template>
 
           <!-- Tokens -->
-          <template v-else>
+          <template v-else-if="activeId === 'tokens'">
             <SCard padding="lg">
               <p class="text-sm text-ink-muted">
                 Personal access tokens for the SolaHub API will be available here. Coming soon.

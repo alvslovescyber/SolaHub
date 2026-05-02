@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using SolaHub.Core.Entities;
 using SolaHub.Core.Interfaces.Repositories;
@@ -53,12 +54,17 @@ public sealed class VerseNoteRepository(AppDbContext db) : IVerseNoteRepository
     )
     {
         var normalized = tag.Trim().ToLowerInvariant();
-        // Use EF Core + PostgreSQL JSONB contains for tag search
+        if (normalized.Length == 0)
+            return Array.Empty<VerseNote>();
+
+        // Serialize a JSON array fragment so tag characters cannot break jsonb containment SQL.
+        var tagFragment = JsonSerializer.Serialize(new[] { normalized });
+
         var notes = await db
             .VerseNotes.AsNoTracking()
             .Where(n => n.UserId == userId)
             .Where(n =>
-                EF.Functions.JsonContains(EF.Property<string>(n, "_tags"), $"\"{normalized}\"")
+                EF.Functions.JsonContains(EF.Property<string>(n, "_tags"), tagFragment)
             )
             .OrderByDescending(n => n.UpdatedAt)
             .ToListAsync(ct);

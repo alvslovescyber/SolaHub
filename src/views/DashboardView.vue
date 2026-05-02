@@ -103,8 +103,8 @@
         subtitle="Open the Word and pick up where you left off"
       >
         <template #actions>
-          <RouterLink :to="{ name: 'bible' }">
-            <SButton size="sm" variant="secondary">
+          <RouterLink :to="{ name: 'bible' }" class="no-underline hover:no-underline">
+            <SButton size="sm" variant="primary">
               <template #leading>
                 <BookMarked class="h-3.5 w-3.5" />
               </template>
@@ -133,7 +133,7 @@
               v-for="(step, idx) in setupSteps"
               :key="step.id"
               :to="step.route"
-              class="group relative overflow-hidden rounded-xl border border-line bg-surface-base hover:border-brand-200 dark:hover:border-brand-500/40 hover:shadow-card transition-all duration-150 p-4 flex flex-col"
+              class="group relative overflow-hidden rounded-xl border border-line bg-surface-base hover:border-brand-200 dark:hover:border-brand-500/40 hover:shadow-card transition-all duration-150 p-4 flex flex-col no-underline hover:no-underline"
             >
               <span
                 class="h-6 w-6 rounded-md inline-flex items-center justify-center text-[11px] font-semibold bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300"
@@ -216,7 +216,7 @@
                 <CalendarDays class="h-5 w-5" />
               </template>
               <template #actions>
-                <RouterLink to="/plans">
+                <RouterLink to="/plans" class="no-underline hover:no-underline">
                   <SButton size="sm" variant="primary"> Create a plan </SButton>
                 </RouterLink>
               </template>
@@ -228,7 +228,7 @@
               v-for="plan in plans.plans.slice(0, 5)"
               :key="plan.id"
               :to="{ name: 'plan-detail', params: { id: plan.id } }"
-              class="flex items-center justify-between px-4 py-3 border-b border-line-subtle last:border-b-0 hover:bg-surface-canvas transition-colors"
+              class="flex items-center justify-between px-4 py-3 border-b border-line-subtle last:border-b-0 hover:bg-surface-canvas transition-colors no-underline hover:no-underline"
             >
               <div class="flex items-center gap-3 min-w-0">
                 <span
@@ -283,7 +283,7 @@
         <section v-if="tab === 'home'" class="mt-8 mb-6">
           <h2 class="text-base font-semibold text-ink-strong mb-3">Quick access</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <RouterLink to="/bible">
+            <RouterLink to="/bible" class="block no-underline hover:no-underline">
               <SCard hoverable padding="md" class="h-full">
                 <div class="flex items-start gap-3">
                   <span
@@ -300,7 +300,7 @@
                 </div>
               </SCard>
             </RouterLink>
-            <RouterLink to="/notes">
+            <RouterLink to="/notes" class="block no-underline hover:no-underline">
               <SCard hoverable padding="md" class="h-full">
                 <div class="flex items-start gap-3">
                   <span
@@ -335,7 +335,7 @@
             href="https://solahub.app/docs/getting-started"
             target="_blank"
             rel="noopener"
-            class="mt-3 inline-flex"
+            class="mt-3 inline-flex no-underline hover:no-underline"
           >
             <SButton size="xs" variant="primary">
               <template #leading>
@@ -356,7 +356,7 @@
             href="https://solahub.app/docs"
             target="_blank"
             rel="noopener"
-            class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[13px] text-ink hover:bg-surface-canvas transition-colors"
+            class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[13px] text-ink hover:bg-surface-canvas transition-colors no-underline hover:no-underline"
           >
             <span class="flex items-center gap-2">
               <HelpCircle class="h-3.5 w-3.5 text-ink-muted" />
@@ -368,7 +368,7 @@
             href="https://solahub.app/changelog"
             target="_blank"
             rel="noopener"
-            class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[13px] text-ink hover:bg-surface-canvas transition-colors"
+            class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[13px] text-ink hover:bg-surface-canvas transition-colors no-underline hover:no-underline"
           >
             <span class="flex items-center gap-2">
               <BookOpenText class="h-3.5 w-3.5 text-ink-muted" />
@@ -380,7 +380,7 @@
             href="https://discord.gg/solahub"
             target="_blank"
             rel="noopener"
-            class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[13px] text-ink hover:bg-surface-canvas transition-colors"
+            class="flex items-center justify-between gap-2 px-2 py-1.5 rounded-md text-[13px] text-ink hover:bg-surface-canvas transition-colors no-underline hover:no-underline"
           >
             <span class="flex items-center gap-2">
               <Users class="h-3.5 w-3.5 text-ink-muted" />

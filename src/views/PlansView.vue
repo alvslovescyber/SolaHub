@@ -17,10 +17,12 @@
     SSpinner,
     STextarea,
     STopBar,
+    useSToast,
   } from '@/components/s'
 
   const plans = usePlansStore()
   const router = useRouter()
+  const toast = useSToast()
 
   const showCreate = ref(false)
   const title = ref('')
@@ -50,15 +52,20 @@
 
   async function createPlan() {
     if (!title.value.trim()) return
-    const plan = await plans.create({
-      title: title.value.trim(),
-      description: description.value.trim() || null,
-      isPublic: isPublic.value,
-    })
-    showCreate.value = false
-    title.value = ''
-    description.value = ''
-    await router.push({ name: 'plan-detail', params: { id: plan.id } })
+    try {
+      const plan = await plans.create({
+        title: title.value.trim(),
+        description: description.value.trim() || null,
+        isPublic: isPublic.value,
+      })
+      toast.success('Reading plan created')
+      showCreate.value = false
+      title.value = ''
+      description.value = ''
+      await router.push({ name: 'plan-detail', params: { id: plan.id } })
+    } catch {
+      toast.error('Could not create plan', plans.error ?? undefined)
+    }
   }
 
   const statusTone = planStatusTone

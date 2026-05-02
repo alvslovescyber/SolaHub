@@ -48,6 +48,15 @@ class CollaborationService {
   async connect(): Promise<void> {
     if (this.connection?.state === signalR.HubConnectionState.Connected) return
 
+    if (this.connection) {
+      try {
+        await this.connection.stop()
+      } catch {
+        /* stale connection — ignore */
+      }
+      this.connection = null
+    }
+
     this.connection = this.buildConnection()
     this.registerHandlers()
 

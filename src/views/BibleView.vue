@@ -3,7 +3,10 @@
   import { ChevronLeft, ChevronRight, Search, BookOpenText, X } from 'lucide-vue-next'
   import { useBible } from '@/composables/useBible'
   import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
-  import { SIconButton, SInput, SSpinner, STopBar } from '@/components/s'
+  import { useBiblePreferencesStore } from '@/stores/biblePreferences.store'
+  import { CANONICAL_BOOKS } from '@/services/bible.service'
+  import { resolveBookShortCode } from '@/lib/bibleReference'
+  import { SIconButton, SInput, SSpinner, STopBar, SDropdownMenu, SButton } from '@/components/s'
 
   const {
     books,
@@ -15,11 +18,13 @@
     currentBook,
     isLoadingChapter,
     isLoadingSearch,
+    searchError,
     loadChapter,
     search,
     selectVerse,
   } = useBible()
 
+  const biblePrefs = useBiblePreferencesStore()
   const { isCompact } = useResponsiveLayout()
   const searchInput = ref('')
   const showSearch = ref(false)
@@ -30,6 +35,11 @@
   function onSearchInput() {
     if (searchTimeout) clearTimeout(searchTimeout)
     searchTimeout = setTimeout(() => void search(searchInput.value), 250)
+  }
+
+  function clearSearchField() {
+    searchInput.value = ''
+    void search('')
   }
 
   onBeforeUnmount(() => {
@@ -64,7 +74,6 @@
     { immediate: true }
   )
 
-  // On compact widths, hide the book list by default
   watch(isCompact, (compact) => (showBookList.value = !compact), { immediate: true })
 
   function pickChapter(short: string, chapter: number) {
@@ -72,8 +81,12 @@
     if (isCompact.value) showBookList.value = false
   }
 
-  function jumpToSearchResult(book: string, chapter: number) {
-    void loadChapter(book, chapter)
+  async function jumpToSearchResult(book: string, chapter: number, verse?: number) {
+    const catalog = books.value.length > 0 ? books.value : CANONICAL_BOOKS
+    const code = resolveBookShortCode(book, catalog)
+    if (!code) return
+    await loadChapter(code, chapter)
+    if (typeof verse === 'number') selectVerse(verse)
     showSearch.value = false
   }
 </script>
@@ -85,6 +98,93 @@
       :subtitle="currentBook?.longName ?? 'Read, search, and highlight Scripture'"
     >
       <template #actions>
+        <SDropdownMenu placement="bottom-end">
+          <template #trigger>
+            <SIconButton label="Reading appearance" size="sm">
+              <span class="text-[12px] font-medium tracking-tight px-0.5 font-sans">Aa</span>
+            </SIconButton>
+          </template>
+          <div class="w-56 p-3 space-y-3" @click.stop>
+            <div>
+              <p class="text-2xs font-medium uppercase tracking-wide text-ink-subtle mb-1.5">
+                Text size
+              </p>
+              <div class="flex gap-1">
+                <SButton
+                  size="sm"
+                  variant="secondary"
+                  class="flex-1 !px-2"
+                  :class="biblePrefs.readerFontScale === 's' && 'ring-2 ring-brand-500/40'"
+                  @click="biblePrefs.setReaderFontScale('s')"
+                >
+                  Small
+                </SButton>
+                <SButton
+                  size="sm"
+                  variant="secondary"
+                  class="flex-1 !px-2"
+                  :class="biblePrefs.readerFontScale === 'm' && 'ring-2 ring-brand-500/40'"
+                  @click="biblePrefs.setReaderFontScale('m')"
+                >
+                  Medium
+                </SButton>
+                <SButton
+                  size="sm"
+                  variant="secondary"
+                  class="flex-1 !px-2"
+                  :class="biblePrefs.readerFontScale === 'l' && 'ring-2 ring-brand-500/40'"
+                  @click="biblePrefs.setReaderFontScale('l')"
+                >
+                  Large
+                </SButton>
+              </div>
+            </div>
+            <div>
+              <p class="text-2xs font-medium uppercase tracking-wide text-ink-subtle mb-1.5">
+                Line spacing
+              </p>
+              <div class="flex gap-1 flex-wrap">
+                <SButton
+                  size="sm"
+                  variant="secondary"
+                  @click="biblePrefs.setReaderLineHeight('compact')"
+                >
+                  Compact
+                </SButton>
+                <SButton
+                  size="sm"
+                  variant="secondary"
+                  @click="biblePrefs.setReaderLineHeight('normal')"
+                >
+                  Normal
+                </SButton>
+                <SButton
+                  size="sm"
+                  variant="secondary"
+                  @click="biblePrefs.setReaderLineHeight('relaxed')"
+                >
+                  Relaxed
+                </SButton>
+              </div>
+            </div>
+            <div>
+              <p class="text-2xs font-medium uppercase tracking-wide text-ink-subtle mb-1.5">
+                Background
+              </p>
+              <div class="flex gap-1 flex-wrap">
+                <SButton size="sm" variant="secondary" @click="biblePrefs.setReaderPaper('white')">
+                  White
+                </SButton>
+                <SButton size="sm" variant="secondary" @click="biblePrefs.setReaderPaper('sepia')">
+                  Sepia
+                </SButton>
+                <SButton size="sm" variant="secondary" @click="biblePrefs.setReaderPaper('muted')">
+                  Soft grey
+                </SButton>
+              </div>
+            </div>
+          </div>
+        </SDropdownMenu>
         <SIconButton
           v-if="isCompact"
           label="Toggle book list"
@@ -100,7 +200,6 @@
     </STopBar>
 
     <div class="flex flex-1 min-h-0">
-      <!-- Book list rail -->
       <Transition name="rail">
         <aside
           v-if="showBookList"
@@ -109,7 +208,7 @@
           <header
             class="px-3 py-2.5 border-b border-line-subtle flex items-center justify-between sticky top-0"
           >
-            <p class="text-2xs font-semibold uppercase tracking-wider text-ink-subtle">
+            <p class="text-2xs font-medium uppercase tracking-wider text-ink-subtle">
               Books · {{ books.length }}
             </p>
             <SIconButton v-if="isCompact" label="Hide" size="xs" @click="showBookList = false">
@@ -119,7 +218,7 @@
           <div class="flex-1 overflow-y-auto py-2">
             <template v-for="(group, label) in groupedBooks" :key="label">
               <p
-                class="sticky top-0 z-10 px-3 py-1.5 text-2xs font-semibold uppercase tracking-wider text-ink-subtle bg-surface-base/85 backdrop-blur"
+                class="sticky top-0 z-10 px-3 py-1.5 text-2xs font-medium uppercase tracking-wider text-ink-subtle bg-surface-base/85 backdrop-blur"
               >
                 {{ label === 'OT' ? 'Old Testament' : 'New Testament' }}
               </p>
@@ -127,19 +226,19 @@
                 v-for="book in group"
                 :key="book.shortName"
                 :class="[
-                  'group flex items-center justify-between w-full text-left px-3 py-1.5 text-sm transition-colors',
+                  'group flex items-center justify-between w-full text-left px-3 py-1.5 text-[13px] font-normal transition-colors rounded-md mx-1',
                   selectedBook === book.shortName
-                    ? 's-sidebar-item-active mx-1.5 my-0.5 rounded-md'
+                    ? 'text-brand-600 bg-brand-500/[0.06]'
                     : 'text-ink hover:bg-surface-canvas',
                 ]"
                 @click="pickChapter(book.shortName, 1)"
               >
-                <span class="truncate font-medium">{{ book.longName }}</span>
+                <span class="truncate">{{ book.longName }}</span>
                 <span
                   :class="[
                     'text-2xs',
                     selectedBook === book.shortName
-                      ? 'text-brand-700 dark:text-brand-300'
+                      ? 'text-brand-600'
                       : 'text-ink-subtle group-hover:text-ink-muted',
                   ]"
                   >{{ book.chapters }}</span
@@ -150,9 +249,7 @@
         </aside>
       </Transition>
 
-      <!-- Reading pane -->
       <div class="flex flex-1 flex-col min-w-0">
-        <!-- Search overlay -->
         <Transition name="fade">
           <div
             v-if="showSearch"
@@ -161,7 +258,7 @@
             <SInput
               v-model="searchInput"
               size="sm"
-              placeholder="Search across all of Scripture…"
+              placeholder="Try John 3:16, Psalm 23, or keywords in this chapter…"
               autofocus
               @input="onSearchInput"
             >
@@ -173,7 +270,7 @@
                   type="button"
                   class="text-ink-muted hover:text-ink-strong"
                   aria-label="Clear search"
-                  @click="searchInput = ''"
+                  @click="clearSearchField"
                 >
                   <X class="h-3.5 w-3.5" />
                 </button>
@@ -185,7 +282,14 @@
             </div>
 
             <p
-              v-else-if="searchInput && searchResults.length === 0"
+              v-else-if="searchError && searchInput"
+              class="mt-3 text-sm text-amber-700 dark:text-amber-300 text-center leading-snug"
+            >
+              {{ searchError }}
+            </p>
+
+            <p
+              v-else-if="searchInput && searchResults.length === 0 && !searchError"
               class="mt-3 text-sm text-ink-muted text-center"
             >
               No results for "{{ searchInput }}"
@@ -199,10 +303,11 @@
                 v-for="(result, i) in searchResults"
                 :key="i"
                 class="w-full text-left p-2.5 rounded-md hover:bg-surface-canvas transition-colors"
-                @click="jumpToSearchResult(result.book, result.chapter)"
+                type="button"
+                @click="jumpToSearchResult(result.book, result.chapter, result.verse)"
               >
                 <p
-                  class="text-2xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300"
+                  class="text-2xs font-medium uppercase tracking-wider text-brand-700 dark:text-brand-300"
                 >
                   {{ result.book }} {{ result.chapter }}:{{ result.verse }}
                 </p>
@@ -214,7 +319,6 @@
           </div>
         </Transition>
 
-        <!-- Sticky chapter nav -->
         <div
           class="sticky top-0 z-10 flex items-center justify-between px-6 py-2.5 border-b border-line-subtle bg-surface-base/85 backdrop-blur-xl"
         >
@@ -226,7 +330,7 @@
           >
             <ChevronLeft class="h-4 w-4" />
           </SIconButton>
-          <span class="text-sm font-semibold text-ink-strong tracking-tight">
+          <span class="text-sm font-medium text-ink-strong tracking-tight">
             {{ currentBook?.longName ?? selectedBook }} {{ selectedChapter }}
           </span>
           <SIconButton
@@ -239,20 +343,25 @@
           </SIconButton>
         </div>
 
-        <!-- Reading area -->
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1 overflow-y-auto bg-surface-base">
           <div v-if="isLoadingChapter" class="flex justify-center pt-16">
             <SSpinner />
           </div>
 
-          <article v-else-if="currentChapter" class="bible-verse max-w-[640px] mx-auto px-8 py-10">
+          <article
+            v-else-if="currentChapter"
+            :class="[
+              'bible-verse max-w-[640px] mx-auto px-8 py-10 rounded-xl transition-colors',
+              biblePrefs.readerFontClass,
+              biblePrefs.readerLeadingClass,
+              biblePrefs.readerPaperClass,
+            ]"
+          >
             <header class="mb-8 text-center">
-              <p
-                class="text-2xs font-semibold uppercase tracking-[0.2em] text-ink-subtle font-sans"
-              >
+              <p class="text-2xs font-medium uppercase tracking-[0.2em] text-ink-subtle font-sans">
                 Chapter
               </p>
-              <h1 class="mt-1 text-4xl font-serif font-semibold text-ink-strong tracking-tight">
+              <h1 class="mt-1 text-4xl font-serif font-medium text-ink-strong tracking-tight">
                 {{ selectedChapter }}
               </h1>
             </header>

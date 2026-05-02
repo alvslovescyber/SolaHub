@@ -14,6 +14,8 @@ public sealed class JwtTokenService : ITokenService
 {
     private const int RefreshTokenByteLength = 64;
 
+    private static readonly JwtSecurityTokenHandler JwtHandler = new();
+
     private readonly JwtOptions _options;
     private readonly ILogger<JwtTokenService> _logger;
     private readonly SigningCredentials _signingCredentials;
@@ -47,7 +49,7 @@ public sealed class JwtTokenService : ITokenService
         );
 
         _logger.LogDebug("Generated access token for user {UserId}", user.Id);
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return JwtHandler.WriteToken(token);
     }
 
     public string GenerateRefreshToken()
