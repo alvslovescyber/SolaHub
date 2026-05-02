@@ -47,7 +47,10 @@
 
 <template>
   <div class="flex flex-col flex-1 min-w-0">
-    <STopBar title="Presenter" subtitle="Project Scripture to the congregation">
+    <STopBar
+      title="Presenter"
+      subtitle="Project Scripture to the congregation"
+    >
       <template #actions>
         <SButton
           variant="secondary"
@@ -57,7 +60,11 @@
         >
           Close display
         </SButton>
-        <SButton size="sm" variant="primary" @click="presenter.openDisplayWindow()">
+        <SButton
+          size="sm"
+          variant="primary"
+          @click="presenter.openDisplayWindow()"
+        >
           <template #leading>
             <ExternalLink class="h-3.5 w-3.5" />
           </template>
@@ -66,10 +73,18 @@
       </template>
     </STopBar>
 
-    <SPageContainer max="2xl" padding="lg">
-      <SCard padding="md" class="flex items-center justify-between">
+    <SPageContainer
+      max="2xl"
+      padding="lg"
+    >
+      <SCard
+        padding="md"
+        class="flex items-center justify-between"
+      >
         <div>
-          <p class="text-sm font-semibold text-ink-strong">Load from Bible</p>
+          <p class="text-sm font-semibold text-ink-strong">
+            Load from Bible
+          </p>
           <p class="text-xs text-ink-muted mt-0.5">
             Loads {{ bible.selectedBook }} {{ bible.selectedChapter }} using
             <span class="text-ink-strong">{{ presenterTranslationHint }}</span>
@@ -89,7 +104,10 @@
         </SButton>
       </SCard>
 
-      <div v-if="presenter.session.slides.length > 0" class="mt-6">
+      <div
+        v-if="presenter.session.slides.length > 0"
+        class="mt-6"
+      >
         <div
           :class="[
             'rounded-xl aspect-video flex flex-col items-center justify-center p-8 shadow-modal',
@@ -103,7 +121,12 @@
           >
             {{ slide.text }}
           </div>
-          <div v-else class="text-slate-400 text-sm">No slide selected</div>
+          <div
+            v-else
+            class="text-slate-400 text-sm"
+          >
+            No slide selected
+          </div>
           <p
             v-if="slide && biblePrefs.presenterShowVerseRef"
             class="text-slate-400 font-medium mt-6"
@@ -135,13 +158,21 @@
             </template>
             Previous
           </SButton>
-          <SButton variant="secondary" size="sm" @click="presenter.toggleFullscreen()">
+          <SButton
+            variant="secondary"
+            size="sm"
+            @click="presenter.toggleFullscreen()"
+          >
             <template #leading>
               <Maximize2 class="h-3.5 w-3.5" />
             </template>
             {{ presenter.session.isFullscreen ? 'Exit fullscreen' : 'Fullscreen' }}
           </SButton>
-          <SButton size="sm" :disabled="!presenter.hasNext" @click="presenter.next()">
+          <SButton
+            size="sm"
+            :disabled="!presenter.hasNext"
+            @click="presenter.next()"
+          >
             Next
             <template #trailing>
               <ChevronRight class="h-3.5 w-3.5" />
@@ -149,7 +180,10 @@
           </SButton>
         </div>
 
-        <SCard padding="none" class="mt-6 max-h-64 overflow-y-auto">
+        <SCard
+          padding="none"
+          class="mt-6 max-h-64 overflow-y-auto"
+        >
           <button
             v-for="(s, i) in presenter.session.slides"
             :key="i"
@@ -167,7 +201,11 @@
         </SCard>
       </div>
 
-      <SCard v-else padding="none" class="mt-6">
+      <SCard
+        v-else
+        padding="none"
+        class="mt-6"
+      >
         <SEmptyState
           tone="violet"
           title="Ready when Sunday is"

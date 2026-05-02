@@ -15,7 +15,9 @@
         class="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700"
       >
         <h3 class="text-sm font-semibold text-slate-900 dark:text-white">
-          <slot name="title"> Context </slot>
+          <slot name="title">
+            Context
+          </slot>
         </h3>
         <button
           class="p-1 rounded text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"

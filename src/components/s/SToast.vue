@@ -22,7 +22,11 @@
 <template>
   <Teleport to="body">
     <div class="fixed top-4 right-4 z-toast flex flex-col gap-2 w-[320px] pointer-events-none">
-      <TransitionGroup name="toast" tag="div" class="flex flex-col gap-2">
+      <TransitionGroup
+        name="toast"
+        tag="div"
+        class="flex flex-col gap-2"
+      >
         <div
           v-for="t in toasts as Toast[]"
           :key="t.id"
@@ -37,7 +41,10 @@
             <p class="text-sm font-medium text-ink-strong">
               {{ t.title }}
             </p>
-            <p v-if="t.description" class="text-xs text-ink-muted mt-0.5">
+            <p
+              v-if="t.description"
+              class="text-xs text-ink-muted mt-0.5"
+            >
               {{ t.description }}
             </p>
           </div>

@@ -33,7 +33,12 @@
             </h3>
           </slot>
         </div>
-        <SIconButton v-if="closable" label="Close" size="sm" @click="emit('close')">
+        <SIconButton
+          v-if="closable"
+          label="Close"
+          size="sm"
+          @click="emit('close')"
+        >
           <X class="h-4 w-4" />
         </SIconButton>
       </header>

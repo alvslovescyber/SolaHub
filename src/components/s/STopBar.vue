@@ -23,35 +23,58 @@
 <template>
   <header
     :class="[
-      'topbar-chrome-pad h-topbar shrink-0 flex items-center justify-between gap-3 pr-3 border-b border-line-subtle',
+      'topbar-chrome-pad min-h-[52px] py-2 shrink-0 flex items-center justify-between gap-3 pr-4 border-b border-line-subtle',
       'bg-surface-base/92 backdrop-blur-xl',
       sidebarPad,
     ]"
     data-tauri-drag-region
   >
     <div class="flex items-center min-w-0 gap-3">
-      <div v-if="title || subtitle" class="min-w-0">
-        <h1 v-if="title" class="text-[13px] font-medium text-ink-strong truncate leading-tight">
+      <div
+        v-if="title || subtitle"
+        class="min-w-0"
+      >
+        <h1
+          v-if="title"
+          class="text-[14px] font-semibold text-ink-strong truncate leading-snug"
+        >
           {{ title }}
         </h1>
-        <p v-if="subtitle" class="text-[11px] text-ink-muted truncate leading-tight mt-0.5">
+        <p
+          v-if="subtitle"
+          class="text-[12px] text-ink-muted truncate leading-snug mt-0.5"
+        >
           {{ subtitle }}
         </p>
       </div>
       <slot name="left" />
     </div>
 
-    <div class="flex items-center gap-1.5" data-no-drag>
+    <div
+      class="flex items-center gap-1.5"
+      data-no-drag
+    >
       <slot name="actions" />
-      <SDropdownMenu v-if="showBell" placement="bottom-end">
+      <SDropdownMenu
+        v-if="showBell"
+        placement="bottom-end"
+      >
         <template #trigger>
-          <SIconButton label="Notifications" size="sm">
+          <SIconButton
+            label="Notifications"
+            size="sm"
+          >
             <Bell class="h-4 w-4" />
           </SIconButton>
         </template>
-        <div class="w-72 px-3 py-3" @click.stop>
+        <div
+          class="w-72 px-3 py-3"
+          @click.stop
+        >
           <div class="flex items-center justify-between mb-2">
-            <p class="text-[13px] font-semibold text-ink-strong">Notifications</p>
+            <p class="text-[13px] font-semibold text-ink-strong">
+              Notifications
+            </p>
             <span class="text-[11px] text-ink-subtle">All caught up</span>
           </div>
           <div class="flex flex-col items-center text-center py-6 text-ink-muted">
@@ -60,7 +83,9 @@
             >
               <BellOff class="h-4 w-4" />
             </span>
-            <p class="text-[13px] text-ink-strong">You're all clear</p>
+            <p class="text-[13px] text-ink-strong">
+              You're all clear
+            </p>
             <p class="text-xs mt-0.5 leading-relaxed">
               Mentions, prayer requests, and church updates will appear here.
             </p>

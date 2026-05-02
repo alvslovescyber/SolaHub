@@ -26,13 +26,19 @@
 
     <main class="flex-1 flex min-w-0 overflow-hidden bg-surface-base s-canvas-aurora">
       <RouterView v-slot="{ Component }">
-        <Transition name="fade" mode="out-in">
+        <Transition
+          name="fade"
+          mode="out-in"
+        >
           <component :is="Component" />
         </Transition>
       </RouterView>
     </main>
 
-    <SCommandPalette :open="ui.commandPaletteOpen" @close="ui.closeCommandPalette" />
+    <SCommandPalette
+      :open="ui.commandPaletteOpen"
+      @close="ui.closeCommandPalette"
+    />
     <SToast />
   </div>
 </template>

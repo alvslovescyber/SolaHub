@@ -21,7 +21,7 @@
   --s-surface-sunken: #f4f4f5;
   --s-surface-raised: #ffffff;
   --s-surface-overlay: rgba(255, 255, 255, 0.96);
-  --s-surface-sidebar: #f7f7f8;
+  --s-surface-sidebar: rgba(247, 247, 248, 0.62);
   --s-surface-vibrancy: rgba(255, 255, 255, 0.72);
 
   --s-titlebar-pad: 0px;

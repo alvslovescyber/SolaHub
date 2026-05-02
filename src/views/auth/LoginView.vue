@@ -25,7 +25,9 @@
         <h1 class="mt-3 text-xl font-semibold text-ink-strong tracking-tight">
           Welcome back to SolaHub
         </h1>
-        <p class="text-sm text-ink-muted mt-1">Sign in to continue your Bible study</p>
+        <p class="text-sm text-ink-muted mt-1">
+          Sign in to continue your Bible study
+        </p>
       </div>
 
       <div class="s-auth-card">
@@ -36,7 +38,10 @@
           Your session has expired. Please sign in again.
         </div>
 
-        <form class="s-auth-card-fields space-y-3.5" @submit.prevent="handleSubmit">
+        <form
+          class="s-auth-card-fields space-y-3.5"
+          @submit.prevent="handleSubmit"
+        >
           <SInput
             v-model="email"
             label="Email"
@@ -55,11 +60,19 @@
             required
           />
 
-          <p v-if="error" class="text-xs text-red-600 dark:text-red-400">
+          <p
+            v-if="error"
+            class="text-xs text-red-600 dark:text-red-400"
+          >
             {{ error }}
           </p>
 
-          <SButton type="submit" full-width :loading="isLoading" size="md">
+          <SButton
+            type="submit"
+            full-width
+            :loading="isLoading"
+            size="md"
+          >
             Sign in with email
           </SButton>
         </form>
@@ -67,7 +80,10 @@
 
       <p class="text-center text-xs text-ink-muted mt-5">
         Don't have an account?
-        <RouterLink to="/register" class="text-brand-600 font-medium hover:underline">
+        <RouterLink
+          to="/register"
+          class="text-brand-600 font-medium hover:underline"
+        >
           Create one
         </RouterLink>
       </p>

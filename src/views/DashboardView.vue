@@ -103,8 +103,14 @@
         subtitle="Open the Word and pick up where you left off"
       >
         <template #actions>
-          <RouterLink :to="{ name: 'bible' }" class="no-underline hover:no-underline">
-            <SButton size="sm" variant="primary">
+          <RouterLink
+            :to="{ name: 'bible' }"
+            class="no-underline hover:no-underline"
+          >
+            <SButton
+              size="sm"
+              variant="primary"
+            >
               <template #leading>
                 <BookMarked class="h-3.5 w-3.5" />
               </template>
@@ -114,19 +120,32 @@
         </template>
       </STopBar>
 
-      <SPageTabs v-model="tab" :tabs="tabs" />
+      <SPageTabs
+        v-model="tab"
+        :tabs="tabs"
+      />
 
-      <SPageContainer max="2xl" padding="lg">
+      <SPageContainer
+        max="2xl"
+        padding="lg"
+      >
         <!-- Setup guide -->
         <section v-if="tab === 'home'">
           <div class="flex items-end justify-between mb-3">
             <div>
-              <h2 class="text-base font-semibold text-ink-strong">Get started</h2>
+              <h2 class="text-base font-semibold text-ink-strong">
+                Get started
+              </h2>
               <p class="text-xs text-ink-muted mt-0.5">
                 A few small steps to settle into your study
               </p>
             </div>
-            <SBadge tone="brand" variant="soft"> 3 of 3 </SBadge>
+            <SBadge
+              tone="brand"
+              variant="soft"
+            >
+              3 of 3
+            </SBadge>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <RouterLink
@@ -156,7 +175,10 @@
         </section>
 
         <!-- Stats -->
-        <section v-if="tab === 'home'" class="mt-8">
+        <section
+          v-if="tab === 'home'"
+          class="mt-8"
+        >
           <div class="grid grid-cols-3 gap-3">
             <article
               v-for="stat in stats"
@@ -178,7 +200,10 @@
                     stat.iconBg,
                   ]"
                 >
-                  <component :is="stat.icon" class="h-4 w-4" />
+                  <component
+                    :is="stat.icon"
+                    class="h-4 w-4"
+                  />
                 </span>
               </div>
             </article>
@@ -186,7 +211,10 @@
         </section>
 
         <!-- Reading list -->
-        <section v-if="tab === 'home' || tab === 'reading'" class="mt-8">
+        <section
+          v-if="tab === 'home' || tab === 'reading'"
+          class="mt-8"
+        >
           <div class="flex items-end justify-between mb-3">
             <div>
               <h2 class="text-base font-semibold text-ink-strong">
@@ -200,14 +228,23 @@
                 }}
               </p>
             </div>
-            <RouterLink to="/plans" class="text-xs text-brand-600 font-medium hover:underline">
+            <RouterLink
+              to="/plans"
+              class="text-xs text-brand-600 font-medium hover:underline"
+            >
               View all
             </RouterLink>
           </div>
 
-          <SSpinner v-if="plans.isLoading" size="sm" />
+          <SSpinner
+            v-if="plans.isLoading"
+            size="sm"
+          />
 
-          <SCard v-else-if="plans.plans.length === 0" padding="none">
+          <SCard
+            v-else-if="plans.plans.length === 0"
+            padding="none"
+          >
             <SEmptyState
               title="No reading plans yet"
               description="Pick a plan or build your own to start walking through Scripture."
@@ -216,14 +253,25 @@
                 <CalendarDays class="h-5 w-5" />
               </template>
               <template #actions>
-                <RouterLink to="/plans" class="no-underline hover:no-underline">
-                  <SButton size="sm" variant="primary"> Create a plan </SButton>
+                <RouterLink
+                  to="/plans"
+                  class="no-underline hover:no-underline"
+                >
+                  <SButton
+                    size="sm"
+                    variant="primary"
+                  >
+                    Create a plan
+                  </SButton>
                 </RouterLink>
               </template>
             </SEmptyState>
           </SCard>
 
-          <SCard v-else padding="none">
+          <SCard
+            v-else
+            padding="none"
+          >
             <RouterLink
               v-for="plan in plans.plans.slice(0, 5)"
               :key="plan.id"
@@ -266,7 +314,10 @@
         </section>
 
         <!-- Activity placeholder -->
-        <section v-if="tab === 'activity'" class="mt-2">
+        <section
+          v-if="tab === 'activity'"
+          class="mt-2"
+        >
           <SCard padding="none">
             <SEmptyState
               title="No recent activity"
@@ -280,11 +331,23 @@
         </section>
 
         <!-- Quick access -->
-        <section v-if="tab === 'home'" class="mt-8 mb-6">
-          <h2 class="text-base font-semibold text-ink-strong mb-3">Quick access</h2>
+        <section
+          v-if="tab === 'home'"
+          class="mt-8 mb-6"
+        >
+          <h2 class="text-base font-semibold text-ink-strong mb-3">
+            Quick access
+          </h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <RouterLink to="/bible" class="block no-underline hover:no-underline">
-              <SCard hoverable padding="md" class="h-full">
+            <RouterLink
+              to="/bible"
+              class="block no-underline hover:no-underline"
+            >
+              <SCard
+                hoverable
+                padding="md"
+                class="h-full"
+              >
                 <div class="flex items-start gap-3">
                   <span
                     class="h-8 w-8 rounded-md bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 inline-flex items-center justify-center"
@@ -292,7 +355,9 @@
                     <BookOpenText class="h-4 w-4" />
                   </span>
                   <div>
-                    <p class="text-[13px] font-semibold text-ink-strong">Open the Bible</p>
+                    <p class="text-[13px] font-semibold text-ink-strong">
+                      Open the Bible
+                    </p>
                     <p class="text-xs text-ink-muted mt-0.5">
                       Read, search, and highlight Scripture
                     </p>
@@ -300,8 +365,15 @@
                 </div>
               </SCard>
             </RouterLink>
-            <RouterLink to="/notes" class="block no-underline hover:no-underline">
-              <SCard hoverable padding="md" class="h-full">
+            <RouterLink
+              to="/notes"
+              class="block no-underline hover:no-underline"
+            >
+              <SCard
+                hoverable
+                padding="md"
+                class="h-full"
+              >
                 <div class="flex items-start gap-3">
                   <span
                     class="h-8 w-8 rounded-md bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 inline-flex items-center justify-center"
@@ -309,8 +381,12 @@
                     <StickyNote class="h-4 w-4" />
                   </span>
                   <div>
-                    <p class="text-[13px] font-semibold text-ink-strong">Journal a verse</p>
-                    <p class="text-xs text-ink-muted mt-0.5">Save reflections tied to Scripture</p>
+                    <p class="text-[13px] font-semibold text-ink-strong">
+                      Journal a verse
+                    </p>
+                    <p class="text-xs text-ink-muted mt-0.5">
+                      Save reflections tied to Scripture
+                    </p>
                   </div>
                 </div>
               </SCard>
@@ -320,12 +396,17 @@
       </SPageContainer>
     </div>
 
-    <SRightRail v-if="!isCompact" title="Help & resources">
+    <SRightRail
+      v-if="!isCompact"
+      title="Help & resources"
+    >
       <div class="p-4 space-y-4">
         <div class="rounded-xl border border-line bg-surface-base p-4">
           <div class="flex items-center gap-2">
             <SBrandMark :size="22" />
-            <p class="text-[13px] font-semibold text-ink-strong">SolaHub guide</p>
+            <p class="text-[13px] font-semibold text-ink-strong">
+              SolaHub guide
+            </p>
           </div>
           <p class="mt-1.5 text-xs text-ink-muted leading-relaxed">
             A quick tour of plans, journaling, and Sunday presenter mode — set up your study in
@@ -337,7 +418,10 @@
             rel="noopener"
             class="mt-3 inline-flex no-underline hover:no-underline"
           >
-            <SButton size="xs" variant="primary">
+            <SButton
+              size="xs"
+              variant="primary"
+            >
               <template #leading>
                 <PlayCircle class="h-3 w-3" />
               </template>

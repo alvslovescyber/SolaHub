@@ -40,11 +40,24 @@
 
 <template>
   <div class="flex flex-col flex-1 min-w-0">
-    <STopBar title="Inbox" subtitle="Shared notes, prayer requests, and church updates" />
-    <SPageTabs v-model="tab" :tabs="tabs" />
-    <SPageContainer max="2xl" padding="lg">
+    <STopBar
+      title="Inbox"
+      subtitle="Shared notes, prayer requests, and church updates"
+    />
+    <SPageTabs
+      v-model="tab"
+      :tabs="tabs"
+    />
+    <SPageContainer
+      max="2xl"
+      padding="lg"
+    >
       <SCard padding="none">
-        <SEmptyState tone="neutral" :title="tabCopy.title" :description="tabCopy.description">
+        <SEmptyState
+          tone="neutral"
+          :title="tabCopy.title"
+          :description="tabCopy.description"
+        >
           <template #icon>
             <Inbox class="h-5 w-5" />
           </template>

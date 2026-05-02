@@ -26,6 +26,9 @@
   >
     <Search class="h-3.5 w-3.5 shrink-0" />
     <span class="flex-1 text-left truncate">{{ placeholder }}</span>
-    <SKbd v-if="showShortcut" :keys="[modKeyLabel, 'K']" />
+    <SKbd
+      v-if="showShortcut"
+      :keys="[modKeyLabel, 'K']"
+    />
   </button>
 </template>

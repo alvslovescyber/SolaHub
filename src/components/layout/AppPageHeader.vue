@@ -15,7 +15,10 @@
       <h1 class="text-lg font-bold text-slate-900 dark:text-white">
         {{ title }}
       </h1>
-      <p v-if="subtitle" class="text-sm text-slate-500 mt-0.5">
+      <p
+        v-if="subtitle"
+        class="text-sm text-slate-500 mt-0.5"
+      >
         {{ subtitle }}
       </p>
     </div>

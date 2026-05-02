@@ -48,7 +48,11 @@
       :subtitle="plans.activePlan?.description ?? undefined"
     >
       <template #left>
-        <SButton variant="ghost" size="xs" @click="router.back()">
+        <SButton
+          variant="ghost"
+          size="xs"
+          @click="router.back()"
+        >
           <template #leading>
             <ArrowLeft class="h-3 w-3" />
           </template>
@@ -56,7 +60,12 @@
         </SButton>
       </template>
       <template #actions>
-        <SButton v-if="isOwner" variant="secondary" size="sm" @click="deletePlan">
+        <SButton
+          v-if="isOwner"
+          variant="secondary"
+          size="sm"
+          @click="deletePlan"
+        >
           <template #leading>
             <Trash2 class="h-3.5 w-3.5" />
           </template>
@@ -65,15 +74,34 @@
       </template>
     </STopBar>
 
-    <SPageContainer max="2xl" padding="lg">
-      <SSpinner v-if="plans.isLoading" size="sm" />
+    <SPageContainer
+      max="2xl"
+      padding="lg"
+    >
+      <SSpinner
+        v-if="plans.isLoading"
+        size="sm"
+      />
 
-      <div v-else-if="plans.activePlan" class="space-y-6">
+      <div
+        v-else-if="plans.activePlan"
+        class="space-y-6"
+      >
         <div class="flex items-center gap-2">
-          <SBadge :tone="statusTone(plans.activePlan.status)" variant="soft" dot>
+          <SBadge
+            :tone="statusTone(plans.activePlan.status)"
+            variant="soft"
+            dot
+          >
             {{ plans.activePlan.status }}
           </SBadge>
-          <SBadge v-if="plans.activePlan.isPublic" tone="brand" variant="soft"> Public </SBadge>
+          <SBadge
+            v-if="plans.activePlan.isPublic"
+            tone="brand"
+            variant="soft"
+          >
+            Public
+          </SBadge>
         </div>
 
         <SCard padding="md">
@@ -90,7 +118,10 @@
               :key="p.userId"
               class="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-surface-canvas border border-line-subtle"
             >
-              <SAvatar :name="p.userId" size="xs" />
+              <SAvatar
+                :name="p.userId"
+                size="xs"
+              />
               <span class="text-xs text-ink">Day {{ p.currentDay }}</span>
             </div>
           </div>
@@ -129,7 +160,12 @@
                   <CheckCircle class="h-3 w-3" />
                   Done
                 </SBadge>
-                <SButton v-else size="xs" variant="secondary" @click="markDay(day.dayNumber)">
+                <SButton
+                  v-else
+                  size="xs"
+                  variant="secondary"
+                  @click="markDay(day.dayNumber)"
+                >
                   Mark done
                 </SButton>
               </div>

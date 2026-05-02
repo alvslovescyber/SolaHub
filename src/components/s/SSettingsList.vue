@@ -30,7 +30,11 @@
 
 <template>
   <nav class="w-[200px] shrink-0 border-r border-line-subtle py-4 px-2 flex flex-col gap-3">
-    <div v-for="(section, index) in sections" :key="index" class="flex flex-col">
+    <div
+      v-for="(section, index) in sections"
+      :key="index"
+      class="flex flex-col"
+    >
       <p
         v-if="section.label"
         class="px-2 py-1 text-2xs font-semibold uppercase tracking-wider text-ink-subtle"
@@ -50,7 +54,11 @@
           ]"
           @click="activate(item)"
         >
-          <component :is="item.icon" v-if="item.icon" class="h-3.5 w-3.5 shrink-0" />
+          <component
+            :is="item.icon"
+            v-if="item.icon"
+            class="h-3.5 w-3.5 shrink-0"
+          />
           {{ item.label }}
         </button>
       </div>

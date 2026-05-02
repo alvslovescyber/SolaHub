@@ -25,7 +25,10 @@
       class="text-sm font-medium text-slate-700 dark:text-slate-300"
     >
       {{ label }}
-      <span v-if="required" class="text-red-500 ml-0.5">*</span>
+      <span
+        v-if="required"
+        class="text-red-500 ml-0.5"
+      >*</span>
     </label>
 
     <input
@@ -45,9 +48,12 @@
         error ? 'border-red-400 dark:border-red-500' : 'border-slate-200 dark:border-slate-700',
       ]"
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-    />
+    >
 
-    <p v-if="error" class="text-xs text-red-500">
+    <p
+      v-if="error"
+      class="text-xs text-red-500"
+    >
       {{ error }}
     </p>
   </div>

@@ -97,7 +97,7 @@
     timer = window.setTimeout(() => {
       visible.value = true
       bindScrollAncestors()
-      nextTick(() => computePosition())
+      void nextTick(() => computePosition())
     }, delay)
   }
 
@@ -108,7 +108,7 @@
   }
 
   watch(visible, (v) => {
-    if (v) nextTick(() => computePosition())
+    if (v) void nextTick(() => computePosition())
   })
 
   onBeforeUnmount(() => {

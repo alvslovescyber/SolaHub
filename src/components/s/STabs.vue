@@ -16,7 +16,10 @@
 </script>
 
 <template>
-  <div role="tablist" class="flex items-center gap-6">
+  <div
+    role="tablist"
+    class="flex items-center gap-6"
+  >
     <button
       v-for="tab in tabs"
       :key="tab.id"

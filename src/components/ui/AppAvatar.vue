@@ -41,7 +41,12 @@
       !src && colorClass,
     ]"
   >
-    <img v-if="src" :src="src" :alt="name" class="rounded-full object-cover w-full h-full" />
+    <img
+      v-if="src"
+      :src="src"
+      :alt="name"
+      class="rounded-full object-cover w-full h-full"
+    >
     <span v-else>{{ initials }}</span>
   </div>
 </template>

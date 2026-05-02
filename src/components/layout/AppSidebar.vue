@@ -47,8 +47,14 @@
     ]"
   >
     <!-- Title bar drag region -->
-    <div class="h-12 flex items-center px-4 shrink-0" data-tauri-drag-region>
-      <div v-if="!ui.sidebarCollapsed" class="flex items-center gap-2">
+    <div
+      class="h-12 flex items-center px-4 shrink-0"
+      data-tauri-drag-region
+    >
+      <div
+        v-if="!ui.sidebarCollapsed"
+        class="flex items-center gap-2"
+      >
         <div class="h-7 w-7 rounded-lg bg-primary-600 flex items-center justify-center">
           <BookOpen class="h-4 w-4 text-white" />
         </div>
@@ -78,8 +84,14 @@
         ]"
         @click="navigate(item.route)"
       >
-        <component :is="item.icon" class="h-4 w-4 shrink-0" />
-        <span v-if="!ui.sidebarCollapsed" class="truncate">{{ item.name }}</span>
+        <component
+          :is="item.icon"
+          class="h-4 w-4 shrink-0"
+        />
+        <span
+          v-if="!ui.sidebarCollapsed"
+          class="truncate"
+        >{{ item.name }}</span>
       </button>
     </nav>
 
@@ -109,8 +121,14 @@
         ]"
         @click="navigate('settings')"
       >
-        <AppAvatar :name="auth.user.displayName" size="sm" />
-        <div v-if="!ui.sidebarCollapsed" class="text-left min-w-0">
+        <AppAvatar
+          :name="auth.user.displayName"
+          size="sm"
+        />
+        <div
+          v-if="!ui.sidebarCollapsed"
+          class="text-left min-w-0"
+        >
           <p class="text-xs font-semibold text-slate-900 dark:text-white truncate">
             {{ auth.user.displayName }}
           </p>
@@ -126,8 +144,14 @@
         :title="ui.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
         @click="ui.toggleSidebar()"
       >
-        <ChevronLeft v-if="!ui.sidebarCollapsed" class="h-4 w-4" />
-        <ChevronRight v-else class="h-4 w-4" />
+        <ChevronLeft
+          v-if="!ui.sidebarCollapsed"
+          class="h-4 w-4"
+        />
+        <ChevronRight
+          v-else
+          class="h-4 w-4"
+        />
       </button>
     </div>
   </aside>

@@ -61,7 +61,12 @@
     ]"
     :title="name"
   >
-    <img v-if="src" :src="src" :alt="name" class="h-full w-full object-cover" />
+    <img
+      v-if="src"
+      :src="src"
+      :alt="name"
+      class="h-full w-full object-cover"
+    >
     <span v-else>{{ initials || '?' }}</span>
   </span>
 </template>

@@ -175,7 +175,7 @@ function readWebChapterCache(key: string): BibleChapter | null {
 
 function writeWebChapterCache(key: string, chapter: BibleChapter): void {
   while (webChapterCache.size >= WEB_CHAPTER_CACHE_MAX) {
-    const oldest = webChapterCache.keys().next().value as string | undefined
+    const oldest = webChapterCache.keys().next().value
     if (oldest === undefined) break
     webChapterCache.delete(oldest)
   }
@@ -224,8 +224,12 @@ export const bibleService = {
     signal?: AbortSignal
   ): Promise<BibleChapter> {
     if (isTauri) {
-      const verses = await invoke<VerseResult[]>('get_chapter', { book, chapter, translation })
-      return { book, chapter, verses }
+      try {
+        const verses = await invoke<VerseResult[]>('get_chapter', { book, chapter, translation })
+        if (verses.length > 0) return { book, chapter, verses }
+      } catch {
+        // verses table not seeded — fall through to web API
+      }
     }
     const slug = BOOK_SLUG[book.toUpperCase()]
     if (!slug) throw new Error(`Unknown book: ${book}`)
@@ -246,7 +250,17 @@ export const bibleService = {
     signal?: AbortSignal
   ): Promise<VerseResult> {
     if (isTauri) {
-      return invoke<VerseResult>('get_verse', { book, chapter, verse, translation })
+      try {
+        const result = await invoke<VerseResult | null>('get_verse', {
+          book,
+          chapter,
+          verse,
+          translation,
+        })
+        if (result) return result
+      } catch {
+        // verses table not seeded — fall through to web API
+      }
     }
     const slug = BOOK_SLUG[book.toUpperCase()]
     if (!slug) throw new Error(`Unknown book: ${book}`)
@@ -257,7 +271,12 @@ export const bibleService = {
 
   async search(query: string, translation = DEFAULT_TRANSLATION): Promise<VerseResult[]> {
     if (isTauri) {
-      return invoke<VerseResult[]>('search_verses', { query, translation })
+      try {
+        const results = await invoke<VerseResult[]>('search_verses', { query, translation })
+        if (results.length > 0) return results
+      } catch {
+        // verses table not seeded — return empty
+      }
     }
     return []
   },

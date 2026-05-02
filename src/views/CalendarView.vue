@@ -33,9 +33,16 @@
 
 <template>
   <div class="flex flex-col flex-1 min-w-0">
-    <STopBar title="Calendar" subtitle="Reading plan days, services, and church events">
+    <STopBar
+      title="Calendar"
+      subtitle="Reading plan days, services, and church events"
+    >
       <template #actions>
-        <SButton size="sm" variant="primary" @click="newEvent">
+        <SButton
+          size="sm"
+          variant="primary"
+          @click="newEvent"
+        >
           <template #leading>
             <Plus class="h-3.5 w-3.5" />
           </template>
@@ -43,8 +50,14 @@
         </SButton>
       </template>
     </STopBar>
-    <SPageTabs v-model="tab" :tabs="tabs" />
-    <SPageContainer max="2xl" padding="lg">
+    <SPageTabs
+      v-model="tab"
+      :tabs="tabs"
+    />
+    <SPageContainer
+      max="2xl"
+      padding="lg"
+    >
       <SCard padding="none">
         <SEmptyState
           tone="neutral"
@@ -55,7 +68,11 @@
             <CalendarDays class="h-5 w-5" />
           </template>
           <template #actions>
-            <SButton variant="secondary" size="sm" @click="backToDashboard">
+            <SButton
+              variant="secondary"
+              size="sm"
+              @click="backToDashboard"
+            >
               Back to Dashboard
             </SButton>
           </template>

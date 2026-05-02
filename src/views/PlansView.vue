@@ -78,7 +78,11 @@
       subtitle="Walk through Scripture, on your own or with your church"
     >
       <template #actions>
-        <SButton size="sm" variant="primary" @click="showCreate = true">
+        <SButton
+          size="sm"
+          variant="primary"
+          @click="showCreate = true"
+        >
           <template #leading>
             <Plus class="h-3.5 w-3.5" />
           </template>
@@ -87,20 +91,36 @@
       </template>
     </STopBar>
 
-    <SPageTabs v-model="tab" :tabs="tabs" />
+    <SPageTabs
+      v-model="tab"
+      :tabs="tabs"
+    />
 
     <div class="px-6 pt-4 shrink-0">
-      <SInput v-model="search" size="sm" placeholder="Search plans">
+      <SInput
+        v-model="search"
+        size="sm"
+        placeholder="Search plans"
+      >
         <template #leading>
           <Search class="h-3.5 w-3.5" />
         </template>
       </SInput>
     </div>
 
-    <SPageContainer max="2xl" padding="md">
-      <SSpinner v-if="plans.isLoading" size="sm" />
+    <SPageContainer
+      max="2xl"
+      padding="md"
+    >
+      <SSpinner
+        v-if="plans.isLoading"
+        size="sm"
+      />
 
-      <SCard v-else-if="filtered.length === 0" padding="none">
+      <SCard
+        v-else-if="filtered.length === 0"
+        padding="none"
+      >
         <SEmptyState
           tone="brand"
           title="No reading plans yet"
@@ -110,12 +130,20 @@
             <CalendarDays class="h-5 w-5" />
           </template>
           <template #actions>
-            <SButton size="sm" @click="showCreate = true"> Create your first plan </SButton>
+            <SButton
+              size="sm"
+              @click="showCreate = true"
+            >
+              Create your first plan
+            </SButton>
           </template>
         </SEmptyState>
       </SCard>
 
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div
+        v-else
+        class="grid grid-cols-1 sm:grid-cols-2 gap-3"
+      >
         <SCard
           v-for="plan in filtered"
           :key="plan.id"
@@ -128,31 +156,49 @@
               <p class="text-sm font-semibold text-ink-strong truncate">
                 {{ plan.title }}
               </p>
-              <p v-if="plan.description" class="text-xs text-ink-muted mt-0.5 line-clamp-2">
+              <p
+                v-if="plan.description"
+                class="text-xs text-ink-muted mt-0.5 line-clamp-2"
+              >
                 {{ plan.description }}
               </p>
             </div>
-            <SBadge :tone="statusTone(plan.status)" variant="soft" dot>
+            <SBadge
+              :tone="statusTone(plan.status)"
+              variant="soft"
+              dot
+            >
               {{ plan.status }}
             </SBadge>
           </div>
           <div class="mt-3 flex items-center gap-3 text-2xs text-ink-muted">
-            <span
-              >{{ plan.participants.length }} participant{{
-                plan.participants.length !== 1 ? 's' : ''
-              }}</span
-            >
+            <span>{{ plan.participants.length }} participant{{
+              plan.participants.length !== 1 ? 's' : ''
+            }}</span>
             <span>·</span>
             <span>{{ plan.days.length }} day{{ plan.days.length !== 1 ? 's' : '' }}</span>
-            <span v-if="plan.isPublic" class="ml-auto">Public</span>
+            <span
+              v-if="plan.isPublic"
+              class="ml-auto"
+            >Public</span>
           </div>
         </SCard>
       </div>
     </SPageContainer>
 
-    <SModal :open="showCreate" title="New reading plan" size="md" @close="showCreate = false">
+    <SModal
+      :open="showCreate"
+      title="New reading plan"
+      size="md"
+      @close="showCreate = false"
+    >
       <div class="space-y-3">
-        <SInput v-model="title" label="Title" placeholder="Gospels in 30 days" required />
+        <SInput
+          v-model="title"
+          label="Title"
+          placeholder="Gospels in 30 days"
+          required
+        />
         <STextarea
           v-model="description"
           label="Description"
@@ -166,8 +212,20 @@
         />
       </div>
       <template #footer>
-        <SButton variant="secondary" size="sm" @click="showCreate = false"> Cancel </SButton>
-        <SButton size="sm" :loading="plans.isSaving" @click="createPlan"> Create plan </SButton>
+        <SButton
+          variant="secondary"
+          size="sm"
+          @click="showCreate = false"
+        >
+          Cancel
+        </SButton>
+        <SButton
+          size="sm"
+          :loading="plans.isSaving"
+          @click="createPlan"
+        >
+          Create plan
+        </SButton>
       </template>
     </SModal>
   </div>

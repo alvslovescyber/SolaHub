@@ -37,7 +37,11 @@
 
 <template>
   <div class="flex flex-col">
-    <SLabel v-if="label" :for="inputId" :required="required">
+    <SLabel
+      v-if="label"
+      :for="inputId"
+      :required="required"
+    >
       {{ label }}
     </SLabel>
     <div class="relative">
@@ -75,7 +79,7 @@
         @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
         @blur="emit('blur', $event)"
         @focus="emit('focus', $event)"
-      />
+      >
       <span
         v-if="$slots.trailing"
         class="absolute inset-y-0 right-0 flex items-center pr-2.5 text-ink-muted"
@@ -83,7 +87,10 @@
         <slot name="trailing" />
       </span>
     </div>
-    <SHelperText v-if="error" error>
+    <SHelperText
+      v-if="error"
+      error
+    >
       {{ error }}
     </SHelperText>
     <SHelperText v-else-if="helper">

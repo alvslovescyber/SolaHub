@@ -100,11 +100,17 @@
       <template #actions>
         <SDropdownMenu placement="bottom-end">
           <template #trigger>
-            <SIconButton label="Reading appearance" size="sm">
+            <SIconButton
+              label="Reading appearance"
+              size="sm"
+            >
               <span class="text-[12px] font-medium tracking-tight px-0.5 font-sans">Aa</span>
             </SIconButton>
           </template>
-          <div class="w-56 p-3 space-y-3" @click.stop>
+          <div
+            class="w-56 p-3 space-y-3"
+            @click.stop
+          >
             <div>
               <p class="text-2xs font-medium uppercase tracking-wide text-ink-subtle mb-1.5">
                 Text size
@@ -172,13 +178,25 @@
                 Background
               </p>
               <div class="flex gap-1 flex-wrap">
-                <SButton size="sm" variant="secondary" @click="biblePrefs.setReaderPaper('white')">
+                <SButton
+                  size="sm"
+                  variant="secondary"
+                  @click="biblePrefs.setReaderPaper('white')"
+                >
                   White
                 </SButton>
-                <SButton size="sm" variant="secondary" @click="biblePrefs.setReaderPaper('sepia')">
+                <SButton
+                  size="sm"
+                  variant="secondary"
+                  @click="biblePrefs.setReaderPaper('sepia')"
+                >
                   Sepia
                 </SButton>
-                <SButton size="sm" variant="secondary" @click="biblePrefs.setReaderPaper('muted')">
+                <SButton
+                  size="sm"
+                  variant="secondary"
+                  @click="biblePrefs.setReaderPaper('muted')"
+                >
                   Soft grey
                 </SButton>
               </div>
@@ -193,7 +211,11 @@
         >
           <BookOpenText class="h-4 w-4" />
         </SIconButton>
-        <SIconButton label="Search Bible" size="sm" @click="showSearch = !showSearch">
+        <SIconButton
+          label="Search Bible"
+          size="sm"
+          @click="showSearch = !showSearch"
+        >
           <Search class="h-4 w-4" />
         </SIconButton>
       </template>
@@ -211,12 +233,20 @@
             <p class="text-2xs font-medium uppercase tracking-wider text-ink-subtle">
               Books · {{ books.length }}
             </p>
-            <SIconButton v-if="isCompact" label="Hide" size="xs" @click="showBookList = false">
+            <SIconButton
+              v-if="isCompact"
+              label="Hide"
+              size="xs"
+              @click="showBookList = false"
+            >
               <X class="h-3.5 w-3.5" />
             </SIconButton>
           </header>
           <div class="flex-1 overflow-y-auto py-2">
-            <template v-for="(group, label) in groupedBooks" :key="label">
+            <template
+              v-for="(group, label) in groupedBooks"
+              :key="label"
+            >
               <p
                 class="sticky top-0 z-10 px-3 py-1.5 text-2xs font-medium uppercase tracking-wider text-ink-subtle bg-surface-base/85 backdrop-blur"
               >
@@ -241,8 +271,7 @@
                       ? 'text-brand-600'
                       : 'text-ink-subtle group-hover:text-ink-muted',
                   ]"
-                  >{{ book.chapters }}</span
-                >
+                >{{ book.chapters }}</span>
               </button>
             </template>
           </div>
@@ -265,7 +294,10 @@
               <template #leading>
                 <Search class="h-3.5 w-3.5" />
               </template>
-              <template v-if="searchInput" #trailing>
+              <template
+                v-if="searchInput"
+                #trailing
+              >
                 <button
                   type="button"
                   class="text-ink-muted hover:text-ink-strong"
@@ -277,7 +309,10 @@
               </template>
             </SInput>
 
-            <div v-if="isLoadingSearch" class="mt-3 flex justify-center">
+            <div
+              v-if="isLoadingSearch"
+              class="mt-3 flex justify-center"
+            >
               <SSpinner size="sm" />
             </div>
 
@@ -344,7 +379,10 @@
         </div>
 
         <div class="flex-1 overflow-y-auto bg-surface-base">
-          <div v-if="isLoadingChapter" class="flex justify-center pt-16">
+          <div
+            v-if="isLoadingChapter"
+            class="flex justify-center pt-16"
+          >
             <SSpinner />
           </div>
 
@@ -376,13 +414,15 @@
                 ]"
                 @click="selectVerse(verse.verse)"
               >
-                <sup>{{ verse.verse }}</sup
-                >{{ verse.text }}{{ ' ' }}
+                <sup>{{ verse.verse }}</sup>{{ verse.text }}{{ ' ' }}
               </span>
             </p>
           </article>
 
-          <div v-else class="text-center text-ink-muted pt-16 text-sm">
+          <div
+            v-else
+            class="text-center text-ink-muted pt-16 text-sm"
+          >
             Choose a book of Scripture to begin reading
           </div>
         </div>

@@ -59,7 +59,11 @@
 </script>
 
 <template>
-  <STooltip v-if="collapsed" :label="label" placement="right">
+  <STooltip
+    v-if="collapsed"
+    :label="label"
+    placement="right"
+  >
     <button
       type="button"
       :class="itemClass"
@@ -67,7 +71,11 @@
       :aria-current="active ? 'page' : undefined"
       @click="go"
     >
-      <component :is="icon" :class="iconClass" :stroke-width="2" />
+      <component
+        :is="icon"
+        :class="iconClass"
+        :stroke-width="2"
+      />
     </button>
   </STooltip>
   <button
@@ -81,10 +89,18 @@
       class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors"
       :class="active ? 's-sidebar-item-active-icon-ring' : ''"
     >
-      <component :is="icon" :class="iconClass" :stroke-width="2" />
+      <component
+        :is="icon"
+        :class="iconClass"
+        :stroke-width="2"
+      />
     </span>
     <span class="truncate flex-1 text-left">{{ label }}</span>
-    <SBadge v-if="badge !== undefined" tone="neutral" variant="soft">
+    <SBadge
+      v-if="badge !== undefined"
+      tone="neutral"
+      variant="soft"
+    >
       {{ badge }}
     </SBadge>
   </button>

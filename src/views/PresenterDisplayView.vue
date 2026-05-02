@@ -32,8 +32,15 @@
       biblePrefs.presenterRootClass,
     ]"
   >
-    <Transition name="fade" mode="out-in">
-      <div v-if="slide" :key="slide.verseRef" class="text-center px-12 max-w-5xl">
+    <Transition
+      name="fade"
+      mode="out-in"
+    >
+      <div
+        v-if="slide"
+        :key="slide.verseRef"
+        class="text-center px-12 max-w-5xl"
+      >
         <p
           class="presenter-slide text-white"
           :style="{ fontSize: biblePrefs.presenterVerseFontSize }"
@@ -48,7 +55,12 @@
           {{ slide.book }} {{ slide.chapter }}:{{ slide.verse }}
         </p>
       </div>
-      <div v-else class="text-slate-600 text-xl">Waiting for presenter…</div>
+      <div
+        v-else
+        class="text-slate-600 text-xl"
+      >
+        Waiting for presenter…
+      </div>
     </Transition>
   </div>
 </template>

@@ -17,7 +17,10 @@
 </script>
 
 <template>
-  <SDropdownMenu placement="top-start" full-width>
+  <SDropdownMenu
+    placement="top-start"
+    full-width
+  >
     <template #trigger>
       <button
         type="button"
@@ -26,13 +29,24 @@
           'hover:bg-black/[0.04] dark:hover:bg-white/[0.06]',
           collapsed
             ? 'justify-center p-1.5 rounded-lg'
-            : 'px-3 py-2.5 rounded-none bg-[#eef1ec]/90 dark:bg-white/[0.04]',
+            : 'px-3 py-2.5 rounded-none dark:bg-white/[0.04]',
         ]"
       >
-        <SAvatar :name="name" :src="avatarSrc" size="sm" rounded="md" />
-        <span v-if="!collapsed" class="flex-1 min-w-0 leading-tight text-left">
+        <SAvatar
+          :name="name"
+          :src="avatarSrc"
+          size="sm"
+          rounded="md"
+        />
+        <span
+          v-if="!collapsed"
+          class="flex-1 min-w-0 leading-tight text-left"
+        >
           <span class="block text-[13px] font-medium text-ink-strong truncate">{{ name }}</span>
-          <span v-if="subtitle" class="block text-[11px] text-ink-muted truncate">{{
+          <span
+            v-if="subtitle"
+            class="block text-[11px] text-ink-muted truncate"
+          >{{
             subtitle
           }}</span>
         </span>
@@ -46,22 +60,34 @@
 
     <SDropdownItem to="/settings">
       <template #leading>
-        <User class="h-[13px] w-[13px] opacity-90" stroke-width="2" />
+        <User
+          class="h-[13px] w-[13px] opacity-90"
+          stroke-width="2"
+        />
       </template>
       Profile
     </SDropdownItem>
     <SDropdownItem to="/settings">
       <template #leading>
-        <Settings class="h-[13px] w-[13px] opacity-90" stroke-width="2" />
+        <Settings
+          class="h-[13px] w-[13px] opacity-90"
+          stroke-width="2"
+        />
       </template>
       Settings
     </SDropdownItem>
     <div class="my-1">
       <SDivider />
     </div>
-    <SDropdownItem danger @click="emit('logout')">
+    <SDropdownItem
+      danger
+      @click="emit('logout')"
+    >
       <template #leading>
-        <LogOut class="h-[13px] w-[13px]" stroke-width="2" />
+        <LogOut
+          class="h-[13px] w-[13px]"
+          stroke-width="2"
+        />
       </template>
       Sign out
     </SDropdownItem>

@@ -20,7 +20,10 @@
 </script>
 
 <template>
-  <label :for="inputId" class="flex items-start gap-2.5 cursor-pointer select-none">
+  <label
+    :for="inputId"
+    class="flex items-start gap-2.5 cursor-pointer select-none"
+  >
     <span class="relative inline-flex shrink-0 mt-0.5">
       <input
         :id="inputId"
@@ -30,7 +33,7 @@
         :disabled="disabled"
         class="peer sr-only"
         @change="emit('update:modelValue', value)"
-      />
+      >
       <span
         :class="[
           'inline-flex h-4 w-4 items-center justify-center rounded-full border transition-colors',
@@ -39,12 +42,21 @@
           disabled && 'opacity-50',
         ]"
       >
-        <span v-if="checked" class="h-2 w-2 rounded-full bg-brand-500" />
+        <span
+          v-if="checked"
+          class="h-2 w-2 rounded-full bg-brand-500"
+        />
       </span>
     </span>
-    <span v-if="label || description" class="flex flex-col leading-tight">
+    <span
+      v-if="label || description"
+      class="flex flex-col leading-tight"
+    >
       <span class="text-sm text-ink-strong">{{ label }}</span>
-      <span v-if="description" class="text-xs text-ink-muted mt-0.5">{{ description }}</span>
+      <span
+        v-if="description"
+        class="text-xs text-ink-muted mt-0.5"
+      >{{ description }}</span>
     </span>
   </label>
 </template>
