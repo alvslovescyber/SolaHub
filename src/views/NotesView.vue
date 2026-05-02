@@ -130,16 +130,9 @@
 
 <template>
   <div class="flex flex-col flex-1 min-w-0">
-    <STopBar
-      title="Notes"
-      subtitle="Verse-by-verse reflections and study notes"
-    >
+    <STopBar title="Notes" subtitle="Verse-by-verse reflections and study notes">
       <template #actions>
-        <SButton
-          size="sm"
-          variant="primary"
-          @click="showCreate = true"
-        >
+        <SButton size="sm" variant="primary" @click="showCreate = true">
           <template #leading>
             <Plus class="h-3.5 w-3.5" />
           </template>
@@ -149,30 +142,23 @@
     </STopBar>
 
     <div class="px-6 pt-4 shrink-0 max-w-2xl">
-      <SInput
-        v-model="search"
-        size="sm"
-        placeholder="Search notes, verses, or tags"
-      >
+      <SInput v-model="search" size="sm" placeholder="Search notes, verses, or tags">
         <template #leading>
           <Search class="h-3.5 w-3.5" />
         </template>
       </SInput>
     </div>
 
-    <SPageContainer
-      max="lg"
-      padding="md"
-    >
-      <SSpinner
-        v-if="notes.isLoading"
-        size="sm"
-      />
+    <SPageContainer max="lg" padding="md">
+      <SSpinner v-if="notes.isLoading" size="sm" />
 
-      <SCard
-        v-else-if="filtered.length === 0"
-        padding="none"
-      >
+      <SCard v-else-if="notes.error" padding="md">
+        <p class="text-sm text-red-600 dark:text-red-400">
+          {{ notes.error }}
+        </p>
+      </SCard>
+
+      <SCard v-else-if="filtered.length === 0" padding="none">
         <SEmptyState
           tone="sun"
           title="No notes yet"
@@ -182,26 +168,13 @@
             <StickyNote class="h-5 w-5" />
           </template>
           <template #actions>
-            <SButton
-              size="sm"
-              @click="showCreate = true"
-            >
-              Create your first note
-            </SButton>
+            <SButton size="sm" @click="showCreate = true"> Create your first note </SButton>
           </template>
         </SEmptyState>
       </SCard>
 
-      <div
-        v-else
-        class="space-y-2.5"
-      >
-        <SCard
-          v-for="note in filtered"
-          :key="note.id"
-          padding="md"
-          class="group"
-        >
+      <div v-else class="space-y-2.5">
+        <SCard v-for="note in filtered" :key="note.id" padding="md" class="group">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
               <p
@@ -212,71 +185,46 @@
               <p class="mt-1.5 text-sm text-ink leading-relaxed whitespace-pre-wrap">
                 {{ note.content }}
               </p>
-              <div
-                v-if="note.tags.length > 0"
-                class="mt-2 flex flex-wrap gap-1"
-              >
-                <SChip
-                  v-for="tag in note.tags"
-                  :key="tag"
-                  tone="brand"
-                >
+              <div v-if="note.tags.length > 0" class="mt-2 flex flex-wrap gap-1">
+                <SChip v-for="tag in note.tags" :key="tag" tone="brand">
                   {{ tag }}
                 </SChip>
               </div>
             </div>
-            <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-              <SIconButton
-                size="sm"
-                label="Edit note"
-                @click="openEdit(note)"
-              >
+            <div
+              class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+            >
+              <SIconButton size="sm" label="Edit note" @click="openEdit(note)">
                 <Pencil class="h-3.5 w-3.5 text-ink-muted" />
               </SIconButton>
-              <SIconButton
-                size="sm"
-                label="Delete note"
-                @click="confirmDelete(note.id)"
-              >
+              <SIconButton size="sm" label="Delete note" @click="confirmDelete(note.id)">
                 <Trash2 class="h-3.5 w-3.5 text-red-500" />
               </SIconButton>
             </div>
           </div>
           <p class="mt-2 text-2xs text-ink-subtle">
             {{ new Date(note.updatedAt).toLocaleDateString() }}
-            <span
-              v-if="note.isShared"
-              class="ml-2 text-emerald-500 font-medium"
-            >Shared</span>
+            <span v-if="note.isShared" class="ml-2 text-emerald-500 font-medium">Shared</span>
           </p>
         </SCard>
       </div>
     </SPageContainer>
 
     <!-- Create modal -->
-    <SModal
-      :open="showCreate"
-      title="New note"
-      size="md"
-      @close="showCreate = false"
-    >
+    <SModal :open="showCreate" title="New note" size="md" @close="showCreate = false">
       <div class="space-y-3">
         <div>
-          <SInput
-            v-model="newVerseRef"
-            label="Verse reference"
-            placeholder="JHN.3.16"
-            required
-          />
-          <p
-            v-if="newVerseRefError"
-            class="mt-1 text-xs text-red-600 dark:text-red-400"
-          >{{ newVerseRefError }}</p>
-          <p
-            v-else
-            class="mt-1 text-[11px] text-ink-subtle"
-          >
-            Format: <code class="font-mono bg-surface-canvas px-0.5 rounded text-[10px]">BOOK.CHAPTER</code> or <code class="font-mono bg-surface-canvas px-0.5 rounded text-[10px]">BOOK.CHAPTER.VERSE</code>
+          <SInput v-model="newVerseRef" label="Verse reference" placeholder="JHN.3.16" required />
+          <p v-if="newVerseRefError" class="mt-1 text-xs text-red-600 dark:text-red-400">
+            {{ newVerseRefError }}
+          </p>
+          <p v-else class="mt-1 text-[11px] text-ink-subtle">
+            Format:
+            <code class="font-mono bg-surface-canvas px-0.5 rounded text-[10px]">BOOK.CHAPTER</code>
+            or
+            <code class="font-mono bg-surface-canvas px-0.5 rounded text-[10px]"
+              >BOOK.CHAPTER.VERSE</code
+            >
           </p>
         </div>
         <STextarea
@@ -286,39 +234,20 @@
           :rows="5"
           required
         />
-        <SInput
-          v-model="newTags"
-          label="Tags"
-          placeholder="faith, grace (comma separated)"
-        />
+        <SInput v-model="newTags" label="Tags" placeholder="faith, grace (comma separated)" />
       </div>
       <template #footer>
-        <SButton
-          variant="secondary"
-          size="sm"
-          @click="showCreate = false"
-        >
-          Cancel
-        </SButton>
-        <SButton
-          size="sm"
-          :loading="notes.isSaving"
-          @click="createNote"
-        >
-          Save note
-        </SButton>
+        <SButton variant="secondary" size="sm" @click="showCreate = false"> Cancel </SButton>
+        <SButton size="sm" :loading="notes.isSaving" @click="createNote"> Save note </SButton>
       </template>
     </SModal>
 
     <!-- Edit modal -->
-    <SModal
-      :open="!!editNote"
-      title="Edit note"
-      size="md"
-      @close="closeEdit"
-    >
+    <SModal :open="!!editNote" title="Edit note" size="md" @close="closeEdit">
       <div class="space-y-3">
-        <p class="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">
+        <p
+          class="text-xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300"
+        >
           {{ editNote?.verseRef }}
         </p>
         <STextarea
@@ -328,20 +257,10 @@
           :rows="5"
           required
         />
-        <SInput
-          v-model="editTags"
-          label="Tags"
-          placeholder="faith, grace (comma separated)"
-        />
+        <SInput v-model="editTags" label="Tags" placeholder="faith, grace (comma separated)" />
       </div>
       <template #footer>
-        <SButton
-          variant="secondary"
-          size="sm"
-          @click="closeEdit"
-        >
-          Cancel
-        </SButton>
+        <SButton variant="secondary" size="sm" @click="closeEdit"> Cancel </SButton>
         <SButton
           size="sm"
           :loading="notes.isSaving"
@@ -360,10 +279,12 @@
       size="sm"
       @close="pendingDeleteId = null"
     >
-      <p class="text-sm text-ink-muted">This note will be permanently deleted. This cannot be undone.</p>
+      <p class="text-sm text-ink-muted">
+        This note will be permanently deleted. This cannot be undone.
+      </p>
       <template #footer>
-        <SButton variant="secondary" size="sm" @click="pendingDeleteId = null">Cancel</SButton>
-        <SButton variant="danger" size="sm" @click="executeDelete">Delete</SButton>
+        <SButton variant="secondary" size="sm" @click="pendingDeleteId = null"> Cancel </SButton>
+        <SButton variant="danger" size="sm" @click="executeDelete"> Delete </SButton>
       </template>
     </SModal>
   </div>

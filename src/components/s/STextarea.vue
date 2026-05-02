@@ -34,11 +34,7 @@
 
 <template>
   <div class="flex flex-col">
-    <SLabel
-      v-if="label"
-      :for="textareaId"
-      :required="required"
-    >
+    <SLabel v-if="label" :for="textareaId" :required="required">
       {{ label }}
     </SLabel>
     <textarea
@@ -59,10 +55,7 @@
       ]"
       @input="onInput"
     />
-    <SHelperText
-      v-if="error"
-      error
-    >
+    <SHelperText v-if="error" error>
       {{ error }}
     </SHelperText>
     <SHelperText v-else-if="helper">

@@ -31,11 +31,7 @@
 
 <template>
   <div class="flex flex-col">
-    <SLabel
-      v-if="label"
-      :for="selectId"
-      :required="required"
-    >
+    <SLabel v-if="label" :for="selectId" :required="required">
       {{ label }}
     </SLabel>
     <div class="relative">
@@ -55,20 +51,10 @@
         ]"
         @change="emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
       >
-        <option
-          v-if="placeholder"
-          value=""
-          disabled
-          :selected="modelValue == null"
-        >
+        <option v-if="placeholder" value="" disabled :selected="modelValue == null">
           {{ placeholder }}
         </option>
-        <option
-          v-for="opt in options"
-          :key="opt.value"
-          :value="opt.value"
-          :disabled="opt.disabled"
-        >
+        <option v-for="opt in options" :key="opt.value" :value="opt.value" :disabled="opt.disabled">
           {{ opt.label }}
         </option>
       </select>
@@ -76,10 +62,7 @@
         class="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-muted pointer-events-none"
       />
     </div>
-    <SHelperText
-      v-if="error"
-      error
-    >
+    <SHelperText v-if="error" error>
       {{ error }}
     </SHelperText>
     <SHelperText v-else-if="helper">

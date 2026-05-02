@@ -82,7 +82,11 @@ internal sealed class RegisterCommandHandler(
         if (tokenResult.IsFailure)
             return tokenResult.Error;
 
-        await userRepository.AddAsync(user, ct);
+        if (!await userRepository.TryAddAsync(user, ct))
+            return Error.Conflict(
+                "Auth.EmailTaken",
+                "An account with this email already exists."
+            );
 
         return new AuthResponse(
             accessToken,

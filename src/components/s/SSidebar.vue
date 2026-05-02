@@ -85,7 +85,8 @@
             <SBrandMark :size="20" />
             <span
               class="text-[13px] font-medium font-sans text-ink-strong tracking-tight select-none truncate"
-            >SolaHub</span>
+              >SolaHub</span
+            >
           </RouterLink>
 
           <!-- Notification bell -->
@@ -113,10 +114,7 @@
             aria-label="Collapse sidebar"
             @click="toggleSidebar"
           >
-            <ChevronsLeft
-              class="h-[15px] w-[15px]"
-              stroke-width="2"
-            />
+            <ChevronsLeft class="h-[15px] w-[15px]" stroke-width="2" />
           </button>
         </template>
 
@@ -132,11 +130,7 @@
           </RouterLink>
 
           <!-- Notification bell collapsed -->
-          <STooltip
-            label="Notifications"
-            placement="right"
-            data-no-drag
-          >
+          <STooltip label="Notifications" placement="right" data-no-drag>
             <button
               type="button"
               :class="[
@@ -147,10 +141,7 @@
               ]"
               @click="notifOpen = !notifOpen"
             >
-              <Bell
-                class="h-4 w-4"
-                stroke-width="2"
-              />
+              <Bell class="h-4 w-4" stroke-width="2" />
             </button>
           </STooltip>
 
@@ -168,47 +159,23 @@
             aria-label="Expand sidebar"
             @click="toggleSidebar"
           >
-            <ChevronsRight
-              class="h-[15px] w-[15px]"
-              stroke-width="2"
-            />
+            <ChevronsRight class="h-[15px] w-[15px]" stroke-width="2" />
           </button>
         </template>
       </div>
 
-      <div
-        v-if="!collapsed"
-        class="px-2 pb-2"
-        data-no-drag
-      >
+      <div v-if="!collapsed" class="px-2 pb-2" data-no-drag>
         <SSearchInput @click="openPalette" />
       </div>
-      <div
-        v-else
-        class="flex justify-center px-0"
-        data-no-drag
-      >
-        <SIconButton
-          size="sm"
-          :label="`Search (${searchKbd})`"
-          @click="openPalette"
-        >
-          <Search
-            class="h-4 w-4"
-            stroke-width="2"
-          />
+      <div v-else class="flex justify-center px-0" data-no-drag>
+        <SIconButton size="sm" :label="`Search (${searchKbd})`" @click="openPalette">
+          <Search class="h-4 w-4" stroke-width="2" />
         </SIconButton>
       </div>
     </div>
 
-    <nav
-      class="flex-1 overflow-y-auto pb-2 min-h-0 flex flex-col gap-1"
-      data-no-drag
-    >
-      <SSidebarGroup
-        label="Study"
-        :collapsed="collapsed"
-      >
+    <nav class="flex-1 overflow-y-auto pb-2 min-h-0 flex flex-col gap-1" data-no-drag>
+      <SSidebarGroup label="Study" :collapsed="collapsed">
         <SSidebarItem
           :icon="Home"
           label="Dashboard"
@@ -223,16 +190,8 @@
         />
       </SSidebarGroup>
 
-      <SSidebarGroup
-        label="Scripture"
-        :collapsed="collapsed"
-      >
-        <SSidebarItem
-          :icon="BookOpen"
-          label="Bible"
-          route-name="bible"
-          :collapsed="collapsed"
-        />
+      <SSidebarGroup label="Scripture" :collapsed="collapsed">
+        <SSidebarItem :icon="BookOpen" label="Bible" route-name="bible" :collapsed="collapsed" />
         <SSidebarItem
           :icon="ListChecks"
           label="Plans"
@@ -240,19 +199,12 @@
           :collapsed="collapsed"
           :badge="activePlansCount"
         />
-        <SSidebarItem
-          :icon="StickyNote"
-          label="Notes"
-          route-name="notes"
-          :collapsed="collapsed"
-        />
+        <SSidebarItem :icon="StickyNote" label="Notes" route-name="notes" :collapsed="collapsed" />
       </SSidebarGroup>
 
-      <SSidebarGroup
-        label="Sunday"
-        :collapsed="collapsed"
-      >
+      <SSidebarGroup label="Sunday" :collapsed="collapsed">
         <SSidebarItem
+          v-if="auth.isPresenter"
           :icon="Monitor"
           label="Presenter"
           route-name="presenter"
@@ -285,8 +237,5 @@
     </div>
   </aside>
 
-  <SNotificationPanel
-    :open="notifOpen"
-    @close="notifOpen = false"
-  />
+  <SNotificationPanel :open="notifOpen" @close="notifOpen = false" />
 </template>

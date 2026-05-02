@@ -51,6 +51,12 @@ internal sealed class VerseNoteConfiguration : IEntityTypeConfiguration<VerseNot
         builder.HasIndex(n => n.UserId);
         builder.HasIndex(n => new { n.IsShared }).HasFilter("is_shared = true");
 
+        builder
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(n => n.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.Ignore(n => n.DomainEvents);
     }
 }

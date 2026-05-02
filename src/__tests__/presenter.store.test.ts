@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { usePresenterStore } from '@/stores/presenter.store'
 import type { PresenterSlide, ScriptureSlide, SongSlide } from '@/types/presenter.types'
 
@@ -234,7 +234,7 @@ describe('presenter.store', () => {
     it('closeDisplayWindow clears overlayOpen', async () => {
       const store = usePresenterStore()
       await store.openDisplayWindow()
-      store.closeDisplayWindow()
+      await store.closeDisplayWindow()
       expect(store.session.overlayOpen).toBe(false)
     })
 

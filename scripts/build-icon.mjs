@@ -97,10 +97,11 @@ async function main() {
   await writeFile(pngPathSrc, final1024)
   await writeFile(svgPathSrc, sunOnlySvg)
 
-  console.log('✓ wrote', pngPathTauri)
-  console.log('✓ wrote', pngPathSrc)
-  console.log('✓ wrote', svgPathSrc)
-  console.log('\nNext: npx tauri icon', pngPathTauri)
+  process.stdout.write(
+    [`✓ wrote ${pngPathTauri}`, `✓ wrote ${pngPathSrc}`, `✓ wrote ${svgPathSrc}`, '', `Next: npx tauri icon ${pngPathTauri}`, ''].join(
+      '\n'
+    )
+  )
 }
 
 main().catch((err) => {

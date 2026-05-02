@@ -16,5 +16,5 @@
     alt="SolaHub"
     class="block select-none"
     draggable="false"
-  >
+  />
 </template>

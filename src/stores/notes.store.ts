@@ -43,6 +43,13 @@ export const useNotesStore = defineStore('notes', () => {
     lastFetchedAt = 0
   }
 
+  function reset(): void {
+    notes.value = []
+    activeNoteId.value = null
+    error.value = null
+    lastFetchedAt = 0
+  }
+
   async function create(payload: CreateNotePayload): Promise<VerseNote> {
     isSaving.value = true
     error.value = null
@@ -105,5 +112,6 @@ export const useNotesStore = defineStore('notes', () => {
     remove,
     setActiveNote,
     invalidateCache,
+    reset,
   }
 })

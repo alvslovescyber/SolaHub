@@ -50,14 +50,25 @@
   const router = useRouter()
   const toast = useSToast()
 
-  onMounted(() => plans.fetchPlan(props.id))
+  onMounted(() => {
+    void plans.fetchPlan(props.id)
+  })
+
+  watch(
+    () => props.id,
+    (id) => {
+      void plans.fetchPlan(id)
+    }
+  )
 
   const plan = computed(() => plans.activePlan)
   const myParticipant = computed(() => {
     const uid = auth.user?.id?.toLowerCase()
     return plan.value?.participants.find((p) => p.userId.toLowerCase() === uid)
   })
-  const isOwner = computed(() => plan.value?.createdBy?.toLowerCase() === auth.user?.id?.toLowerCase())
+  const isOwner = computed(
+    () => plan.value?.createdBy?.toLowerCase() === auth.user?.id?.toLowerCase()
+  )
   const isDraft = computed(() => plan.value?.status === 'Draft')
   const isActive = computed(() => plan.value?.status === 'Active')
   const isParticipant = computed(() => !!myParticipant.value)
@@ -74,18 +85,25 @@
   })
 
   // ── Presentation (emoji/colour) ──────────────────────────────────
-  const presentation = computed(() => (plan.value ? getPlanPresentation(plan.value.id) : { emoji: '📖', colorId: 'brand' }))
+  const presentation = computed(() =>
+    plan.value ? getPlanPresentation(plan.value.id) : { emoji: '📖', colorId: 'brand' }
+  )
   const accentColor = computed(() => getPlanAccentColor(presentation.value.colorId))
 
   // ── Confirm dialog state ─────────────────────────────────────────────────
-  const confirmDialog = ref<{ open: boolean; title: string; body: string; onConfirm: () => void }>({
+  const confirmDialog = ref<{
+    open: boolean
+    title: string
+    body: string
+    onConfirm: () => void | Promise<void>
+  }>({
     open: false,
     title: '',
     body: '',
     onConfirm: () => {},
   })
 
-  function openConfirm(title: string, body: string, onConfirm: () => void) {
+  function openConfirm(title: string, body: string, onConfirm: () => void | Promise<void>) {
     confirmDialog.value = { open: true, title, body, onConfirm }
   }
 
@@ -93,8 +111,8 @@
     confirmDialog.value.open = false
   }
 
-  function runConfirm() {
-    confirmDialog.value.onConfirm()
+  async function runConfirm() {
+    await confirmDialog.value.onConfirm()
     closeConfirm()
   }
 
@@ -154,7 +172,9 @@
     showAddDay.value = true
   }
 
-  const canAddDay = computed(() => dayTitle.value.trim().length > 0 && addedPassages.value.length > 0)
+  const canAddDay = computed(
+    () => dayTitle.value.trim().length > 0 && addedPassages.value.length > 0
+  )
 
   async function addDay() {
     if (!canAddDay.value) return
@@ -184,7 +204,7 @@
     }
   }
 
-  async function archivePlan() {
+  function archivePlan() {
     openConfirm(
       'Archive plan?',
       'Participants will no longer be able to record progress.',
@@ -199,7 +219,7 @@
     )
   }
 
-  async function deletePlan() {
+  function deletePlan() {
     openConfirm(
       'Delete reading plan?',
       'This cannot be undone. All days and participant progress will be lost.',
@@ -234,9 +254,12 @@
 
   // ── Invite ────────────────────────────────────────────────────────
   function copyInviteLink() {
-    const link = `${window.location.origin}/plans/join/${props.id}`
-    navigator.clipboard.writeText(link)
-    toast.success('Invite link copied', 'Share it with anyone who has SolaHub installed — they can tap it to join.')
+    const link = `${window.location.origin}/#/plans/${props.id}`
+    void navigator.clipboard.writeText(link)
+    toast.success(
+      'Invite link copied',
+      'Share it with anyone who has SolaHub installed — they can tap it to join.'
+    )
   }
 
   function dayState(dayNumber: number): 'done' | 'current' | 'upcoming' {
@@ -269,7 +292,9 @@
   // ── Circular SVG progress ring ────────────────────────────────────
   const ringRadius = 36
   const ringCircumference = 2 * Math.PI * ringRadius
-  const ringDashoffset = computed(() => ringCircumference - (progressPct.value / 100) * ringCircumference)
+  const ringDashoffset = computed(
+    () => ringCircumference - (progressPct.value / 100) * ringCircumference
+  )
 </script>
 
 <template>
@@ -293,7 +318,9 @@
             :loading="plans.isSaving"
             @click="publishPlan"
           >
-            <template #leading><Zap class="h-3.5 w-3.5" /></template>
+            <template #leading>
+              <Zap class="h-3.5 w-3.5" />
+            </template>
             Publish plan
           </SButton>
           <SButton
@@ -303,11 +330,15 @@
             :loading="plans.isSaving"
             @click="archivePlan"
           >
-            <template #leading><Archive class="h-3.5 w-3.5" /></template>
+            <template #leading>
+              <Archive class="h-3.5 w-3.5" />
+            </template>
             Archive
           </SButton>
           <SButton variant="ghost" size="sm" @click="deletePlan">
-            <template #leading><Trash2 class="h-3.5 w-3.5 text-red-500" /></template>
+            <template #leading>
+              <Trash2 class="h-3.5 w-3.5 text-red-500" />
+            </template>
             Delete
           </SButton>
         </template>
@@ -358,7 +389,9 @@
 
               <!-- Plan info -->
               <div class="flex-1 min-w-0">
-                <h1 class="text-xl font-bold text-ink-strong truncate">{{ plan.title }}</h1>
+                <h1 class="text-xl font-bold text-ink-strong truncate">
+                  {{ plan.title }}
+                </h1>
                 <p v-if="plan.description" class="text-sm text-ink-muted mt-0.5 line-clamp-2">
                   {{ plan.description }}
                 </p>
@@ -380,7 +413,11 @@
                   <span>{{ plan.days.length }} day{{ plan.days.length !== 1 ? 's' : '' }}</span>
                   <span class="text-line">·</span>
                   <Users class="h-3.5 w-3.5 shrink-0" />
-                  <span>{{ plan.participants.length }} participant{{ plan.participants.length !== 1 ? 's' : '' }}</span>
+                  <span
+                    >{{ plan.participants.length }} participant{{
+                      plan.participants.length !== 1 ? 's' : ''
+                    }}</span
+                  >
                   <template v-if="isParticipant">
                     <span class="text-line">·</span>
                     <TrendingUp class="h-3.5 w-3.5 shrink-0" />
@@ -397,7 +434,9 @@
                   size="sm"
                   @click="joinPlan"
                 >
-                  <template #leading><Star class="h-3.5 w-3.5" /></template>
+                  <template #leading>
+                    <Star class="h-3.5 w-3.5" />
+                  </template>
                   Join plan
                 </SButton>
                 <SButton
@@ -406,7 +445,9 @@
                   size="sm"
                   @click="copyInviteLink"
                 >
-                  <template #leading><Link class="h-3.5 w-3.5" /></template>
+                  <template #leading>
+                    <Link class="h-3.5 w-3.5" />
+                  </template>
                   Invite
                 </SButton>
               </div>
@@ -417,15 +458,10 @@
         <!-- ── CONTENT AREA ───────────────────────────────────────────── -->
         <div class="max-w-4xl mx-auto px-6 py-6">
           <div class="flex gap-6 items-start">
-
             <!-- ── LEFT COLUMN ────────────────────────────────────────── -->
             <div class="flex-1 min-w-0 flex flex-col gap-4">
-
               <!-- Today's reading card (active participant with a next day) -->
-              <SCard
-                v-if="isActive && isParticipant && nextDay"
-                padding="md"
-              >
+              <SCard v-if="isActive && isParticipant && nextDay" padding="md">
                 <div
                   class="absolute inset-0 rounded-xl pointer-events-none"
                   :style="{ boxShadow: `inset 0 0 0 2px ${accentColor.hex}40` }"
@@ -441,14 +477,16 @@
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
                       Today's reading · Day {{ nextDay.dayNumber }}
                     </p>
-                    <p class="text-sm font-semibold text-ink-strong mt-0.5">{{ nextDay.title }}</p>
+                    <p class="text-sm font-semibold text-ink-strong mt-0.5">
+                      {{ nextDay.title }}
+                    </p>
                     <div class="flex flex-wrap gap-1 mt-1.5">
                       <span
-                        v-for="ref in nextDay.verseRefs"
-                        :key="ref"
+                        v-for="verseRef in nextDay.verseRefs"
+                        :key="verseRef"
                         class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-canvas border border-line-subtle text-ink-muted"
                       >
-                        {{ formatRef(ref) }}
+                        {{ formatRef(verseRef) }}
                       </span>
                     </div>
                   </div>
@@ -459,17 +497,16 @@
                     :loading="plans.isSaving"
                     @click="markDay(nextDay.dayNumber)"
                   >
-                    <template #leading><CheckCircle2 class="h-3.5 w-3.5" /></template>
+                    <template #leading>
+                      <CheckCircle2 class="h-3.5 w-3.5" />
+                    </template>
                     Mark done
                   </SButton>
                 </div>
               </SCard>
 
               <!-- Plan complete celebration card -->
-              <SCard
-                v-if="progressPct === 100 && plan.days.length > 0"
-                padding="md"
-              >
+              <SCard v-if="progressPct === 100 && plan.days.length > 0" padding="md">
                 <div class="flex items-center gap-3">
                   <Star class="h-5 w-5 shrink-0 text-[var(--s-success-fg)]" />
                   <div>
@@ -483,20 +520,21 @@
 
               <!-- Reading schedule card -->
               <SCard padding="none">
-                <header class="px-4 py-3 border-b border-line-subtle flex items-center justify-between">
+                <header
+                  class="px-4 py-3 border-b border-line-subtle flex items-center justify-between"
+                >
                   <div class="flex items-center gap-2">
                     <CalendarDays class="h-3.5 w-3.5 text-ink-muted" />
                     <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted">
-                      Reading schedule · {{ plan.days.length }} day{{ plan.days.length !== 1 ? 's' : '' }}
+                      Reading schedule · {{ plan.days.length }} day{{
+                        plan.days.length !== 1 ? 's' : ''
+                      }}
                     </p>
                   </div>
-                  <SButton
-                    v-if="isOwner"
-                    size="xs"
-                    variant="secondary"
-                    @click="openAddDay"
-                  >
-                    <template #leading><Plus class="h-3 w-3" /></template>
+                  <SButton v-if="isOwner" size="xs" variant="secondary" @click="openAddDay">
+                    <template #leading>
+                      <Plus class="h-3 w-3" />
+                    </template>
                     Add day
                   </SButton>
                 </header>
@@ -506,7 +544,9 @@
                   v-if="plan.days.length === 0"
                   class="py-12 flex flex-col items-center gap-3 text-center px-6"
                 >
-                  <div class="h-12 w-12 rounded-xl bg-surface-canvas border border-line-subtle flex items-center justify-center">
+                  <div
+                    class="h-12 w-12 rounded-xl bg-surface-canvas border border-line-subtle flex items-center justify-center"
+                  >
                     <BookOpen class="h-6 w-6 text-ink-subtle" />
                   </div>
                   <div>
@@ -521,7 +561,9 @@
                     variant="secondary"
                     @click="openAddDay"
                   >
-                    <template #leading><Plus class="h-3.5 w-3.5" /></template>
+                    <template #leading>
+                      <Plus class="h-3.5 w-3.5" />
+                    </template>
                     Add first day
                   </SButton>
                 </div>
@@ -533,7 +575,8 @@
                     :key="day.dayNumber"
                     :class="[
                       'flex items-start gap-3 px-4 py-3 border-b border-line-subtle last:border-b-0',
-                      dayState(day.dayNumber) === 'current' && 'bg-brand-50/50 dark:bg-brand-500/10',
+                      dayState(day.dayNumber) === 'current' &&
+                        'bg-brand-50/50 dark:bg-brand-500/10',
                     ]"
                   >
                     <!-- State circle -->
@@ -559,7 +602,8 @@
                             ? 'text-brand-600 dark:text-brand-400'
                             : 'text-ink-muted',
                         ]"
-                      >{{ day.dayNumber }}</span>
+                        >{{ day.dayNumber }}</span
+                      >
                     </div>
 
                     <!-- Day info -->
@@ -576,11 +620,11 @@
                       </p>
                       <div class="flex flex-wrap gap-1 mt-1">
                         <span
-                          v-for="ref in day.verseRefs"
-                          :key="ref"
+                          v-for="verseRef in day.verseRefs"
+                          :key="verseRef"
                           class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-canvas border border-line-subtle text-ink-muted"
                         >
-                          {{ formatRef(ref) }}
+                          {{ formatRef(verseRef) }}
                         </span>
                       </div>
                     </div>
@@ -594,7 +638,9 @@
                         :loading="plans.isSaving"
                         @click="markDay(day.dayNumber)"
                       >
-                        <template #leading><CheckCircle2 class="h-3 w-3" /></template>
+                        <template #leading>
+                          <CheckCircle2 class="h-3 w-3" />
+                        </template>
                         Mark done
                       </SButton>
                       <SBadge
@@ -612,12 +658,8 @@
 
             <!-- ── RIGHT COLUMN ───────────────────────────────────────── -->
             <div class="w-64 shrink-0 flex flex-col gap-4">
-
               <!-- Progress card (active participant) -->
-              <SCard
-                v-if="isActive && isParticipant"
-                padding="md"
-              >
+              <SCard v-if="isActive && isParticipant" padding="md">
                 <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-muted mb-3">
                   Your progress
                 </p>
@@ -625,14 +667,18 @@
                 <div class="flex items-center gap-3 mb-3">
                   <svg width="88" height="88" viewBox="0 0 88 88" class="shrink-0 -rotate-90">
                     <circle
-                      cx="44" cy="44" :r="ringRadius"
+                      cx="44"
+                      cy="44"
+                      :r="ringRadius"
                       fill="none"
                       stroke="currentColor"
                       stroke-width="8"
                       class="text-surface-canvas"
                     />
                     <circle
-                      cx="44" cy="44" :r="ringRadius"
+                      cx="44"
+                      cy="44"
+                      :r="ringRadius"
                       fill="none"
                       :stroke="accentColor.hex"
                       stroke-width="8"
@@ -643,10 +689,16 @@
                     />
                   </svg>
                   <div>
-                    <p class="text-2xl font-bold text-ink-strong leading-none">{{ progressPct }}%</p>
+                    <p class="text-2xl font-bold text-ink-strong leading-none">
+                      {{ progressPct }}%
+                    </p>
                     <p class="text-xs text-ink-muted mt-0.5">
-                      <template v-if="(myParticipant?.currentDay ?? 0) === 0">Not started yet</template>
-                      <template v-else>{{ myParticipant?.currentDay }}/{{ plan.days.length }} days done</template>
+                      <template v-if="(myParticipant?.currentDay ?? 0) === 0">
+                        Not started yet
+                      </template>
+                      <template v-else>
+                        {{ myParticipant?.currentDay }}/{{ plan.days.length }} days done
+                      </template>
                     </p>
                     <p v-if="estimatedCompletion" class="text-[11px] text-ink-subtle mt-1">
                       Est. {{ estimatedCompletion }}
@@ -663,10 +715,7 @@
               </SCard>
 
               <!-- Invite card (owner + active + public) -->
-              <SCard
-                v-if="isOwner && isActive && plan.isPublic"
-                padding="md"
-              >
+              <SCard v-if="isOwner && isActive && plan.isPublic" padding="md">
                 <div class="flex items-center gap-2 mb-1">
                   <Link class="h-3.5 w-3.5 text-ink-muted" />
                   <p class="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
@@ -677,7 +726,9 @@
                   Share a deep link so others can join this plan with one tap.
                 </p>
                 <SButton size="sm" variant="secondary" class="w-full" @click="copyInviteLink">
-                  <template #leading><Copy class="h-3.5 w-3.5" /></template>
+                  <template #leading>
+                    <Copy class="h-3.5 w-3.5" />
+                  </template>
                   Copy invite link
                 </SButton>
               </SCard>
@@ -707,20 +758,27 @@
                     <SAvatar :name="p.displayName || p.userId" size="sm" class="shrink-0" />
                     <div class="min-w-0 flex-1">
                       <p class="text-xs font-medium text-ink truncate">
-                        {{ p.userId === auth.user?.id ? 'You' : (p.displayName || 'Unknown') }}
+                        {{ p.userId === auth.user?.id ? 'You' : p.displayName || 'Unknown' }}
                       </p>
                       <div class="flex items-center gap-1.5 mt-0.5">
                         <div class="h-1 flex-1 rounded-full bg-line overflow-hidden">
                           <div
                             class="h-full rounded-full transition-all"
                             :style="{
-                              width: plan.days.length > 0 ? `${Math.round((p.currentDay / plan.days.length) * 100)}%` : '0%',
+                              width:
+                                plan.days.length > 0
+                                  ? `${Math.round((p.currentDay / plan.days.length) * 100)}%`
+                                  : '0%',
                               backgroundColor: accentColor.hex,
                             }"
                           />
                         </div>
                         <span class="text-[10px] text-ink-muted shrink-0">
-                          {{ p.currentDay === 0 ? 'Not started' : `${p.currentDay}/${plan.days.length}` }}
+                          {{
+                            p.currentDay === 0
+                              ? 'Not started'
+                              : `${p.currentDay}/${plan.days.length}`
+                          }}
                         </span>
                       </div>
                     </div>
@@ -734,12 +792,7 @@
     </div>
 
     <!-- ── Edit Icon Modal ──────────────────────────────────────────────── -->
-    <SModal
-      :open="showEditIcon"
-      title="Change plan icon"
-      size="sm"
-      @close="showEditIcon = false"
-    >
+    <SModal :open="showEditIcon" title="Change plan icon" size="sm" @close="showEditIcon = false">
       <div class="space-y-4">
         <div>
           <SLabel>Emoji</SLabel>
@@ -779,22 +832,19 @@
         </div>
       </div>
       <template #footer>
-        <SButton variant="secondary" size="sm" @click="showEditIcon = false">Cancel</SButton>
-        <SButton size="sm" @click="saveIcon">Save</SButton>
+        <SButton variant="secondary" size="sm" @click="showEditIcon = false"> Cancel </SButton>
+        <SButton size="sm" @click="saveIcon"> Save </SButton>
       </template>
     </SModal>
 
     <!-- ── Confirm Dialog ────────────────────────────────────────────────── -->
-    <SModal
-      :open="confirmDialog.open"
-      :title="confirmDialog.title"
-      size="sm"
-      @close="closeConfirm"
-    >
-      <p class="text-sm text-ink-muted">{{ confirmDialog.body }}</p>
+    <SModal :open="confirmDialog.open" :title="confirmDialog.title" size="sm" @close="closeConfirm">
+      <p class="text-sm text-ink-muted">
+        {{ confirmDialog.body }}
+      </p>
       <template #footer>
-        <SButton variant="secondary" size="sm" @click="closeConfirm">Cancel</SButton>
-        <SButton variant="danger" size="sm" @click="runConfirm">Confirm</SButton>
+        <SButton variant="secondary" size="sm" @click="closeConfirm"> Cancel </SButton>
+        <SButton variant="danger" size="sm" @click="runConfirm"> Confirm </SButton>
       </template>
     </SModal>
 
@@ -859,16 +909,15 @@
             </select>
 
             <SButton size="sm" variant="secondary" @click="addPassage">
-              <template #leading><Plus class="h-3.5 w-3.5" /></template>
+              <template #leading>
+                <Plus class="h-3.5 w-3.5" />
+              </template>
               Add
             </SButton>
           </div>
 
           <!-- Added passages chips -->
-          <div
-            v-if="addedPassages.length > 0"
-            class="mt-2.5 flex flex-wrap gap-1.5"
-          >
+          <div v-if="addedPassages.length > 0" class="mt-2.5 flex flex-wrap gap-1.5">
             <span
               v-for="passage in addedPassages"
               :key="passage.key"
@@ -891,15 +940,8 @@
       </div>
 
       <template #footer>
-        <SButton variant="secondary" size="sm" @click="showAddDay = false">
-          Cancel
-        </SButton>
-        <SButton
-          size="sm"
-          :loading="plans.isSaving"
-          :disabled="!canAddDay"
-          @click="addDay"
-        >
+        <SButton variant="secondary" size="sm" @click="showAddDay = false"> Cancel </SButton>
+        <SButton size="sm" :loading="plans.isSaving" :disabled="!canAddDay" @click="addDay">
           Add day
         </SButton>
       </template>

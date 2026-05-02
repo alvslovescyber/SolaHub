@@ -163,7 +163,7 @@ const BUILT_IN_SONGS: Song[] = [
       {
         type: 'verse',
         label: 'Verse 3',
-        text: "Great things He hath taught us, great things He hath done,\nAnd great our rejoicing through Jesus the Son;\nBut purer, and higher, and greater will be\nOur wonder, our transport, when Jesus we see.",
+        text: 'Great things He hath taught us, great things He hath done,\nAnd great our rejoicing through Jesus the Son;\nBut purer, and higher, and greater will be\nOur wonder, our transport, when Jesus we see.',
       },
     ],
   },

@@ -46,7 +46,7 @@ internal sealed class ReadingPlanConfiguration : IEntityTypeConfiguration<Readin
                 days.WithOwner().HasForeignKey("plan_id");
                 days.HasKey("plan_id", nameof(ReadingPlanDay.DayNumber));
 
-                days.Property(d => d.DayNumber).IsRequired();
+                days.Property(d => d.DayNumber).IsRequired().ValueGeneratedNever();
                 days.Property(d => d.Title).HasMaxLength(200).IsRequired();
 
                 // VerseRefs is a computed property from _verseRefKeys — not a navigation
@@ -74,6 +74,12 @@ internal sealed class ReadingPlanConfiguration : IEntityTypeConfiguration<Readin
                     .HasConversion(id => id.Value, value => UserId.From(value))
                     .IsRequired();
 
+                participants
+                    .HasOne<User>()
+                    .WithMany()
+                    .HasForeignKey(pp => pp.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
                 participants.Property(pp => pp.CurrentDay).IsRequired();
                 participants.Property(pp => pp.JoinedAt).IsRequired();
             }
@@ -82,6 +88,18 @@ internal sealed class ReadingPlanConfiguration : IEntityTypeConfiguration<Readin
         builder.HasIndex(p => p.CreatedBy);
         builder.HasIndex(p => p.ChurchId).HasFilter("church_id IS NOT NULL");
         builder.HasIndex(p => p.Status);
+
+        builder
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(p => p.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder
+            .HasOne<Church>()
+            .WithMany()
+            .HasForeignKey(p => p.ChurchId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.Ignore(p => p.DomainEvents);
     }

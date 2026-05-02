@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { VerseResult } from '@/types/bible.types'
 
-const STORAGE_KEY = 'solahub:verse-annotations'
+const STORAGE_PREFIX = 'solahub:verse-annotations'
 
 interface Persisted {
   highlights: Record<string, string>
@@ -10,22 +10,42 @@ interface Persisted {
   notes: Record<string, string>
 }
 
-function load(): Persisted {
+function emptyState(): Persisted {
+  return { highlights: {}, savedVerses: [], notes: {} }
+}
+
+function load(key: string): Persisted {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { highlights: {}, savedVerses: [], notes: {} }
+    const raw = localStorage.getItem(key)
+    if (!raw) return emptyState()
     return JSON.parse(raw) as Persisted
   } catch {
-    return { highlights: {}, savedVerses: [], notes: {} }
+    return emptyState()
   }
 }
 
 export const useVerseAnnotationsStore = defineStore('verseAnnotations', () => {
-  const initial = load()
+  let storageKey = `${STORAGE_PREFIX}:anonymous`
+  const initial = load(storageKey)
 
   const highlights = ref<Record<string, string>>(initial.highlights)
   const savedVerses = ref<VerseResult[]>(initial.savedVerses)
   const notes = ref<Record<string, string>>(initial.notes)
+
+  function useScope(userId: string | null): void {
+    storageKey = `${STORAGE_PREFIX}:${userId ?? 'anonymous'}`
+    const scoped = load(storageKey)
+    highlights.value = scoped.highlights
+    savedVerses.value = scoped.savedVerses
+    notes.value = scoped.notes
+  }
+
+  function reset(): void {
+    const empty = emptyState()
+    highlights.value = empty.highlights
+    savedVerses.value = empty.savedVerses
+    notes.value = empty.notes
+  }
 
   function verseKey(book: string, chapter: number, verse: number): string {
     return `${book}.${chapter}.${verse}`
@@ -68,7 +88,7 @@ export const useVerseAnnotationsStore = defineStore('verseAnnotations', () => {
 
   function persist(): void {
     localStorage.setItem(
-      STORAGE_KEY,
+      storageKey,
       JSON.stringify({
         highlights: highlights.value,
         savedVerses: savedVerses.value,
@@ -77,5 +97,16 @@ export const useVerseAnnotationsStore = defineStore('verseAnnotations', () => {
     )
   }
 
-  return { highlights, savedVerses, notes, verseKey, setHighlight, saveVerse, removeSavedVerse, setNote }
+  return {
+    highlights,
+    savedVerses,
+    notes,
+    verseKey,
+    setHighlight,
+    saveVerse,
+    removeSavedVerse,
+    setNote,
+    useScope,
+    reset,
+  }
 })

@@ -54,7 +54,18 @@ internal sealed class RefreshTokenCommandHandler(
         if (tokenResult.IsFailure)
             return tokenResult.Error;
 
-        await userRepository.UpdateAsync(user, ct);
+        var rotated = await userRepository.TryRotateRefreshTokenAsync(
+            user.Id,
+            refreshHash,
+            newHash,
+            now.Add(tokenService.RefreshTokenLifetime),
+            ct
+        );
+        if (!rotated)
+            return Error.Unauthorized(
+                "Auth.InvalidToken",
+                "Invalid or expired refresh token."
+            );
 
         return new AuthResponse(
             newAccessToken,

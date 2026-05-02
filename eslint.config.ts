@@ -30,6 +30,11 @@ export default defineConfigWithVueTs(
       'vue/define-emits-declaration': ['error', 'type-based'],
       'vue/no-unused-vars': 'error',
       'vue/block-order': ['error', { order: ['script', 'template', 'style'] }],
+      'vue/html-closing-bracket-newline': 'off',
+      'vue/html-indent': 'off',
+      'vue/html-self-closing': 'off',
+      'vue/max-attributes-per-line': 'off',
+      'vue/singleline-html-element-content-newline': 'off',
 
       // TypeScript
       '@typescript-eslint/no-explicit-any': 'error',
@@ -41,6 +46,14 @@ export default defineConfigWithVueTs(
       // General
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       eqeqeq: ['error', 'always'],
+    },
+  },
+  {
+    name: 'app/test-rules',
+    files: ['src/**/__tests__/**/*.{ts,vue}', 'src/**/*.test.ts', 'e2e/**/*.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+      'vue/one-component-per-file': 'off',
     },
   }
 )

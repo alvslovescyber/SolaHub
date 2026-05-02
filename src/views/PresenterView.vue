@@ -34,7 +34,7 @@
     STopBar,
     useSToast,
   } from '@/components/s'
-  import type { PresenterSlide, ScriptureSlide, SongSlide } from '@/types/presenter.types'
+  import type { ScriptureSlide, SongSlide } from '@/types/presenter.types'
   import type { Song, SongSection } from '@/stores/songs.store'
 
   const presenter = usePresenterStore()
@@ -84,9 +84,7 @@
   const filteredNT = computed(() => filteredBooks.value.filter((b) => b.testament === 'NT'))
 
   const chapterRange = computed(() =>
-    browsingBook.value
-      ? Array.from({ length: browsingBook.value.chapters }, (_, i) => i + 1)
-      : []
+    browsingBook.value ? Array.from({ length: browsingBook.value.chapters }, (_, i) => i + 1) : []
   )
 
   async function loadScriptureChapter(book: (typeof CANONICAL_BOOKS)[0], chapterNum: number) {
@@ -182,7 +180,7 @@
   const newSong = ref({
     title: '',
     author: '',
-    sections: [{ type: 'verse' as SongSection['type'], label: 'Verse 1', text: '' }],
+    sections: [{ type: 'verse', label: 'Verse 1', text: '' }],
   })
 
   function addSongSection() {
@@ -195,15 +193,20 @@
     let type: SongSection['type']
     let label: string
     if (!hasChorus) {
-      type = 'chorus'; label = 'Chorus'
+      type = 'chorus'
+      label = 'Chorus'
     } else if (verseCount < 3) {
-      type = 'verse'; label = `Verse ${verseCount + 1}`
+      type = 'verse'
+      label = `Verse ${verseCount + 1}`
     } else if (!hasBridge) {
-      type = 'bridge'; label = 'Bridge'
+      type = 'bridge'
+      label = 'Bridge'
     } else if (!hasOutro) {
-      type = 'outro'; label = 'Outro'
+      type = 'outro'
+      label = 'Outro'
     } else {
-      type = 'verse'; label = `Verse ${verseCount + 1}`
+      type = 'verse'
+      label = `Verse ${verseCount + 1}`
     }
     newSong.value.sections.push({ type, label, text: '' })
   }
@@ -251,7 +254,9 @@
         await nextTick()
         try {
           await overlayRef.value?.requestFullscreen?.()
-        } catch { /* fullscreen blocked */ }
+        } catch {
+          /* fullscreen blocked */
+        }
         // Re-focus after fullscreen transition takes control
         overlayRef.value?.focus()
       } else {
@@ -274,13 +279,16 @@
 
   async function handleOpenDisplay() {
     if (!isTauri) {
-      toast.info('Opening in fullscreen mode', 'Monitor selection is only available in the desktop app. Using fullscreen overlay.')
+      toast.info(
+        'Opening in fullscreen mode',
+        'Monitor selection is only available in the desktop app. Using fullscreen overlay.'
+      )
     }
     await presenter.openDisplayWindow(selectedMonitorIndex.value)
   }
 
   async function handleCloseDisplay() {
-    presenter.closeDisplayWindow()
+    await presenter.closeDisplayWindow()
     if (document.fullscreenElement) await document.exitFullscreen?.()
   }
 
@@ -315,14 +323,8 @@
           @click="presenter.toggleBlank()"
         >
           <template #leading>
-            <EyeOff
-              v-if="!presenter.isBlanked"
-              class="h-3.5 w-3.5"
-            />
-            <Eye
-              v-else
-              class="h-3.5 w-3.5"
-            />
+            <EyeOff v-if="!presenter.isBlanked" class="h-3.5 w-3.5" />
+            <Eye v-else class="h-3.5 w-3.5" />
           </template>
           {{ presenter.isBlanked ? 'Show slide' : 'Blank screen' }}
         </SButton>
@@ -335,12 +337,7 @@
         >
           Close display
         </SButton>
-        <SButton
-          size="sm"
-          variant="primary"
-          :disabled="!hasSlides"
-          @click="handleOpenDisplay"
-        >
+        <SButton size="sm" variant="primary" :disabled="!hasSlides" @click="handleOpenDisplay">
           <template #leading>
             <ExternalLink class="h-3.5 w-3.5" />
           </template>
@@ -351,16 +348,18 @@
 
     <!-- 3-column body -->
     <div class="flex flex-1 min-h-0 overflow-hidden">
-
       <!-- ── Left panel: Library ─────────────────────────────────────────────── -->
-      <div class="w-60 shrink-0 flex flex-col border-r border-line-subtle bg-surface-base/60 backdrop-blur-xl overflow-hidden">
-
+      <div
+        class="w-60 shrink-0 flex flex-col border-r border-line-subtle bg-surface-base/60 backdrop-blur-xl overflow-hidden"
+      >
         <!-- Tab bar -->
         <div class="flex border-b border-line-subtle px-2 pt-2 gap-0.5 shrink-0">
           <button
             :class="[
               'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[12px] font-medium font-sans transition-colors',
-              activeTab === 'scripture' ? 'bg-surface-raised text-ink-strong shadow-xs' : 'text-ink-muted hover:text-ink',
+              activeTab === 'scripture'
+                ? 'bg-surface-raised text-ink-strong shadow-xs'
+                : 'text-ink-muted hover:text-ink',
             ]"
             @click="activeTab = 'scripture'"
           >
@@ -370,7 +369,9 @@
           <button
             :class="[
               'flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[12px] font-medium font-sans transition-colors',
-              activeTab === 'songs' ? 'bg-surface-raised text-ink-strong shadow-xs' : 'text-ink-muted hover:text-ink',
+              activeTab === 'songs'
+                ? 'bg-surface-raised text-ink-strong shadow-xs'
+                : 'text-ink-muted hover:text-ink',
             ]"
             @click="activeTab = 'songs'"
           >
@@ -381,18 +382,10 @@
 
         <!-- ── Scripture panel ────────────────────────────────────────────────── -->
         <template v-if="activeTab === 'scripture'">
-
           <!-- VIEW: Book list -->
-          <div
-            v-if="browserView === 'books'"
-            class="flex-1 flex flex-col min-h-0"
-          >
+          <div v-if="browserView === 'books'" class="flex-1 flex flex-col min-h-0">
             <div class="px-2 pt-2 pb-1 shrink-0">
-              <SInput
-                v-model="bookSearch"
-                size="sm"
-                placeholder="Search books…"
-              >
+              <SInput v-model="bookSearch" size="sm" placeholder="Search books…">
                 <template #leading>
                   <Search class="h-3 w-3" />
                 </template>
@@ -401,7 +394,9 @@
             <!-- Non-sticky headers — panel is too narrow for sticky to look right -->
             <div class="flex-1 overflow-y-auto pb-2">
               <div v-if="filteredOT.length > 0">
-                <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold font-sans uppercase tracking-wider text-ink-subtle">
+                <p
+                  class="px-3 pt-2.5 pb-1 text-[10px] font-semibold font-sans uppercase tracking-wider text-ink-subtle"
+                >
                   Old Testament
                 </p>
                 <button
@@ -412,11 +407,15 @@
                   @click="selectBook(book)"
                 >
                   <span class="truncate">{{ book.longName }}</span>
-                  <span class="text-[10px] text-ink-subtle group-hover:text-ink-muted shrink-0 ml-1">{{ book.chapters }} ch</span>
+                  <span class="text-[10px] text-ink-subtle group-hover:text-ink-muted shrink-0 ml-1"
+                    >{{ book.chapters }} ch</span
+                  >
                 </button>
               </div>
               <div v-if="filteredNT.length > 0">
-                <p class="px-3 pt-2.5 pb-1 text-[10px] font-semibold font-sans uppercase tracking-wider text-ink-subtle">
+                <p
+                  class="px-3 pt-2.5 pb-1 text-[10px] font-semibold font-sans uppercase tracking-wider text-ink-subtle"
+                >
                   New Testament
                 </p>
                 <button
@@ -427,7 +426,9 @@
                   @click="selectBook(book)"
                 >
                   <span class="truncate">{{ book.longName }}</span>
-                  <span class="text-[10px] text-ink-subtle group-hover:text-ink-muted shrink-0 ml-1">{{ book.chapters }} ch</span>
+                  <span class="text-[10px] text-ink-subtle group-hover:text-ink-muted shrink-0 ml-1"
+                    >{{ book.chapters }} ch</span
+                  >
                 </button>
               </div>
               <p
@@ -440,16 +441,9 @@
           </div>
 
           <!-- VIEW: Chapter grid -->
-          <div
-            v-else-if="browserView === 'chapters'"
-            class="flex-1 flex flex-col min-h-0"
-          >
+          <div v-else-if="browserView === 'chapters'" class="flex-1 flex flex-col min-h-0">
             <div class="flex items-center gap-1 px-2 py-2 border-b border-line-subtle shrink-0">
-              <SIconButton
-                size="sm"
-                label="Back to books"
-                @click="backToBooks"
-              >
+              <SIconButton size="sm" label="Back to books" @click="backToBooks">
                 <ChevronLeft class="h-3.5 w-3.5" />
               </SIconButton>
               <span class="text-[13px] font-semibold font-sans text-ink-strong truncate">
@@ -483,20 +477,15 @@
           </div>
 
           <!-- VIEW: Verse list -->
-          <div
-            v-else
-            class="flex-1 flex flex-col min-h-0"
-          >
+          <div v-else class="flex-1 flex flex-col min-h-0">
             <div class="flex items-center gap-1 px-2 py-2 border-b border-line-subtle shrink-0">
-              <SIconButton
-                size="sm"
-                label="Back to chapters"
-                @click="backToChapters"
-              >
+              <SIconButton size="sm" label="Back to chapters" @click="backToChapters">
                 <ChevronLeft class="h-3.5 w-3.5" />
               </SIconButton>
               <div class="min-w-0 flex-1">
-                <p class="text-[13px] font-semibold font-sans text-ink-strong truncate leading-tight">
+                <p
+                  class="text-[13px] font-semibold font-sans text-ink-strong truncate leading-tight"
+                >
                   {{ browsingBook?.longName }} {{ browsingChapter }}
                 </p>
                 <p class="text-[10px] text-ink-subtle font-sans">
@@ -506,10 +495,7 @@
             </div>
 
             <!-- Verse list — ref'd for auto-scroll; only highlights when this chapter is in queue -->
-            <div
-              ref="verseListRef"
-              class="flex-1 overflow-y-auto"
-            >
+            <div ref="verseListRef" class="flex-1 overflow-y-auto">
               <button
                 v-for="(s, i) in loadedChapterSlides"
                 :key="s.verseRef"
@@ -546,17 +532,12 @@
               </button>
             </div>
           </div>
-
         </template>
 
         <!-- ── Songs panel ─────────────────────────────────────────────────────── -->
         <template v-else>
           <div class="px-2 pt-2 pb-1 shrink-0">
-            <SInput
-              v-model="songSearch"
-              size="sm"
-              placeholder="Search songs…"
-            >
+            <SInput v-model="songSearch" size="sm" placeholder="Search songs…">
               <template #leading>
                 <Search class="h-3 w-3" />
               </template>
@@ -570,15 +551,16 @@
               @click="loadSong(song)"
             >
               <div class="min-w-0">
-                <p class="text-[13px] font-medium font-sans text-ink truncate">{{ song.title }}</p>
-                <p
-                  v-if="song.author"
-                  class="text-[11px] text-ink-muted font-sans mt-0.5"
-                >
+                <p class="text-[13px] font-medium font-sans text-ink truncate">
+                  {{ song.title }}
+                </p>
+                <p v-if="song.author" class="text-[11px] text-ink-muted font-sans mt-0.5">
                   {{ song.author }}{{ song.year ? ` · ${song.year}` : '' }}
                 </p>
               </div>
-              <span class="text-[10px] text-ink-subtle shrink-0 mt-0.5">{{ song.sections.length }} slides</span>
+              <span class="text-[10px] text-ink-subtle shrink-0 mt-0.5"
+                >{{ song.sections.length }} slides</span
+              >
             </button>
             <p
               v-if="filteredSongs.length === 0"
@@ -588,12 +570,7 @@
             </p>
           </div>
           <div class="px-2 py-2 border-t border-line-subtle shrink-0">
-            <SButton
-              variant="secondary"
-              size="sm"
-              class="w-full"
-              @click="addSongModal = true"
-            >
+            <SButton variant="secondary" size="sm" class="w-full" @click="addSongModal = true">
               <template #leading>
                 <Plus class="h-3.5 w-3.5" />
               </template>
@@ -601,12 +578,10 @@
             </SButton>
           </div>
         </template>
-
       </div>
 
       <!-- ── Center: Preview + slide queue ──────────────────────────────────── -->
       <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
-
         <!-- Scale-transform preview -->
         <div class="flex-[0_0_auto] p-4 pb-2">
           <div
@@ -641,7 +616,9 @@
               v-if="presenter.isBlanked"
               class="absolute inset-0 flex items-center justify-center"
             >
-              <span class="text-[10px] font-semibold font-sans uppercase tracking-widest text-slate-600">
+              <span
+                class="text-[10px] font-semibold font-sans uppercase tracking-widest text-slate-600"
+              >
                 Screen blanked
               </span>
             </div>
@@ -669,21 +646,14 @@
                 </template>
                 Prev
               </SButton>
-              <SButton
-                size="sm"
-                :disabled="!presenter.hasNext"
-                @click="presenter.next()"
-              >
+              <SButton size="sm" :disabled="!presenter.hasNext" @click="presenter.next()">
                 Next
                 <template #trailing>
                   <ChevronRight class="h-3.5 w-3.5" />
                 </template>
               </SButton>
             </div>
-            <span
-              v-if="hasSlides"
-              class="text-xs text-ink-muted font-sans tabular-nums"
-            >
+            <span v-if="hasSlides" class="text-xs text-ink-muted font-sans tabular-nums">
               {{ presenter.session.currentIndex + 1 }} / {{ presenter.session.slides.length }}
             </span>
             <!-- Blank toggle in controls bar -->
@@ -695,14 +665,8 @@
               @click="presenter.toggleBlank()"
             >
               <template #leading>
-                <EyeOff
-                  v-if="!presenter.isBlanked"
-                  class="h-3.5 w-3.5"
-                />
-                <Eye
-                  v-else
-                  class="h-3.5 w-3.5"
-                />
+                <EyeOff v-if="!presenter.isBlanked" class="h-3.5 w-3.5" />
+                <Eye v-else class="h-3.5 w-3.5" />
               </template>
               {{ presenter.isBlanked ? 'Show' : 'Blank' }}
             </SButton>
@@ -726,7 +690,9 @@
             </SEmptyState>
           </div>
           <div v-else>
-            <p class="px-4 py-2 text-[10px] font-semibold font-sans uppercase tracking-wider text-ink-subtle border-b border-line-subtle">
+            <p
+              class="px-4 py-2 text-[10px] font-semibold font-sans uppercase tracking-wider text-ink-subtle border-b border-line-subtle"
+            >
               Slides · {{ presenter.session.slides.length }}
             </p>
             <button
@@ -743,16 +709,22 @@
               <p
                 :class="[
                   'text-[11px] font-semibold font-sans mb-0.5 uppercase tracking-wider',
-                  i === presenter.session.currentIndex ? 'text-brand-600 dark:text-brand-300' : 'text-ink-subtle',
+                  i === presenter.session.currentIndex
+                    ? 'text-brand-600 dark:text-brand-300'
+                    : 'text-ink-subtle',
                 ]"
               >
-                <template v-if="s.source === 'song'">{{ s.sectionLabel }}</template>
-                <template v-else>{{ s.book }} {{ s.chapter }}:{{ s.verse }}</template>
+                <template v-if="s.source === 'song'">
+                  {{ s.sectionLabel }}
+                </template>
+                <template v-else> {{ s.book }} {{ s.chapter }}:{{ s.verse }} </template>
               </p>
               <p
                 :class="[
                   'text-xs font-sans line-clamp-2 whitespace-pre-line',
-                  i === presenter.session.currentIndex ? 'text-brand-700 dark:text-brand-200' : 'text-ink-muted',
+                  i === presenter.session.currentIndex
+                    ? 'text-brand-700 dark:text-brand-200'
+                    : 'text-ink-muted',
                 ]"
               >
                 {{ s.text }}
@@ -763,7 +735,9 @@
       </div>
 
       <!-- ── Right panel: Display settings ──────────────────────────────────── -->
-      <div class="w-52 shrink-0 flex flex-col border-l border-line-subtle bg-surface-base/60 backdrop-blur-xl overflow-y-auto">
+      <div
+        class="w-52 shrink-0 flex flex-col border-l border-line-subtle bg-surface-base/60 backdrop-blur-xl overflow-y-auto"
+      >
         <div class="px-3 py-3 space-y-5">
           <p class="text-[10px] font-semibold font-sans uppercase tracking-wider text-ink-subtle">
             Display settings
@@ -771,9 +745,7 @@
 
           <!-- Output monitor -->
           <div>
-            <p class="text-[11px] font-medium font-sans text-ink-muted mb-2">
-              Output monitor
-            </p>
+            <p class="text-[11px] font-medium font-sans text-ink-muted mb-2">Output monitor</p>
             <div class="flex flex-col gap-1">
               <button
                 v-for="(mon, i) in monitors"
@@ -788,24 +760,23 @@
               >
                 <Monitor class="h-3.5 w-3.5 mt-0.5 shrink-0" />
                 <div class="min-w-0">
-                  <p class="text-[12px] font-sans truncate leading-tight">{{ mon.name }}</p>
-                  <p class="text-[10px] text-ink-subtle font-sans mt-0.5">{{ mon.width }}×{{ mon.height }}</p>
+                  <p class="text-[12px] font-sans truncate leading-tight">
+                    {{ mon.name }}
+                  </p>
+                  <p class="text-[10px] text-ink-subtle font-sans mt-0.5">
+                    {{ mon.width }}×{{ mon.height }}
+                  </p>
                 </div>
               </button>
             </div>
-            <p
-              v-if="monitorsLoading"
-              class="text-[10px] text-ink-subtle font-sans mt-1.5"
-            >
+            <p v-if="monitorsLoading" class="text-[10px] text-ink-subtle font-sans mt-1.5">
               Detecting monitors…
             </p>
           </div>
 
           <!-- Background -->
           <div>
-            <p class="text-[11px] font-medium font-sans text-ink-muted mb-2">
-              Background
-            </p>
+            <p class="text-[11px] font-medium font-sans text-ink-muted mb-2">Background</p>
             <div class="flex flex-col gap-1">
               <button
                 v-for="bg in BG_OPTIONS"
@@ -829,9 +800,7 @@
 
           <!-- Font scale -->
           <div>
-            <p class="text-[11px] font-medium font-sans text-ink-muted mb-2">
-              Text size
-            </p>
+            <p class="text-[11px] font-medium font-sans text-ink-muted mb-2">Text size</p>
             <div class="flex flex-col gap-1">
               <button
                 v-for="fs in FONT_OPTIONS"
@@ -851,9 +820,7 @@
 
           <!-- Show verse ref -->
           <div>
-            <p class="text-[11px] font-medium font-sans text-ink-muted mb-2">
-              Verse reference
-            </p>
+            <p class="text-[11px] font-medium font-sans text-ink-muted mb-2">Verse reference</p>
             <button
               :class="[
                 'flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[12px] font-sans transition-colors text-left',
@@ -866,7 +833,9 @@
               <span
                 :class="[
                   'h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors',
-                  biblePrefs.presenterShowVerseRef ? 'border-brand-500 bg-brand-500' : 'border-line',
+                  biblePrefs.presenterShowVerseRef
+                    ? 'border-brand-500 bg-brand-500'
+                    : 'border-line',
                 ]"
               >
                 <svg
@@ -890,15 +859,14 @@
 
           <!-- Translation -->
           <div>
-            <p class="text-[11px] font-medium font-sans text-ink-muted mb-1">
-              Translation
+            <p class="text-[11px] font-medium font-sans text-ink-muted mb-1">Translation</p>
+            <p class="text-[12px] font-sans text-ink">
+              {{ presenterTranslationHint }}
             </p>
-            <p class="text-[12px] font-sans text-ink">{{ presenterTranslationHint }}</p>
             <p class="text-[10px] text-ink-subtle font-sans mt-0.5">Change in Settings</p>
           </div>
         </div>
       </div>
-
     </div>
 
     <!-- ── Fullscreen presenter overlay ───────────────────────────────────────── -->
@@ -927,7 +895,9 @@
         />
 
         <!-- Bottom HUD — always visible but dim; fades to near-invisible -->
-        <div class="absolute bottom-6 inset-x-0 flex items-center justify-between px-8 pointer-events-none overlay-hud">
+        <div
+          class="absolute bottom-6 inset-x-0 flex items-center justify-between px-8 pointer-events-none overlay-hud"
+        >
           <span class="text-slate-700 text-[11px] font-sans tabular-nums">
             {{ presenter.session.currentIndex + 1 }} / {{ presenter.session.slides.length }}
           </span>
@@ -942,12 +912,7 @@
           >
             BLANKED — click to show
           </span>
-          <span
-            v-else
-            class="text-transparent text-[11px] font-sans"
-          >
-            &nbsp;
-          </span>
+          <span v-else class="text-transparent text-[11px] font-sans"> &nbsp; </span>
         </div>
 
         <!-- Close button — appears on hover via overlay-hud animation -->
@@ -970,26 +935,13 @@
     >
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-3">
-          <SInput
-            v-model="newSong.title"
-            label="Title"
-            placeholder="Amazing Grace"
-            required
-          />
-          <SInput
-            v-model="newSong.author"
-            label="Author"
-            placeholder="John Newton (optional)"
-          />
+          <SInput v-model="newSong.title" label="Title" placeholder="Amazing Grace" required />
+          <SInput v-model="newSong.author" label="Author" placeholder="John Newton (optional)" />
         </div>
         <div class="space-y-3">
           <div class="flex items-center justify-between">
             <p class="text-sm font-medium text-ink-strong">Sections</p>
-            <SButton
-              variant="secondary"
-              size="sm"
-              @click="addSongSection"
-            >
+            <SButton variant="secondary" size="sm" @click="addSongSection">
               <template #leading>
                 <Plus class="h-3.5 w-3.5" />
               </template>
@@ -1002,42 +954,18 @@
             class="border border-line rounded-lg p-3 space-y-2"
           >
             <div class="flex items-center gap-2">
-              <SInput
-                v-model="sec.label"
-                size="sm"
-                placeholder="Verse 1"
-                class="flex-1"
-              />
-              <SIconButton
-                size="sm"
-                label="Remove section"
-                @click="removeSongSection(i)"
-              >
+              <SInput v-model="sec.label" size="sm" placeholder="Verse 1" class="flex-1" />
+              <SIconButton size="sm" label="Remove section" @click="removeSongSection(i)">
                 <Trash2 class="h-3.5 w-3.5" />
               </SIconButton>
             </div>
-            <STextarea
-              v-model="sec.text"
-              :rows="3"
-              placeholder="Paste lyrics here…"
-              autoresize
-            />
+            <STextarea v-model="sec.text" :rows="3" placeholder="Paste lyrics here…" autoresize />
           </div>
         </div>
       </div>
       <template #footer>
-        <SButton
-          variant="secondary"
-          size="sm"
-          @click="addSongModal = false"
-        >
-          Cancel
-        </SButton>
-        <SButton
-          size="sm"
-          :disabled="!newSong.title.trim()"
-          @click="submitNewSong"
-        >
+        <SButton variant="secondary" size="sm" @click="addSongModal = false"> Cancel </SButton>
+        <SButton size="sm" :disabled="!newSong.title.trim()" @click="submitNewSong">
           Save song
         </SButton>
       </template>
@@ -1046,27 +974,35 @@
 </template>
 
 <style scoped>
-.presenter-fade-enter-active,
-.presenter-fade-leave-active {
-  transition: opacity 0.12s ease;
-}
-.presenter-fade-enter-from,
-.presenter-fade-leave-to {
-  opacity: 0;
-}
+  .presenter-fade-enter-active,
+  .presenter-fade-leave-active {
+    transition: opacity 0.12s ease;
+  }
+  .presenter-fade-enter-from,
+  .presenter-fade-leave-to {
+    opacity: 0;
+  }
 
-/* HUD fades in for 2s then retreats to near-invisible */
-@keyframes hud-appear {
-  0%   { opacity: 0; }
-  15%  { opacity: 0.8; }
-  60%  { opacity: 0.8; }
-  100% { opacity: 0.08; }
-}
-.overlay-hud {
-  animation: hud-appear 5s ease-out forwards;
-}
-.overlay-hud:hover {
-  opacity: 0.8;
-  animation: none;
-}
+  /* HUD fades in for 2s then retreats to near-invisible */
+  @keyframes hud-appear {
+    0% {
+      opacity: 0;
+    }
+    15% {
+      opacity: 0.8;
+    }
+    60% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 0.08;
+    }
+  }
+  .overlay-hud {
+    animation: hud-appear 5s ease-out forwards;
+  }
+  .overlay-hud:hover {
+    opacity: 0.8;
+    animation: none;
+  }
 </style>

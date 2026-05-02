@@ -40,6 +40,7 @@ public sealed class VerseRefValueObjectTests
 {
     [Theory]
     [InlineData("GEN.1.1")]
+    [InlineData("GEN.1")]
     [InlineData("JHN.3.16")]
     [InlineData("REV.22.21")]
     public void Parse_WithValidRef_Succeeds(string input)
@@ -51,7 +52,6 @@ public sealed class VerseRefValueObjectTests
     [Theory]
     [InlineData("")]
     [InlineData("TOOSHORT")]
-    [InlineData("GEN.1")]
     [InlineData("1.2.3")]
     public void TryParse_WithInvalidRef_ReturnsFalse(string input)
     {

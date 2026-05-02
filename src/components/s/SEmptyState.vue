@@ -57,16 +57,10 @@
     <h3 class="relative text-base font-semibold text-ink-strong">
       {{ title }}
     </h3>
-    <p
-      v-if="description"
-      class="relative text-sm text-ink-muted mt-1.5 max-w-sm leading-relaxed"
-    >
+    <p v-if="description" class="relative text-sm text-ink-muted mt-1.5 max-w-sm leading-relaxed">
       {{ description }}
     </p>
-    <div
-      v-if="$slots.actions"
-      class="relative mt-5 flex items-center gap-2"
-    >
+    <div v-if="$slots.actions" class="relative mt-5 flex items-center gap-2">
       <slot name="actions" />
     </div>
   </div>

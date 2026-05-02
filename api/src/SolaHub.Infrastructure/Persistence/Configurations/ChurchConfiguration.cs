@@ -34,6 +34,12 @@ internal sealed class ChurchConfiguration : IEntityTypeConfiguration<Church>
 
         builder.HasIndex(c => c.AdminId);
 
+        builder
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(c => c.AdminId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Ignore(c => c.DomainEvents);
     }
 }

@@ -59,19 +59,12 @@
                 <h2 class="text-base font-semibold text-ink-strong">
                   {{ title }}
                 </h2>
-                <p
-                  v-if="description"
-                  class="text-sm text-ink-muted mt-0.5"
-                >
+                <p v-if="description" class="text-sm text-ink-muted mt-0.5">
                   {{ description }}
                 </p>
               </slot>
             </div>
-            <SIconButton
-              label="Close"
-              size="sm"
-              @click="emit('close')"
-            >
+            <SIconButton label="Close" size="sm" @click="emit('close')">
               <X class="h-4 w-4" />
             </SIconButton>
           </header>

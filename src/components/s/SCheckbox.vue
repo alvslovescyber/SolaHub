@@ -18,10 +18,7 @@
 </script>
 
 <template>
-  <label
-    :for="inputId"
-    class="flex items-start gap-2.5 cursor-pointer select-none group"
-  >
+  <label :for="inputId" class="flex items-start gap-2.5 cursor-pointer select-none group">
     <span class="relative inline-flex shrink-0 mt-0.5">
       <input
         :id="inputId"
@@ -30,7 +27,7 @@
         :disabled="disabled"
         class="peer sr-only"
         @change="emit('update:modelValue', ($event.target as HTMLInputElement).checked)"
-      >
+      />
       <span
         :class="[
           'inline-flex h-4 w-4 items-center justify-center rounded border transition-colors',
@@ -39,22 +36,12 @@
           disabled && 'opacity-50',
         ]"
       >
-        <Check
-          v-if="modelValue"
-          class="h-3 w-3 text-white"
-          :stroke-width="3"
-        />
+        <Check v-if="modelValue" class="h-3 w-3 text-white" :stroke-width="3" />
       </span>
     </span>
-    <span
-      v-if="label || description"
-      class="flex flex-col leading-tight"
-    >
+    <span v-if="label || description" class="flex flex-col leading-tight">
       <span class="text-sm text-ink-strong">{{ label }}</span>
-      <span
-        v-if="description"
-        class="text-xs text-ink-muted mt-0.5"
-      >{{ description }}</span>
+      <span v-if="description" class="text-xs text-ink-muted mt-0.5">{{ description }}</span>
     </span>
   </label>
 </template>

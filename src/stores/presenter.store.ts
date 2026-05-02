@@ -1,7 +1,19 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { invoke } from '@tauri-apps/api/core'
 import type { PresenterSlide, PresenterSession } from '@/types/presenter.types'
 import { collaborationService } from '@/services/collaboration.service'
+import { isTauri } from '@/lib/platform'
+
+const DISPLAY_CHANNEL = 'solahub:presenter-display'
+
+export interface PresenterDisplayState {
+  type: 'state'
+  slides: PresenterSlide[]
+  currentIndex: number
+  isBlanked: boolean
+  planId: string | null
+}
 
 export const usePresenterStore = defineStore('presenter', () => {
   const session = ref<PresenterSession>({
@@ -14,6 +26,8 @@ export const usePresenterStore = defineStore('presenter', () => {
   })
 
   const isBlanked = ref(false)
+  const displayChannel =
+    typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(DISPLAY_CHANNEL)
 
   const currentSlide = computed<PresenterSlide | null>(
     () => session.value.slides[session.value.currentIndex] ?? null
@@ -35,16 +49,19 @@ export const usePresenterStore = defineStore('presenter', () => {
       planId,
     }
     isBlanked.value = false
+    syncDisplayState()
   }
 
   function next(): void {
     if (isBlanked.value) {
       isBlanked.value = false
+      syncDisplayState()
       return
     }
     if (hasNext.value) {
       session.value.currentIndex++
       broadcastCurrentVerse()
+      syncDisplayState()
     }
   }
 
@@ -53,6 +70,7 @@ export const usePresenterStore = defineStore('presenter', () => {
       session.value.currentIndex--
       isBlanked.value = false
       broadcastCurrentVerse()
+      syncDisplayState()
     }
   }
 
@@ -61,27 +79,45 @@ export const usePresenterStore = defineStore('presenter', () => {
       session.value.currentIndex = index
       isBlanked.value = false
       broadcastCurrentVerse()
+      syncDisplayState()
     }
   }
 
   function toggleBlank(): void {
     isBlanked.value = !isBlanked.value
+    syncDisplayState()
   }
 
-  async function openDisplayWindow(_monitorIndex = 0): Promise<void> {
+  async function openDisplayWindow(monitorIndex = 0): Promise<void> {
     isBlanked.value = false
+    if (isTauri) {
+      await invoke('open_presenter_window', {
+        url: '/#/presenter-display',
+        monitorIndex,
+      })
+      session.value.displayWindowOpen = true
+      syncDisplayState()
+      window.setTimeout(syncDisplayState, 250)
+      return
+    }
     session.value.overlayOpen = true
+    syncDisplayState()
   }
 
-  function closeDisplayWindow(): void {
+  async function closeDisplayWindow(): Promise<void> {
+    if (isTauri && session.value.displayWindowOpen) {
+      await invoke('close_presenter_window')
+    }
     session.value.overlayOpen = false
     session.value.displayWindowOpen = false
     isBlanked.value = false
+    syncDisplayState()
   }
 
   function closeOverlay(): void {
     session.value.overlayOpen = false
     isBlanked.value = false
+    syncDisplayState()
   }
 
   async function toggleFullscreen(): Promise<void> {
@@ -93,7 +129,33 @@ export const usePresenterStore = defineStore('presenter', () => {
         await document.exitFullscreen?.()
       }
       session.value.isFullscreen = entering
-    } catch { /* fullscreen not supported or blocked */ }
+    } catch {
+      /* fullscreen not supported or blocked */
+    }
+  }
+
+  function applyDisplayState(state: PresenterDisplayState): void {
+    session.value = {
+      ...session.value,
+      slides: state.slides.map((slide) => ({ ...slide })),
+      currentIndex: state.currentIndex,
+      planId: state.planId,
+    }
+    isBlanked.value = state.isBlanked
+  }
+
+  function syncDisplayState(): void {
+    if (!displayChannel) return
+
+    const state = {
+      type: 'state',
+      slides: session.value.slides.map((slide) => ({ ...slide })),
+      currentIndex: session.value.currentIndex,
+      isBlanked: isBlanked.value,
+      planId: session.value.planId,
+    } satisfies PresenterDisplayState
+
+    displayChannel.postMessage(state)
   }
 
   function broadcastCurrentVerse(): void {
@@ -119,5 +181,9 @@ export const usePresenterStore = defineStore('presenter', () => {
     closeDisplayWindow,
     closeOverlay,
     toggleFullscreen,
+    applyDisplayState,
+    syncDisplayState,
   }
 })
+
+export { DISPLAY_CHANNEL }

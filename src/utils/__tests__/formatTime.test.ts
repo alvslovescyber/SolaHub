@@ -47,7 +47,7 @@ describe('groupByDate', () => {
 
   it('groups items into correct buckets', () => {
     const items = [
-      { timestamp: ms(30_000), id: 'a' },       // Today
+      { timestamp: ms(30_000), id: 'a' }, // Today
       { timestamp: ms(36 * 3_600_000), id: 'b' }, // Yesterday
       { timestamp: ms(4 * 86_400_000), id: 'c' }, // This week
       { timestamp: ms(20 * 86_400_000), id: 'd' }, // Earlier

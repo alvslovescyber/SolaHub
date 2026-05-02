@@ -17,19 +17,19 @@ test.describe('Notes', () => {
 
   test('navigate to notes page', async ({ page }) => {
     await page.goto('/#/notes')
-    await expect(page.getByText('Your verse annotations')).toBeVisible()
+    await expect(page.getByText('Verse-by-verse reflections and study notes')).toBeVisible()
   })
 
   test('create a note and see it in the list', async ({ page }) => {
     await page.goto('/#/notes')
 
-    await page.getByRole('button', { name: 'New Note' }).click()
+    await page.getByRole('button', { name: 'New note' }).click()
 
-    await page.getByPlaceholder('Verse ref (e.g. JHN.3.16)').fill('JHN.3.16')
-    await page.getByPlaceholder('Your note...').fill('For God so loved the world that he gave his only Son.')
-    await page.getByPlaceholder('Tags (comma-separated').fill('love, salvation')
+    await page.getByPlaceholder('JHN.3.16').fill('JHN.3.16')
+    await page.getByPlaceholder(/Your note/).fill('For God so loved the world that he gave his only Son.')
+    await page.getByPlaceholder('faith, grace (comma separated)').fill('love, salvation')
 
-    await page.getByRole('button', { name: 'Save' }).click()
+    await page.getByRole('button', { name: 'Save note' }).click()
 
     await expect(page.getByText('JHN.3.16')).toBeVisible({ timeout: 5_000 })
     await expect(page.getByText('For God so loved the world')).toBeVisible()

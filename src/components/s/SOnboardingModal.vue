@@ -37,7 +37,11 @@
       title: 'Read & Study Scripture',
       description:
         'Navigate any book, chapter, or verse instantly. Search passages across the entire Bible and write notes tied directly to the text.',
-      features: ['Full KJV Bible, works offline', 'Instant full-text search', 'Verse-linked annotations'],
+      features: [
+        'Full KJV Bible, works offline',
+        'Instant full-text search',
+        'Verse-linked annotations',
+      ],
     },
     {
       id: 'plans',
@@ -72,7 +76,7 @@
       icon: Sparkles,
       title: "You're all set",
       description:
-        "Your study environment is ready. Open the Bible to start reading, create a plan to stay on track, or launch the Presenter for Sunday.",
+        'Your study environment is ready. Open the Bible to start reading, create a plan to stay on track, or launch the Presenter for Sunday.',
       features: null,
     },
   ]
@@ -124,10 +128,7 @@
         data-onboarding
         @click.self="close"
       >
-        <Transition
-          name="ob-enter"
-          appear
-        >
+        <Transition name="ob-enter" appear>
           <div
             v-if="open"
             class="w-full max-w-[440px] bg-surface-base rounded-2xl shadow-2xl border border-line overflow-hidden"
@@ -157,14 +158,8 @@
 
             <!-- Content -->
             <div class="px-6 pt-6 pb-2 min-h-[290px]">
-              <Transition
-                :name="transitionName"
-                mode="out-in"
-              >
-                <div
-                  :key="current.id"
-                  class="flex flex-col"
-                >
+              <Transition :name="transitionName" mode="out-in">
+                <div :key="current.id" class="flex flex-col">
                   <!-- App-style icon -->
                   <div
                     :class="[
@@ -172,21 +167,16 @@
                       current.iconBg,
                     ]"
                   >
-                    <SBrandMark
-                      v-if="current.id === 'welcome'"
-                      :size="28"
-                    />
+                    <SBrandMark v-if="current.id === 'welcome'" :size="28" />
                     <component
-                      v-else
                       :is="current.icon"
+                      v-else
                       class="h-7 w-7 text-white drop-shadow-sm"
                     />
                   </div>
 
                   <!-- Title -->
-                  <h2
-                    class="text-[22px] font-bold text-ink-strong leading-tight tracking-tight"
-                  >
+                  <h2 class="text-[22px] font-bold text-ink-strong leading-tight tracking-tight">
                     {{ current.title }}
                   </h2>
 
@@ -196,15 +186,8 @@
                   </p>
 
                   <!-- Features -->
-                  <ul
-                    v-if="current.features"
-                    class="mt-5 space-y-2.5"
-                  >
-                    <li
-                      v-for="f in current.features"
-                      :key="f"
-                      class="flex items-center gap-2.5"
-                    >
+                  <ul v-if="current.features" class="mt-5 space-y-2.5">
+                    <li v-for="f in current.features" :key="f" class="flex items-center gap-2.5">
                       <span
                         class="shrink-0 h-[18px] w-[18px] rounded-full bg-surface-sunken text-ink inline-flex items-center justify-center"
                       >
@@ -219,12 +202,7 @@
 
             <!-- Footer -->
             <div class="flex items-center justify-between px-6 pb-6 pt-4">
-              <SButton
-                v-if="!isFirst"
-                variant="ghost"
-                size="sm"
-                @click="prev"
-              >
+              <SButton v-if="!isFirst" variant="ghost" size="sm" @click="prev">
                 <template #leading>
                   <ChevronLeft class="h-3.5 w-3.5" />
                 </template>
@@ -236,25 +214,13 @@
                 <span class="text-[11px] text-ink-subtle tabular-nums">
                   {{ step + 1 }} / {{ steps.length }}
                 </span>
-                <SButton
-                  v-if="!isLast"
-                  variant="primary"
-                  size="sm"
-                  @click="next"
-                >
+                <SButton v-if="!isLast" variant="primary" size="sm" @click="next">
                   Continue
                   <template #trailing>
                     <ChevronRight class="h-3.5 w-3.5" />
                   </template>
                 </SButton>
-                <SButton
-                  v-else
-                  variant="primary"
-                  size="sm"
-                  @click="close"
-                >
-                  Get started
-                </SButton>
+                <SButton v-else variant="primary" size="sm" @click="close"> Get started </SButton>
               </div>
             </div>
           </div>

@@ -21,7 +21,6 @@
     SInput,
     SLabel,
     SModal,
-    SPageContainer,
     SPageTabs,
     SSpinner,
     STextarea,
@@ -80,6 +79,11 @@
     selectedColorId.value = PLAN_ACCENT_COLORS[0].id
   }
 
+  function closeCreateModal() {
+    showCreate.value = false
+    resetCreateForm()
+  }
+
   async function createPlan() {
     if (!title.value.trim()) return
     try {
@@ -108,11 +112,7 @@
       subtitle="Walk through Scripture, on your own or with your church"
     >
       <template #actions>
-        <SButton
-          size="sm"
-          variant="primary"
-          @click="showCreate = true"
-        >
+        <SButton size="sm" variant="primary" @click="showCreate = true">
           <template #leading>
             <Plus class="h-3.5 w-3.5" />
           </template>
@@ -121,18 +121,11 @@
       </template>
     </STopBar>
 
-    <SPageTabs
-      v-model="tab"
-      :tabs="tabs"
-    />
+    <SPageTabs v-model="tab" :tabs="tabs" />
 
     <!-- Search bar -->
     <div class="px-6 pt-4 pb-2 shrink-0">
-      <SInput
-        v-model="search"
-        size="sm"
-        placeholder="Search plans"
-      >
+      <SInput v-model="search" size="sm" placeholder="Search plans">
         <template #leading>
           <Search class="h-3.5 w-3.5" />
         </template>
@@ -141,17 +134,17 @@
 
     <!-- Plan grid (scrollable) -->
     <div class="flex-1 overflow-y-auto px-6 py-4">
-      <div
-        v-if="plans.isLoading"
-        class="flex justify-center pt-12"
-      >
+      <div v-if="plans.isLoading" class="flex justify-center pt-12">
         <SSpinner />
       </div>
 
-      <SCard
-        v-else-if="hasFetched && filtered.length === 0"
-        padding="none"
-      >
+      <SCard v-else-if="plans.error" padding="md">
+        <p class="text-sm text-red-600 dark:text-red-400">
+          {{ plans.error }}
+        </p>
+      </SCard>
+
+      <SCard v-else-if="hasFetched && filtered.length === 0" padding="none">
         <SEmptyState
           tone="brand"
           title="No reading plans yet"
@@ -161,21 +154,13 @@
             <BookOpen class="h-5 w-5" />
           </template>
           <template #actions>
-            <SButton
-              size="sm"
-              @click="showCreate = true"
-            >
-              Create your first plan
-            </SButton>
+            <SButton size="sm" @click="showCreate = true"> Create your first plan </SButton>
           </template>
         </SEmptyState>
       </SCard>
 
       <!-- Square card grid -->
-      <div
-        v-else
-        class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
-      >
+      <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         <button
           v-for="plan in filtered"
           :key="plan.id"
@@ -190,25 +175,21 @@
               borderBottom: `2px solid ${getPlanAccentColor(getPlanPresentation(plan.id).colorId).hex}30`,
             }"
           >
-            <span
-              class="text-5xl leading-none select-none"
-              role="img"
-            >{{ getPlanPresentation(plan.id).emoji }}</span>
+            <span class="text-5xl leading-none select-none" role="img">{{
+              getPlanPresentation(plan.id).emoji
+            }}</span>
           </div>
 
           <!-- Content -->
           <div class="flex flex-col flex-1 p-3 gap-2 min-w-0">
             <!-- Title + status -->
             <div class="flex items-start justify-between gap-1.5">
-              <p class="text-[13px] font-semibold font-sans text-ink-strong leading-snug line-clamp-2 flex-1">
+              <p
+                class="text-[13px] font-semibold font-sans text-ink-strong leading-snug line-clamp-2 flex-1"
+              >
                 {{ plan.title }}
               </p>
-              <SBadge
-                :tone="statusTone(plan.status)"
-                variant="soft"
-                dot
-                class="shrink-0 mt-0.5"
-              >
+              <SBadge :tone="statusTone(plan.status)" variant="soft" dot class="shrink-0 mt-0.5">
                 {{ plan.status }}
               </SBadge>
             </div>
@@ -225,7 +206,9 @@
 
             <!-- Progress bar -->
             <div v-if="myProgress(plan)">
-              <div class="flex items-center justify-between text-[10px] text-ink-muted mb-1 font-sans">
+              <div
+                class="flex items-center justify-between text-[10px] text-ink-muted mb-1 font-sans"
+              >
                 <span>Progress</span>
                 <span>{{ myProgress(plan)!.current }}/{{ myProgress(plan)!.total }}d</span>
               </div>
@@ -241,7 +224,9 @@
             </div>
 
             <!-- Meta footer -->
-            <div class="flex items-center gap-2.5 text-[10px] text-ink-subtle font-sans pt-1 border-t border-line-subtle">
+            <div
+              class="flex items-center gap-2.5 text-[10px] text-ink-subtle font-sans pt-1 border-t border-line-subtle"
+            >
               <span class="flex items-center gap-1">
                 <Users class="h-2.5 w-2.5" />
                 {{ plan.participants.length }}
@@ -250,10 +235,7 @@
                 <BookOpen class="h-2.5 w-2.5" />
                 {{ plan.days.length }}d
               </span>
-              <span
-                v-if="!plan.isPublic"
-                class="flex items-center gap-1 ml-auto"
-              >
+              <span v-if="!plan.isPublic" class="flex items-center gap-1 ml-auto">
                 <Lock class="h-2.5 w-2.5" />
                 Private
               </span>
@@ -269,7 +251,7 @@
       title="New reading plan"
       description="Give it a name and choose an icon to make it yours."
       size="md"
-      @close="showCreate = false; resetCreateForm()"
+      @close="closeCreateModal"
     >
       <div class="space-y-4">
         <!-- Emoji & colour picker -->
@@ -312,12 +294,7 @@
           </div>
         </div>
 
-        <SInput
-          v-model="title"
-          label="Title"
-          placeholder="Gospels in 30 days"
-          required
-        />
+        <SInput v-model="title" label="Title" placeholder="Gospels in 30 days" required />
         <STextarea
           v-model="description"
           label="Description"
@@ -331,20 +308,8 @@
         />
       </div>
       <template #footer>
-        <SButton
-          variant="secondary"
-          size="sm"
-          @click="showCreate = false; resetCreateForm()"
-        >
-          Cancel
-        </SButton>
-        <SButton
-          size="sm"
-          :loading="plans.isSaving"
-          @click="createPlan"
-        >
-          Create plan
-        </SButton>
+        <SButton variant="secondary" size="sm" @click="closeCreateModal"> Cancel </SButton>
+        <SButton size="sm" :loading="plans.isSaving" @click="createPlan"> Create plan </SButton>
       </template>
     </SModal>
   </div>

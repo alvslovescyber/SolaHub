@@ -14,14 +14,35 @@
       date: 'May 2025',
       isLatest: true,
       changes: [
-        { type: 'feature' as ChangeType, text: 'Full KJV Bible reader with chapter navigation and offline support' },
-        { type: 'feature' as ChangeType, text: 'Reading plans — create, publish, share, and track daily progress' },
-        { type: 'feature' as ChangeType, text: 'Verse journal with tags, filtering, and Scripture linking' },
-        { type: 'feature' as ChangeType, text: 'Sunday Presenter with dual-screen display and slide builder' },
-        { type: 'feature' as ChangeType, text: 'Church community plans shared across your congregation' },
+        {
+          type: 'feature' as ChangeType,
+          text: 'Full KJV Bible reader with chapter navigation and offline support',
+        },
+        {
+          type: 'feature' as ChangeType,
+          text: 'Reading plans — create, publish, share, and track daily progress',
+        },
+        {
+          type: 'feature' as ChangeType,
+          text: 'Verse journal with tags, filtering, and Scripture linking',
+        },
+        {
+          type: 'feature' as ChangeType,
+          text: 'Sunday Presenter with dual-screen display and slide builder',
+        },
+        {
+          type: 'feature' as ChangeType,
+          text: 'Church community plans shared across your congregation',
+        },
         { type: 'feature' as ChangeType, text: 'Live collaboration for church teams' },
-        { type: 'improvement' as ChangeType, text: 'Dashboard with reading stats, today\'s plan, and quick access' },
-        { type: 'improvement' as ChangeType, text: 'Command palette (⌘K) for instant navigation across the app' },
+        {
+          type: 'improvement' as ChangeType,
+          text: "Dashboard with reading stats, today's plan, and quick access",
+        },
+        {
+          type: 'improvement' as ChangeType,
+          text: 'Command palette (⌘K) for instant navigation across the app',
+        },
         { type: 'improvement' as ChangeType, text: 'Dark mode support' },
       ],
     },
@@ -31,7 +52,10 @@
       isLatest: false,
       changes: [
         { type: 'feature' as ChangeType, text: 'Initial beta release of the Bible reader' },
-        { type: 'feature' as ChangeType, text: 'Reading plan scaffolding with draft and publish support' },
+        {
+          type: 'feature' as ChangeType,
+          text: 'Reading plan scaffolding with draft and publish support',
+        },
         { type: 'feature' as ChangeType, text: 'User accounts, registration, and profile setup' },
         { type: 'improvement' as ChangeType, text: 'Native desktop app for macOS and Windows' },
         { type: 'fix' as ChangeType, text: 'Reliable offline access for Bible reading' },
@@ -98,10 +122,7 @@
 
           <!-- Releases -->
           <div class="flex-1 overflow-y-auto px-5 py-5 space-y-7">
-            <section
-              v-for="release in releases"
-              :key="release.version"
-            >
+            <section v-for="release in releases" :key="release.version">
               <!-- Version header -->
               <div class="flex items-center gap-2.5 mb-4">
                 <h3 class="text-[13px] font-bold text-ink-strong tracking-tight">
@@ -130,7 +151,10 @@
                   class="flex items-start gap-3"
                 >
                   <span
-                    :class="['mt-[7px] shrink-0 h-1.5 w-1.5 rounded-full', typeConfig[change.type].dot]"
+                    :class="[
+                      'mt-[7px] shrink-0 h-1.5 w-1.5 rounded-full',
+                      typeConfig[change.type].dot,
+                    ]"
                   />
                   <div class="flex items-start gap-2 min-w-0">
                     <span
@@ -141,16 +165,15 @@
                     >
                       {{ typeConfig[change.type].label }}
                     </span>
-                    <span class="text-[13px] text-ink-muted leading-relaxed">{{ change.text }}</span>
+                    <span class="text-[13px] text-ink-muted leading-relaxed">{{
+                      change.text
+                    }}</span>
                   </div>
                 </li>
               </ul>
 
               <!-- Divider between releases -->
-              <div
-                v-if="!release.isLatest"
-                class="mt-7 border-t border-line-subtle"
-              />
+              <div v-if="!release.isLatest" class="mt-7 border-t border-line-subtle" />
             </section>
           </div>
         </div>

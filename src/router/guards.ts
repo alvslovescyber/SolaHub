@@ -4,7 +4,7 @@ import { tokenStorage } from '@/services/http/client'
 
 function isTokenExpired(token: string): boolean {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]!))
+    const payload = JSON.parse(atob(token.split('.')[1] ?? ''))
     return typeof payload.exp === 'number' && payload.exp * 1000 < Date.now()
   } catch {
     return true
@@ -20,7 +20,7 @@ export function registerGuards(router: Router): void {
     // When the access token is missing or expired but a refresh token exists,
     // silently exchange it before routing. This prevents components from mounting
     // with a stale token and triggering unnecessary 401 console errors.
-    if (!hasValidToken && tokenStorage.getRefresh()) {
+    if ((!hasValidToken || !auth.user) && tokenStorage.getRefresh()) {
       await auth.rehydrate()
     }
 

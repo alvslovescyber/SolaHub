@@ -10,24 +10,14 @@
 </script>
 
 <template>
-  <div
-    role="status"
-    class="flex items-center gap-2"
-  >
+  <div role="status" class="flex items-center gap-2">
     <svg
       :class="['animate-spin text-primary-600', sizeClasses[size]]"
       fill="none"
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
-      <circle
-        class="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        stroke-width="4"
-      />
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
       <path
         class="opacity-75"
         fill="currentColor"

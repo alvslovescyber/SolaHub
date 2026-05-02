@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using SolaHub.Core.Entities;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.ValueObjects;
@@ -8,6 +9,8 @@ namespace SolaHub.Infrastructure.Repositories;
 
 public sealed class UserRepository(AppDbContext db) : IUserRepository
 {
+    private const string UniqueViolation = "23505";
+
     // Reads that are followed by an Update (login, refresh) keep tracking enabled —
     // change tracking is what makes the subsequent SaveChangesAsync efficient.
     public Task<User?> GetByIdAsync(UserId id, CancellationToken ct) =>
@@ -43,6 +46,48 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
         await db.SaveChangesAsync(ct);
     }
 
+    public async Task<bool> TryAddAsync(User user, CancellationToken ct)
+    {
+        try
+        {
+            await AddAsync(user, ct);
+            return true;
+        }
+        catch (DbUpdateException ex) when (IsUniqueEmailViolation(ex))
+        {
+            db.Entry(user).State = EntityState.Detached;
+            return false;
+        }
+    }
+
+    public async Task<bool> TryRotateRefreshTokenAsync(
+        UserId userId,
+        string expectedRefreshTokenHash,
+        string newRefreshTokenHash,
+        DateTimeOffset newExpiry,
+        CancellationToken ct = default
+    )
+    {
+        var now = DateTimeOffset.UtcNow;
+        var affected = await db
+            .Users.Where(u =>
+                u.Id == userId
+                && u.IsActive
+                && u.RefreshToken == expectedRefreshTokenHash
+                && u.RefreshTokenExpiry.HasValue
+                && u.RefreshTokenExpiry.Value > now
+            )
+            .ExecuteUpdateAsync(
+                setters => setters
+                    .SetProperty(u => u.RefreshToken, newRefreshTokenHash)
+                    .SetProperty(u => u.RefreshTokenExpiry, newExpiry)
+                    .SetProperty(u => u.UpdatedAt, now),
+                ct
+            );
+
+        return affected == 1;
+    }
+
     public async Task UpdateAsync(User user, CancellationToken ct)
     {
         // See ReadingPlanRepository.UpdateAsync — avoid Update() on already-tracked
@@ -56,4 +101,11 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
     {
         await db.Users.Where(u => u.Id == id).ExecuteDeleteAsync(ct);
     }
+
+    private static bool IsUniqueEmailViolation(DbUpdateException ex) =>
+        ex.InnerException is PostgresException
+        {
+            SqlState: UniqueViolation,
+            ConstraintName: "ix_users_email"
+        };
 }

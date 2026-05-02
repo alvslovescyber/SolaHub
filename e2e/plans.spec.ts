@@ -17,20 +17,20 @@ test.describe('Reading Plans', () => {
 
   test('navigate to plans page', async ({ page }) => {
     await page.goto('/#/plans')
-    await expect(page.getByText('Collaborative Bible reading')).toBeVisible()
+    await expect(page.getByText('Walk through Scripture, on your own or with your church')).toBeVisible()
   })
 
   test('create a plan and navigate to detail', async ({ page }) => {
     await page.goto('/#/plans')
 
-    await page.getByRole('button', { name: 'New Plan' }).click()
+    await page.getByRole('button', { name: 'New plan' }).click()
 
     await page
-      .getByPlaceholder('Plan title')
+      .getByPlaceholder('Gospels in 30 days')
       .fill('Genesis in 30 Days')
     await page.getByPlaceholder('Description').fill('Read through the book of Genesis')
 
-    await page.getByRole('button', { name: 'Create' }).click()
+    await page.getByRole('button', { name: 'Create plan' }).click()
 
     // Should navigate to plan detail
     await expect(page).toHaveURL(/#\/plans\//, { timeout: 10_000 })

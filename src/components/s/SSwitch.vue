@@ -21,10 +21,7 @@
 </script>
 
 <template>
-  <label
-    :for="inputId"
-    class="flex items-center gap-3 cursor-pointer select-none"
-  >
+  <label :for="inputId" class="flex items-center gap-3 cursor-pointer select-none">
     <button
       :id="inputId"
       type="button"
@@ -46,15 +43,9 @@
         ]"
       />
     </button>
-    <span
-      v-if="label || description"
-      class="flex flex-col leading-tight"
-    >
+    <span v-if="label || description" class="flex flex-col leading-tight">
       <span class="text-sm text-ink-strong">{{ label }}</span>
-      <span
-        v-if="description"
-        class="text-xs text-ink-muted mt-0.5"
-      >{{ description }}</span>
+      <span v-if="description" class="text-xs text-ink-muted mt-0.5">{{ description }}</span>
     </span>
   </label>
 </template>

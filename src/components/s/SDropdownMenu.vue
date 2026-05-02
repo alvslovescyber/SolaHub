@@ -43,18 +43,9 @@
 </script>
 
 <template>
-  <div
-    ref="root"
-    :class="fullWidth ? 'relative block w-full' : 'relative inline-flex'"
-  >
-    <span
-      :class="fullWidth ? 'block w-full' : ''"
-      @click="toggle"
-    >
-      <slot
-        name="trigger"
-        :open="open"
-      />
+  <div ref="root" :class="fullWidth ? 'relative block w-full' : 'relative inline-flex'">
+    <span :class="fullWidth ? 'block w-full' : ''" @click="toggle">
+      <slot name="trigger" :open="open" />
     </span>
     <Transition name="fade">
       <div

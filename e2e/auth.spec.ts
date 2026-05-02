@@ -6,7 +6,7 @@ test.describe('Authentication', () => {
   test('shows login page on first load', async ({ page }) => {
     await page.goto('/')
     await expect(page).toHaveURL(/#\/login/)
-    await expect(page.getByText('Sign in to your account')).toBeVisible()
+    await expect(page.getByText('Welcome back to SolaHub')).toBeVisible()
   })
 
   test('register → redirect to dashboard', async ({ page }) => {
@@ -25,7 +25,7 @@ test.describe('Authentication', () => {
 
     await page.getByLabel('Email').fill('nobody@example.com')
     await page.getByLabel('Password').fill('wrongpassword')
-    await page.getByRole('button', { name: 'Sign in' }).click()
+    await page.getByRole('button', { name: 'Sign in with email' }).click()
 
     // Error message should appear
     await expect(page.locator('text=Invalid email or password')).toBeVisible({ timeout: 5_000 })

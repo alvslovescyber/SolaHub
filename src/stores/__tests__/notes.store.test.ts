@@ -97,7 +97,12 @@ describe('notes store', () => {
 
       const store = useNotesStore()
       await store.fetchMyNotes()
-      await store.create({ verseRef: 'Psalm 23:1', content: 'The Lord is my shepherd', tags: [], isShared: false })
+      await store.create({
+        verseRef: 'Psalm 23:1',
+        content: 'The Lord is my shepherd',
+        tags: [],
+        isShared: false,
+      })
 
       expect(store.notes[0].id).toBe('note-new')
       expect(store.notes[1].id).toBe('note-old')
@@ -110,7 +115,12 @@ describe('notes store', () => {
 
       const store = useNotesStore()
       await store.fetchMyNotes()
-      await store.create({ verseRef: 'John 1:1', content: 'In the beginning', tags: [], isShared: false })
+      await store.create({
+        verseRef: 'John 1:1',
+        content: 'In the beginning',
+        tags: [],
+        isShared: false,
+      })
 
       expect(store.activeNoteId).toBe('note-new')
     })

@@ -101,9 +101,9 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
 
     public Result AddParticipant(UserId userId)
     {
-        if (Status == PlanStatus.Archived)
+        if (Status != PlanStatus.Active)
             return Result.Failure(
-                Error.Conflict("Plans.Archived", "Cannot join an archived plan.")
+                Error.Conflict("Plans.NotActive", "Only active plans can be joined.")
             );
 
         if (_participants.Any(p => p.UserId == userId))
@@ -149,6 +149,11 @@ public sealed class ReadingPlan : BaseEntity<ReadingPlanId>
 
     public Result RecordProgress(UserId userId, int dayNumber)
     {
+        if (Status != PlanStatus.Active)
+            return Result.Failure(
+                Error.Conflict("Plans.NotActive", "Progress can only be recorded on active plans.")
+            );
+
         var participant = _participants.FirstOrDefault(p => p.UserId == userId);
         if (participant is null)
             return Result.Failure(

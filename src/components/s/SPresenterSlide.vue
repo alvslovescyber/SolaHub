@@ -60,15 +60,9 @@
 </script>
 
 <template>
-  <Transition
-    name="presenter-fade"
-    mode="out-in"
-  >
+  <Transition name="presenter-fade" mode="out-in">
     <!-- Blanked: render an invisible element so out-in transition works -->
-    <div
-      v-if="blanked"
-      :key="'blanked'"
-    />
+    <div v-if="blanked" :key="'blanked'" />
 
     <!-- Slide content -->
     <div
@@ -87,10 +81,7 @@
       </p>
 
       <!-- Main text -->
-      <p
-        class="text-white font-serif leading-tight whitespace-pre-line"
-        :style="textStyle"
-      >
+      <p class="text-white font-serif leading-tight whitespace-pre-line" :style="textStyle">
         {{ slide.text }}
       </p>
 
@@ -115,11 +106,7 @@
     </div>
 
     <!-- Empty state (canvas preview only) -->
-    <div
-      v-else-if="showEmpty"
-      :key="'empty'"
-      class="flex flex-col items-center gap-6 text-center"
-    >
+    <div v-else-if="showEmpty" :key="'empty'" class="flex flex-col items-center gap-6 text-center">
       <Monitor
         class="text-slate-700"
         :style="canvasMode ? { width: '80px', height: '80px' } : { width: '3rem', height: '3rem' }"
@@ -136,12 +123,12 @@
 </template>
 
 <style scoped>
-.presenter-fade-enter-active,
-.presenter-fade-leave-active {
-  transition: opacity 0.12s ease;
-}
-.presenter-fade-enter-from,
-.presenter-fade-leave-to {
-  opacity: 0;
-}
+  .presenter-fade-enter-active,
+  .presenter-fade-leave-active {
+    transition: opacity 0.12s ease;
+  }
+  .presenter-fade-enter-from,
+  .presenter-fade-leave-to {
+    opacity: 0;
+  }
 </style>

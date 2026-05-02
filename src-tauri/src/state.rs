@@ -41,6 +41,23 @@ pub fn initialize_schema(conn: &Connection) -> SqlResult<()> {
         CREATE INDEX IF NOT EXISTS idx_highlight_cache_verse
             ON highlight_cache(verse_ref);
 
+        CREATE TABLE IF NOT EXISTS verses (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            book        TEXT NOT NULL,
+            book_short  TEXT NOT NULL,
+            chapter     INTEGER NOT NULL,
+            verse       INTEGER NOT NULL,
+            text        TEXT NOT NULL,
+            translation TEXT NOT NULL,
+            UNIQUE (book_short, chapter, verse, translation)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_verses_lookup
+            ON verses(book_short, chapter, verse, translation);
+
+        CREATE INDEX IF NOT EXISTS idx_verses_translation_text
+            ON verses(translation, text);
+
         CREATE TABLE IF NOT EXISTS reading_progress_cache (
             plan_id     TEXT NOT NULL,
             day_index   INTEGER NOT NULL,

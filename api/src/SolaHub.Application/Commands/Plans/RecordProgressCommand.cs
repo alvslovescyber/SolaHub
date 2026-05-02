@@ -35,7 +35,12 @@ internal sealed class RecordProgressCommandHandler(IReadingPlanRepository planRe
         if (progressResult.IsFailure)
             return progressResult.Error;
 
-        await planRepository.UpdateAsync(plan, ct);
+        await planRepository.AdvanceParticipantProgressAsync(
+            request.PlanId,
+            request.UserId,
+            request.DayNumber,
+            ct
+        );
         return Result.Success();
     }
 }

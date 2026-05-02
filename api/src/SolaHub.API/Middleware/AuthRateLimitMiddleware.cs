@@ -1,5 +1,7 @@
 using System.Globalization;
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 
 namespace SolaHub.API.Middleware;
 
@@ -9,11 +11,13 @@ namespace SolaHub.API.Middleware;
 public sealed class AuthRateLimitMiddleware(
     RequestDelegate next,
     IDistributedCache cache,
-    ILogger<AuthRateLimitMiddleware> logger
+    ILogger<AuthRateLimitMiddleware> logger,
+    IConnectionMultiplexer? redis = null
 )
 {
     private const int MaxRequestsPerWindow = 60;
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> KeyLocks = new();
 
     public async Task InvokeAsync(HttpContext context)
     {
@@ -24,10 +28,51 @@ public sealed class AuthRateLimitMiddleware(
             var path = context.Request.Path.Value ?? "";
             var key = $"solahub:ratelimit:auth:{ip}:{path}:{minuteBucket}";
 
+            var limited = redis is not null
+                ? await IsRedisLimitedAsync(key)
+                : await IsDistributedCacheLimitedAsync(key, context.RequestAborted);
+
+            if (limited)
+            {
+                context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                context.Response.Headers.RetryAfter = ((int)Window.TotalSeconds).ToString(
+                    CultureInfo.InvariantCulture
+                );
+                await context.Response.WriteAsync("Too many requests. Try again later.");
+                return;
+            }
+        }
+
+        await next(context);
+    }
+
+    private async Task<bool> IsRedisLimitedAsync(string key)
+    {
+        try
+        {
+            var db = redis!.GetDatabase();
+            var count = await db.StringIncrementAsync(key);
+            if (count == 1)
+                await db.KeyExpireAsync(key, Window);
+            return count > MaxRequestsPerWindow;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Redis rate-limit operation failed; falling back to memory cache.");
+            return await IsDistributedCacheLimitedAsync(key, CancellationToken.None);
+        }
+    }
+
+    private async Task<bool> IsDistributedCacheLimitedAsync(string key, CancellationToken ct)
+    {
+        var keyLock = KeyLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+        await keyLock.WaitAsync(ct);
+        try
+        {
             var count = 0;
             try
             {
-                var raw = await cache.GetStringAsync(key, context.RequestAborted);
+                var raw = await cache.GetStringAsync(key, ct);
                 if (
                     raw is not null
                     && !int.TryParse(
@@ -53,24 +98,12 @@ public sealed class AuthRateLimitMiddleware(
             }
             catch (Exception ex)
             {
-                // Fail open on cache outages so a flaky cache cannot lock out auth.
-                logger.LogWarning(
-                    ex,
-                    "Distributed cache read failed for rate limit; failing open."
-                );
-                await next(context);
-                return;
+                logger.LogWarning(ex, "Distributed cache read failed for rate limit; denying request.");
+                return true;
             }
 
             if (count >= MaxRequestsPerWindow)
-            {
-                context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                context.Response.Headers.RetryAfter = ((int)Window.TotalSeconds).ToString(
-                    CultureInfo.InvariantCulture
-                );
-                await context.Response.WriteAsync("Too many requests. Try again later.");
-                return;
-            }
+                return true;
 
             try
             {
@@ -78,7 +111,7 @@ public sealed class AuthRateLimitMiddleware(
                     key,
                     (count + 1).ToString(CultureInfo.InvariantCulture),
                     new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = Window },
-                    context.RequestAborted
+                    ct
                 );
             }
             catch (OperationCanceledException)
@@ -87,11 +120,16 @@ public sealed class AuthRateLimitMiddleware(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Distributed cache write failed for rate limit; continuing.");
+                logger.LogWarning(ex, "Distributed cache write failed for rate limit; denying request.");
+                return true;
             }
-        }
 
-        await next(context);
+            return false;
+        }
+        finally
+        {
+            keyLock.Release();
+        }
     }
 
     private static bool ShouldLimit(HttpContext context)

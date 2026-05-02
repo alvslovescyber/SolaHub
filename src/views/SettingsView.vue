@@ -101,7 +101,11 @@
       passwordError.value = 'New password must be at least 8 characters.'
       return
     }
-    if (!/[A-Z]/.test(newPassword.value) || !/[a-z]/.test(newPassword.value) || !/[0-9]/.test(newPassword.value)) {
+    if (
+      !/[A-Z]/.test(newPassword.value) ||
+      !/[a-z]/.test(newPassword.value) ||
+      !/[0-9]/.test(newPassword.value)
+    ) {
       passwordError.value = 'Password must contain uppercase, lowercase, and a digit.'
       return
     }
@@ -117,7 +121,8 @@
       newPassword.value = ''
       confirmPassword.value = ''
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { description?: string } } })?.response?.data?.description
+      const msg = (e as { response?: { data?: { description?: string } } })?.response?.data
+        ?.description
       passwordError.value = msg ?? 'Could not update password. Please try again.'
     } finally {
       passwordSubmitting.value = false
@@ -257,10 +262,7 @@
       :show-bell="false"
     />
     <div class="flex flex-1 min-h-0">
-      <SSettingsList
-        v-model:active-id="activeId"
-        :sections="sections"
-      />
+      <SSettingsList v-model:active-id="activeId" :sections="sections" />
 
       <div class="flex-1 overflow-y-auto relative z-[1]">
         <div class="max-w-2xl mx-auto p-8">
@@ -300,17 +302,9 @@
 
           <!-- Profile -->
           <template v-if="activeId === 'profile'">
-            <SCard
-              padding="lg"
-              class="space-y-5"
-            >
+            <SCard padding="lg" class="space-y-5">
               <div class="flex items-center gap-4">
-                <SAvatar
-                  v-if="user"
-                  :name="user.displayName"
-                  size="xl"
-                  rounded="md"
-                />
+                <SAvatar v-if="user" :name="user.displayName" size="xl" rounded="md" />
                 <div class="min-w-0">
                   <p class="text-sm font-semibold text-ink-strong">
                     {{ user?.displayName }}
@@ -329,12 +323,8 @@
                     accept="image/png,image/jpeg,image/webp"
                     class="hidden"
                     @change="onAvatarFile"
-                  >
-                  <SButton
-                    size="sm"
-                    variant="secondary"
-                    @click="pickAvatar"
-                  >
+                  />
+                  <SButton size="sm" variant="secondary" @click="pickAvatar">
                     Change avatar
                   </SButton>
                 </div>
@@ -343,15 +333,8 @@
               <SDivider />
 
               <div class="grid grid-cols-2 gap-4">
-                <SInput
-                  v-model="displayName"
-                  label="Display name"
-                />
-                <SInput
-                  v-model="email"
-                  label="Email"
-                  type="email"
-                />
+                <SInput v-model="displayName" label="Display name" />
+                <SInput v-model="email" label="Email" type="email" />
               </div>
 
               <STextarea
@@ -362,18 +345,8 @@
               />
 
               <div class="flex justify-end gap-2">
-                <SButton
-                  variant="secondary"
-                  size="sm"
-                  @click="resetProfile"
-                >
-                  Cancel
-                </SButton>
-                <SButton
-                  size="sm"
-                  :loading="profileSaving"
-                  @click="saveProfile"
-                >
+                <SButton variant="secondary" size="sm" @click="resetProfile"> Cancel </SButton>
+                <SButton size="sm" :loading="profileSaving" @click="saveProfile">
                   Save changes
                 </SButton>
               </div>
@@ -382,14 +355,8 @@
 
           <!-- Security -->
           <template v-else-if="activeId === 'security'">
-            <SCard
-              padding="lg"
-              class="space-y-5"
-            >
-              <form
-                class="space-y-3"
-                @submit.prevent="changePassword"
-              >
+            <SCard padding="lg" class="space-y-5">
+              <form class="space-y-3" @submit.prevent="changePassword">
                 <SLabel>Change password</SLabel>
                 <div class="grid grid-cols-1 gap-3">
                   <SInput
@@ -411,18 +378,11 @@
                     autocomplete="new-password"
                   />
                 </div>
-                <p
-                  v-if="passwordError"
-                  class="text-xs text-red-600 dark:text-red-400"
-                >
+                <p v-if="passwordError" class="text-xs text-red-600 dark:text-red-400">
                   {{ passwordError }}
                 </p>
                 <div class="flex justify-end">
-                  <SButton
-                    type="submit"
-                    size="sm"
-                    :loading="passwordSubmitting"
-                  >
+                  <SButton type="submit" size="sm" :loading="passwordSubmitting">
                     Update password
                   </SButton>
                 </div>
@@ -432,30 +392,19 @@
 
               <div class="flex items-center justify-between">
                 <div>
-                  <p class="text-sm font-medium text-ink-strong">
-                    Sign out everywhere
-                  </p>
+                  <p class="text-sm font-medium text-ink-strong">Sign out everywhere</p>
                   <p class="text-xs text-ink-muted mt-0.5">
                     Revokes refresh tokens on every device.
                   </p>
                 </div>
-                <SButton
-                  variant="danger"
-                  size="sm"
-                  @click="logout()"
-                >
-                  Sign out
-                </SButton>
+                <SButton variant="danger" size="sm" @click="logout()"> Sign out </SButton>
               </div>
             </SCard>
           </template>
 
           <!-- Notifications -->
           <template v-else-if="activeId === 'notifications'">
-            <SCard
-              padding="lg"
-              class="space-y-5"
-            >
+            <SCard padding="lg" class="space-y-5">
               <SSwitch
                 v-model="notifyMentions"
                 label="Mentions"
@@ -478,10 +427,7 @@
 
           <!-- Bible & translations -->
           <template v-else-if="activeId === 'bible-translations'">
-            <SCard
-              padding="lg"
-              class="space-y-6"
-            >
+            <SCard padding="lg" class="space-y-6">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <SSelect
                   :model-value="biblePrefs.defaultTranslationId"
@@ -548,16 +494,10 @@
                   Desktop builds can later bundle additional offline texts; web mode streams from
                   the configured provider.
                 </p>
-                <div
-                  v-if="catalogAvailable.length === 0"
-                  class="text-sm text-ink-muted"
-                >
+                <div v-if="catalogAvailable.length === 0" class="text-sm text-ink-muted">
                   Every translation in our catalog is already installed.
                 </div>
-                <div
-                  v-else
-                  class="space-y-2"
-                >
+                <div v-else class="space-y-2">
                   <div
                     v-for="row in catalogAvailable"
                     :key="row.id"
@@ -571,11 +511,7 @@
                         {{ row.language }}{{ row.notes ? ` · ${row.notes}` : '' }}
                       </p>
                     </div>
-                    <SButton
-                      size="xs"
-                      variant="primary"
-                      @click="installTranslation(row.id)"
-                    >
+                    <SButton size="xs" variant="primary" @click="installTranslation(row.id)">
                       Add
                     </SButton>
                   </div>
@@ -586,10 +522,7 @@
 
           <!-- Presenter -->
           <template v-else-if="activeId === 'presenter-prefs'">
-            <SCard
-              padding="lg"
-              class="space-y-6"
-            >
+            <SCard padding="lg" class="space-y-6">
               <SSwitch
                 :model-value="biblePrefs.presenterUseSeparateTranslation"
                 label="Dedicated translation for projection"
@@ -663,10 +596,7 @@
 
           <!-- Songs & media -->
           <template v-else-if="activeId === 'songs-media'">
-            <SCard
-              padding="lg"
-              class="space-y-6"
-            >
+            <SCard padding="lg" class="space-y-6">
               <SSelect
                 :model-value="biblePrefs.songsIntegration"
                 label="Lyrics source"

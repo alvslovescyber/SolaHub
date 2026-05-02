@@ -28,7 +28,11 @@ export function useActivityFeed() {
         type: 'note_created',
         timestamp: new Date(note.createdAt),
         label: 'Added a verse note',
-        detail: note.verseRef + (note.content ? ' — ' + note.content.slice(0, 80) + (note.content.length > 80 ? '…' : '') : ''),
+        detail:
+          note.verseRef +
+          (note.content
+            ? ' — ' + note.content.slice(0, 80) + (note.content.length > 80 ? '…' : '')
+            : ''),
         route: { name: 'notes' },
         icon: markRaw(StickyNote),
         iconBg: 'bg-amber-50 dark:bg-amber-500/15',
@@ -41,7 +45,11 @@ export function useActivityFeed() {
           type: 'note_updated',
           timestamp: new Date(note.updatedAt),
           label: 'Updated a verse note',
-          detail: note.verseRef + (note.content ? ' — ' + note.content.slice(0, 80) + (note.content.length > 80 ? '…' : '') : ''),
+          detail:
+            note.verseRef +
+            (note.content
+              ? ' — ' + note.content.slice(0, 80) + (note.content.length > 80 ? '…' : '')
+              : ''),
           route: { name: 'notes' },
           icon: markRaw(StickyNote),
           iconBg: 'bg-amber-50 dark:bg-amber-500/15',

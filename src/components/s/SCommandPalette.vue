@@ -115,16 +115,10 @@
               type="text"
               placeholder="Type a command or search…"
               class="flex-1 bg-transparent text-sm text-ink-strong placeholder:text-ink-subtle focus:outline-none"
-            >
+            />
           </div>
-          <ul
-            v-if="filtered.length > 0"
-            class="max-h-[320px] overflow-y-auto py-1.5"
-          >
-            <li
-              v-for="(cmd, index) in filtered"
-              :key="cmd.id"
-            >
+          <ul v-if="filtered.length > 0" class="max-h-[320px] overflow-y-auto py-1.5">
+            <li v-for="(cmd, index) in filtered" :key="cmd.id">
               <button
                 type="button"
                 :class="[
@@ -136,24 +130,13 @@
                 @click="run(cmd)"
                 @mouseenter="activeIndex = index"
               >
-                <component
-                  :is="cmd.icon"
-                  class="h-4 w-4 shrink-0"
-                />
+                <component :is="cmd.icon" class="h-4 w-4 shrink-0" />
                 <span class="flex-1 truncate">{{ cmd.label }}</span>
-                <span
-                  v-if="cmd.hint"
-                  class="text-2xs text-ink-subtle"
-                >{{ cmd.hint }}</span>
+                <span v-if="cmd.hint" class="text-2xs text-ink-subtle">{{ cmd.hint }}</span>
               </button>
             </li>
           </ul>
-          <div
-            v-else
-            class="px-3 py-6 text-center text-sm text-ink-muted"
-          >
-            No results
-          </div>
+          <div v-else class="px-3 py-6 text-center text-sm text-ink-muted">No results</div>
         </div>
       </div>
     </Transition>

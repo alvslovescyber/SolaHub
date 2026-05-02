@@ -26,11 +26,7 @@
       :key="index"
       class="ring-2 ring-surface-base rounded-full"
     >
-      <SAvatar
-        :name="item.name"
-        :src="item.src"
-        :size="size"
-      />
+      <SAvatar :name="item.name" :src="item.src" :size="size" />
     </span>
     <span
       v-if="overflow > 0"

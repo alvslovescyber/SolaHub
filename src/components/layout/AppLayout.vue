@@ -22,10 +22,7 @@
 
     <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
       <RouterView v-slot="{ Component }">
-        <Transition
-          name="fade"
-          mode="out-in"
-        >
+        <Transition name="fade" mode="out-in">
           <component :is="Component" />
         </Transition>
       </RouterView>

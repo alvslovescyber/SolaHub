@@ -47,7 +47,9 @@ export function useDisplayMonitors() {
     }
   }
 
-  onMounted(() => { void detectMonitors() })
+  onMounted(() => {
+    void detectMonitors()
+  })
 
   return { monitors, selectedMonitorIndex, loading, detectMonitors }
 }

@@ -58,16 +58,9 @@
 
 <template>
   <div class="flex flex-col flex-1 min-w-0">
-    <STopBar
-      title="Community"
-      subtitle="Your church family, in one place"
-    >
+    <STopBar title="Community" subtitle="Your church family, in one place">
       <template #actions>
-        <SButton
-          size="sm"
-          variant="primary"
-          @click="startPost"
-        >
+        <SButton size="sm" variant="primary" @click="startPost">
           <template #leading>
             <Plus class="h-3.5 w-3.5" />
           </template>
@@ -75,20 +68,10 @@
         </SButton>
       </template>
     </STopBar>
-    <SPageTabs
-      v-model="tab"
-      :tabs="tabs"
-    />
-    <SPageContainer
-      max="2xl"
-      padding="lg"
-    >
+    <SPageTabs v-model="tab" :tabs="tabs" />
+    <SPageContainer max="2xl" padding="lg">
       <SCard padding="none">
-        <SEmptyState
-          tone="neutral"
-          :title="tabCopy.title"
-          :description="tabCopy.description"
-        >
+        <SEmptyState tone="neutral" :title="tabCopy.title" :description="tabCopy.description">
           <template #icon>
             <Users class="h-5 w-5" />
           </template>

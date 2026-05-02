@@ -67,6 +67,7 @@ public sealed class JwtTokenService : ITokenService
             new(JwtRegisteredClaimNames.Email, user.Email.Value),
             new(JwtRegisteredClaimNames.Name, user.DisplayName),
             new(ClaimTypes.Role, user.Role.ToString()),
+            new("session_version", user.SessionVersion.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(
                 JwtRegisteredClaimNames.Iat,

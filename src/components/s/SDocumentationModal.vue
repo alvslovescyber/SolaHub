@@ -1,13 +1,6 @@
 <script setup lang="ts">
   import { type Component, ref, computed, onMounted, onBeforeUnmount } from 'vue'
-  import {
-    BookOpenText,
-    CalendarDays,
-    StickyNote,
-    Monitor,
-    HelpCircle,
-    X,
-  } from 'lucide-vue-next'
+  import { BookOpenText, CalendarDays, StickyNote, Monitor, HelpCircle, X } from 'lucide-vue-next'
   import SBrandMark from './SBrandMark.vue'
 
   defineProps<{ open: boolean }>()
@@ -15,6 +8,12 @@
 
   type Article = { id: string; title: string; content: string }
   type Section = { id: string; label: string; icon: Component; articles: Article[] }
+  type InlineSegment = { text: string; strong: boolean }
+  type ContentBlock = {
+    type: 'heading' | 'label' | 'bullet' | 'paragraph'
+    text?: string
+    segments?: InlineSegment[]
+  }
 
   const sections: Section[] = [
     {
@@ -283,6 +282,10 @@ Click End to clear the output display and return the presenter to an idle state.
     return sec?.articles.find((a) => a.id === activeArticle.value) ?? null
   })
 
+  const currentBlocks = computed(() =>
+    currentArticle.value ? parseContent(currentArticle.value.content) : []
+  )
+
   function selectArticle(sectionId: string, articleId: string) {
     activeSection.value = sectionId
     activeArticle.value = articleId
@@ -295,31 +298,45 @@ Click End to clear the output display and return the presenter to an idle state.
   onMounted(() => document.addEventListener('keydown', onKey))
   onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 
-  function render(text: string): string {
+  function parseInline(text: string): InlineSegment[] {
+    const segments: InlineSegment[] = []
+    const boldPattern = /\*\*(.*?)\*\*/g
+    let lastIndex = 0
+    let match: RegExpExecArray | null
+
+    while ((match = boldPattern.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        segments.push({ text: text.slice(lastIndex, match.index), strong: false })
+      }
+
+      segments.push({ text: match[1], strong: true })
+      lastIndex = match.index + match[0].length
+    }
+
+    if (lastIndex < text.length) {
+      segments.push({ text: text.slice(lastIndex), strong: false })
+    }
+
+    return segments.length ? segments : [{ text, strong: false }]
+  }
+
+  function parseContent(text: string): ContentBlock[] {
     return text
       .trim()
       .split('\n')
-      .map((line) => {
+      .flatMap((line) => {
         if (line.startsWith('## ')) {
-          return `<h2 class="text-[15px] font-semibold text-ink-strong mb-2.5 mt-6 first:mt-0">${line.slice(3)}</h2>`
+          return [{ type: 'heading' as const, text: line.slice(3) }]
         }
         if (line.startsWith('**') && line.endsWith('**') && line.length > 4) {
-          return `<p class="text-[13px] font-semibold text-ink mt-4 mb-0.5">${line.slice(2, -2)}</p>`
+          return [{ type: 'label' as const, text: line.slice(2, -2) }]
         }
         if (line.startsWith('- ')) {
-          const inner = line
-            .slice(2)
-            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-medium text-ink">$1</strong>')
-          return `<p class="flex items-start gap-2 text-sm text-ink-muted leading-relaxed py-0.5"><span class="text-ink-subtle shrink-0 select-none mt-0.5">•</span><span>${inner}</span></p>`
+          return [{ type: 'bullet' as const, segments: parseInline(line.slice(2)) }]
         }
-        if (line.trim() === '') return ''
-        const inner = line.replace(
-          /\*\*(.*?)\*\*/g,
-          '<strong class="font-medium text-ink">$1</strong>'
-        )
-        return `<p class="text-sm text-ink-muted leading-relaxed mt-1">${inner}</p>`
+        if (line.trim() === '') return []
+        return [{ type: 'paragraph' as const, segments: parseInline(line) }]
       })
-      .join('')
   }
 </script>
 
@@ -360,11 +377,7 @@ Click End to clear the output display and return the presenter to an idle state.
             <nav
               class="w-[200px] shrink-0 border-r border-line-subtle bg-surface-canvas overflow-y-auto py-2 px-2"
             >
-              <div
-                v-for="section in sections"
-                :key="section.id"
-                class="mb-0.5"
-              >
+              <div v-for="section in sections" :key="section.id" class="mb-0.5">
                 <button
                   :class="[
                     'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-left text-[11px] font-bold uppercase tracking-[0.07em] transition-colors',
@@ -374,17 +387,11 @@ Click End to clear the output display and return the presenter to an idle state.
                   ]"
                   @click="selectArticle(section.id, section.articles[0].id)"
                 >
-                  <component
-                    :is="section.icon"
-                    class="h-3.5 w-3.5 shrink-0"
-                  />
+                  <component :is="section.icon" class="h-3.5 w-3.5 shrink-0" />
                   {{ section.label }}
                 </button>
                 <Transition name="docs-nav">
-                  <div
-                    v-if="activeSection === section.id"
-                    class="ml-1.5 mt-0.5 mb-1.5 space-y-px"
-                  >
+                  <div v-if="activeSection === section.id" class="ml-1.5 mt-0.5 mb-1.5 space-y-px">
                     <button
                       v-for="article in section.articles"
                       :key="article.id"
@@ -405,15 +412,54 @@ Click End to clear the output display and return the presenter to an idle state.
 
             <!-- Content -->
             <div class="flex-1 overflow-y-auto px-9 py-8">
-              <Transition
-                name="docs-content"
-                mode="out-in"
-              >
-                <div
-                  v-if="currentArticle"
-                  :key="currentArticle.id"
-                  v-html="render(currentArticle.content)"
-                />
+              <Transition name="docs-content" mode="out-in">
+                <div v-if="currentArticle" :key="currentArticle.id">
+                  <template
+                    v-for="(block, blockIndex) in currentBlocks"
+                    :key="`${block.type}-${blockIndex}`"
+                  >
+                    <h2
+                      v-if="block.type === 'heading'"
+                      class="text-[15px] font-semibold text-ink-strong mb-2.5 mt-6 first:mt-0"
+                    >
+                      {{ block.text }}
+                    </h2>
+                    <p
+                      v-else-if="block.type === 'label'"
+                      class="text-[13px] font-semibold text-ink mt-4 mb-0.5"
+                    >
+                      {{ block.text }}
+                    </p>
+                    <p
+                      v-else-if="block.type === 'bullet'"
+                      class="flex items-start gap-2 text-sm text-ink-muted leading-relaxed py-0.5"
+                    >
+                      <span class="text-ink-subtle shrink-0 select-none mt-0.5">•</span>
+                      <span>
+                        <template
+                          v-for="(segment, segmentIndex) in block.segments"
+                          :key="segmentIndex"
+                        >
+                          <strong v-if="segment.strong" class="font-medium text-ink">
+                            {{ segment.text }}
+                          </strong>
+                          <span v-else>{{ segment.text }}</span>
+                        </template>
+                      </span>
+                    </p>
+                    <p v-else class="text-sm text-ink-muted leading-relaxed mt-1">
+                      <template
+                        v-for="(segment, segmentIndex) in block.segments"
+                        :key="segmentIndex"
+                      >
+                        <strong v-if="segment.strong" class="font-medium text-ink">
+                          {{ segment.text }}
+                        </strong>
+                        <span v-else>{{ segment.text }}</span>
+                      </template>
+                    </p>
+                  </template>
+                </div>
               </Transition>
             </div>
           </div>

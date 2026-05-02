@@ -3,6 +3,9 @@ import { defineStore } from 'pinia'
 import router from '@/router'
 import { authService } from '@/services/auth.service'
 import { tokenStorage } from '@/services/http/client'
+import { useNotesStore } from '@/stores/notes.store'
+import { usePlansStore } from '@/stores/plans.store'
+import { useVerseAnnotationsStore } from '@/stores/verseAnnotations.store'
 import type { User } from '@/types/user.types'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -22,6 +25,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authService.register(email, password, displayName)
       user.value = response.user
+      useVerseAnnotationsStore().useScope(response.user.id)
       await router.push({ name: 'dashboard' })
     } catch (e: unknown) {
       error.value = extractErrorMessage(e)
@@ -31,13 +35,14 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(email: string, password: string): Promise<void> {
+  async function login(email: string, password: string, redirect?: string): Promise<void> {
     isLoading.value = true
     error.value = null
     try {
       const response = await authService.login(email, password)
       user.value = response.user
-      await router.push({ name: 'dashboard' })
+      useVerseAnnotationsStore().useScope(response.user.id)
+      await router.push(normalizeRedirect(redirect))
     } catch (e: unknown) {
       error.value = extractErrorMessage(e)
       throw e
@@ -48,19 +53,28 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout(): Promise<void> {
     await authService.logout().catch(() => {})
-    user.value = null
+    clearSessionState()
     await router.push({ name: 'login' })
   }
 
-  function updateUser(partial: Partial<import('@/types/user.types').User>): void {
+  function clearSessionState(): void {
+    user.value = null
+    tokenStorage.clear()
+    useNotesStore().reset()
+    usePlansStore().reset()
+    const annotations = useVerseAnnotationsStore()
+    annotations.reset()
+    annotations.useScope(null)
+  }
+
+  function updateUser(partial: Partial<User>): void {
     if (user.value) {
       user.value = { ...user.value, ...partial }
     }
   }
 
   function handleSessionExpired(): void {
-    user.value = null
-    tokenStorage.clear()
+    clearSessionState()
     void router.push({ name: 'login', query: { reason: 'session-expired' } })
   }
 
@@ -75,8 +89,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authService.refresh()
       user.value = response.user
+      useVerseAnnotationsStore().useScope(response.user.id)
     } catch {
-      tokenStorage.clear()
+      clearSessionState()
     }
   }
 
@@ -95,6 +110,13 @@ export const useAuthStore = defineStore('auth', () => {
     rehydrate,
   }
 })
+
+function normalizeRedirect(redirect?: string): string | { name: string } {
+  if (!redirect || !redirect.startsWith('/') || redirect.startsWith('//')) {
+    return { name: 'dashboard' }
+  }
+  return redirect
+}
 
 function extractErrorMessage(e: unknown): string {
   if (

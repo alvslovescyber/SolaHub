@@ -44,7 +44,11 @@
   const notes = useNotesStore()
   const plans = usePlansStore()
   const { isCompact } = useResponsiveLayout()
-  const { feed: activityFeed, grouped: groupedActivity, isLoading: activityLoading } = useActivityFeed()
+  const {
+    feed: activityFeed,
+    grouped: groupedActivity,
+    isLoading: activityLoading,
+  } = useActivityFeed()
 
   const greeting = computed(() => {
     const hour = new Date().getHours()
@@ -135,18 +139,21 @@
   ] as const
 
   const stepDoneMap = computed<Record<string, boolean>>(() => ({
-    profile: !!(auth.user?.displayName),
+    profile: !!auth.user?.displayName,
     plan: plans.plans.length > 0,
-    invite: !!(auth.user?.churchId),
+    invite: !!auth.user?.churchId,
   }))
 
   const guide = ref<GuideState>(loadGuide())
   const openStepId = ref<string | null>(
-    setupSteps.find((s) => !loadGuide().skipped.includes(s.id) && !stepDoneMap.value[s.id])?.id ?? null
+    setupSteps.find((s) => !loadGuide().skipped.includes(s.id) && !stepDoneMap.value[s.id])?.id ??
+      null
   )
 
   const remainingStepCount = computed(
-    () => setupSteps.filter((s) => !guide.value.skipped.includes(s.id) && !stepDoneMap.value[s.id]).length
+    () =>
+      setupSteps.filter((s) => !guide.value.skipped.includes(s.id) && !stepDoneMap.value[s.id])
+        .length
   )
 
   function toggleStep(id: string): void {
@@ -159,8 +166,7 @@
       skipped: [...new Set([...guide.value.skipped, id])],
     }
     saveGuide(guide.value)
-    openStepId.value =
-      setupSteps.find((s) => !guide.value.skipped.includes(s.id))?.id ?? null
+    openStepId.value = setupSteps.find((s) => !guide.value.skipped.includes(s.id))?.id ?? null
   }
 
   function dismissGuide(): void {
@@ -181,14 +187,8 @@
         subtitle="Open the Word and pick up where you left off"
       >
         <template #actions>
-          <RouterLink
-            :to="{ name: 'bible' }"
-            class="no-underline hover:no-underline"
-          >
-            <SButton
-              size="sm"
-              variant="primary"
-            >
+          <RouterLink :to="{ name: 'bible' }" class="no-underline hover:no-underline">
+            <SButton size="sm" variant="primary">
               <template #leading>
                 <BookMarked class="h-3.5 w-3.5" />
               </template>
@@ -198,22 +198,14 @@
         </template>
       </STopBar>
 
-      <SPageTabs
-        v-model="tab"
-        :tabs="tabs"
-      />
+      <SPageTabs v-model="tab" :tabs="tabs" />
 
-      <SPageContainer
-        max="2xl"
-        padding="lg"
-      >
-
+      <SPageContainer max="2xl" padding="lg">
         <!-- ── Today card ── -->
-        <section
-          v-if="tab === 'home'"
-          class="mb-6"
-        >
-          <div class="flex gap-4 items-stretch rounded-xl border border-line bg-surface-raised px-5 py-4">
+        <section v-if="tab === 'home'" class="mb-6">
+          <div
+            class="flex gap-4 items-stretch rounded-xl border border-line bg-surface-raised px-5 py-4"
+          >
             <!-- Date badge -->
             <div
               :class="[
@@ -223,8 +215,12 @@
                   : 'bg-surface-canvas text-ink-strong',
               ]"
             >
-              <span class="text-[26px] font-bold leading-none tabular-nums">{{ todayDateNum }}</span>
-              <span class="text-[9px] font-semibold uppercase tracking-widest text-ink-muted">{{ todayMonth }}</span>
+              <span class="text-[26px] font-bold leading-none tabular-nums">{{
+                todayDateNum
+              }}</span>
+              <span class="text-[9px] font-semibold uppercase tracking-widest text-ink-muted">{{
+                todayMonth
+              }}</span>
             </div>
 
             <!-- Status column -->
@@ -250,17 +246,16 @@
         </section>
 
         <!-- ── Setup guide (accordion) ── -->
-        <section
-          v-if="tab === 'home' && !guide.dismissed"
-          class="mb-6"
-        >
+        <section v-if="tab === 'home' && !guide.dismissed" class="mb-6">
           <div class="flex items-baseline justify-between mb-3">
             <div>
-              <h2 class="text-[13px] font-semibold text-ink-strong">
-                Get started
-              </h2>
+              <h2 class="text-[13px] font-semibold text-ink-strong">Get started</h2>
               <p class="text-xs text-ink-muted mt-0.5">
-                {{ remainingStepCount === 0 ? 'All steps complete' : `${remainingStepCount} of ${setupSteps.length} steps remaining` }}
+                {{
+                  remainingStepCount === 0
+                    ? 'All steps complete'
+                    : `${remainingStepCount} of ${setupSteps.length} steps remaining`
+                }}
               </p>
             </div>
             <button
@@ -290,14 +285,18 @@
                   <span
                     v-else
                     class="h-[18px] w-[18px] rounded-full border-2 border-line flex items-center justify-center text-[10px] font-bold text-ink-subtle"
-                  >{{ idx + 1 }}</span>
+                    >{{ idx + 1 }}</span
+                  >
                 </span>
                 <span
                   :class="[
                     'flex-1 text-[13px] font-medium',
-                    stepDoneMap[step.id] || guide.skipped.includes(step.id) ? 'text-ink-subtle line-through' : 'text-ink-strong',
+                    stepDoneMap[step.id] || guide.skipped.includes(step.id)
+                      ? 'text-ink-subtle line-through'
+                      : 'text-ink-strong',
                   ]"
-                >{{ step.title }}</span>
+                  >{{ step.title }}</span
+                >
                 <ChevronDown
                   :class="[
                     'h-3.5 w-3.5 text-ink-subtle shrink-0 transition-transform duration-200',
@@ -309,21 +308,19 @@
               <!-- Expanded body -->
               <Transition name="guide-step">
                 <div
-                  v-if="openStepId === step.id && !stepDoneMap[step.id] && !guide.skipped.includes(step.id)"
+                  v-if="
+                    openStepId === step.id &&
+                    !stepDoneMap[step.id] &&
+                    !guide.skipped.includes(step.id)
+                  "
                   class="pl-[52px] pr-4 pb-4"
                 >
                   <p class="text-xs text-ink-muted leading-relaxed mb-3">
                     {{ step.desc }}
                   </p>
                   <div class="flex items-center gap-3">
-                    <RouterLink
-                      :to="step.route"
-                      class="no-underline hover:no-underline"
-                    >
-                      <SButton
-                        size="sm"
-                        variant="primary"
-                      >
+                    <RouterLink :to="step.route" class="no-underline hover:no-underline">
+                      <SButton size="sm" variant="primary">
                         {{ step.cta }}
                       </SButton>
                     </RouterLink>
@@ -341,10 +338,7 @@
         </section>
 
         <!-- ── Overview stats ── -->
-        <section
-          v-if="tab === 'home'"
-          class="mb-7"
-        >
+        <section v-if="tab === 'home'" class="mb-7">
           <p class="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-subtle mb-3">
             Overview
           </p>
@@ -357,7 +351,9 @@
               <p class="text-[11px] font-medium uppercase tracking-[0.06em] text-ink-subtle">
                 {{ stat.label }}
               </p>
-              <p class="text-[28px] font-bold text-ink-strong mt-1 leading-none tracking-tight tabular-nums">
+              <p
+                class="text-[28px] font-bold text-ink-strong mt-1 leading-none tracking-tight tabular-nums"
+              >
                 {{ stat.value }}
               </p>
             </article>
@@ -365,10 +361,7 @@
         </section>
 
         <!-- ── Today's reading / Reading tab ── -->
-        <section
-          v-if="tab === 'home' || tab === 'reading'"
-          class="mb-7"
-        >
+        <section v-if="tab === 'home' || tab === 'reading'" class="mb-7">
           <div class="flex items-baseline justify-between mb-3">
             <div>
               <p class="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-subtle">
@@ -382,23 +375,14 @@
                 }}
               </p>
             </div>
-            <RouterLink
-              to="/plans"
-              class="text-xs text-brand-600 font-medium hover:underline"
-            >
+            <RouterLink to="/plans" class="text-xs text-brand-600 font-medium hover:underline">
               View all
             </RouterLink>
           </div>
 
-          <SSpinner
-            v-if="plans.isLoading"
-            size="sm"
-          />
+          <SSpinner v-if="plans.isLoading" size="sm" />
 
-          <SCard
-            v-else-if="plans.plans.length === 0"
-            padding="none"
-          >
+          <SCard v-else-if="plans.plans.length === 0" padding="none">
             <SEmptyState
               title="No reading plans yet"
               description="Pick a plan or build your own to start walking through Scripture."
@@ -407,25 +391,14 @@
                 <CalendarDays class="h-5 w-5" />
               </template>
               <template #actions>
-                <RouterLink
-                  to="/plans"
-                  class="no-underline hover:no-underline"
-                >
-                  <SButton
-                    size="sm"
-                    variant="primary"
-                  >
-                    Create a plan
-                  </SButton>
+                <RouterLink to="/plans" class="no-underline hover:no-underline">
+                  <SButton size="sm" variant="primary"> Create a plan </SButton>
                 </RouterLink>
               </template>
             </SEmptyState>
           </SCard>
 
-          <SCard
-            v-else
-            padding="none"
-          >
+          <SCard v-else padding="none">
             <RouterLink
               v-for="plan in plans.plans.slice(0, 5)"
               :key="plan.id"
@@ -461,29 +434,19 @@
               </SBadge>
             </RouterLink>
           </SCard>
-          <p
-            v-if="plans.plans.length > 5"
-            class="mt-2 text-xs text-ink-subtle text-right"
-          >
+          <p v-if="plans.plans.length > 5" class="mt-2 text-xs text-ink-subtle text-right">
             Showing 5 of {{ plans.plans.length }} —
-            <RouterLink to="/plans" class="text-brand-600 font-medium hover:underline">view all</RouterLink>
+            <RouterLink to="/plans" class="text-brand-600 font-medium hover:underline">
+              view all
+            </RouterLink>
           </p>
         </section>
 
         <!-- ── Activity feed ── -->
-        <section
-          v-if="tab === 'activity'"
-          class="mt-2"
-        >
-          <SSpinner
-            v-if="activityLoading"
-            size="sm"
-          />
+        <section v-if="tab === 'activity'" class="mt-2">
+          <SSpinner v-if="activityLoading" size="sm" />
 
-          <SCard
-            v-else-if="activityFeed.length === 0"
-            padding="none"
-          >
+          <SCard v-else-if="activityFeed.length === 0" padding="none">
             <SEmptyState
               title="No activity yet"
               description="Write a verse note, join a reading plan, or mark daily reading to see your history here."
@@ -494,15 +457,11 @@
             </SEmptyState>
           </SCard>
 
-          <div
-            v-else
-            class="space-y-6"
-          >
-            <div
-              v-for="group in groupedActivity"
-              :key="group.label"
-            >
-              <p class="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-subtle mb-2 px-1">
+          <div v-else class="space-y-6">
+            <div v-for="group in groupedActivity" :key="group.label">
+              <p
+                class="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-subtle mb-2 px-1"
+              >
                 {{ group.label }}
               </p>
               <SCard padding="none">
@@ -519,19 +478,13 @@
                       event.iconColor,
                     ]"
                   >
-                    <component
-                      :is="event.icon"
-                      class="h-4 w-4"
-                    />
+                    <component :is="event.icon" class="h-4 w-4" />
                   </span>
                   <div class="flex-1 min-w-0">
                     <p class="text-[13px] font-medium text-ink-strong leading-snug">
                       {{ event.label }}
                     </p>
-                    <p
-                      v-if="event.detail"
-                      class="text-xs text-ink-muted mt-0.5 line-clamp-1"
-                    >
+                    <p v-if="event.detail" class="text-xs text-ink-muted mt-0.5 line-clamp-1">
                       {{ event.detail }}
                     </p>
                   </div>
@@ -545,46 +498,35 @@
         </section>
 
         <!-- ── Quick access — 4-item icon grid ── -->
-        <section
-          v-if="tab === 'home'"
-          class="mt-1 mb-6"
-        >
+        <section v-if="tab === 'home'" class="mt-1 mb-6">
           <p class="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-subtle mb-3">
             Quick access
           </p>
           <div class="grid grid-cols-2 gap-2.5">
-            <RouterLink
-              to="/bible"
-              class="block no-underline hover:no-underline"
-            >
-              <SCard
-                hoverable
-                padding="sm"
-                class="h-full"
-              >
+            <RouterLink to="/bible" class="block no-underline hover:no-underline">
+              <SCard hoverable padding="sm" class="h-full">
                 <div class="flex items-center gap-3">
-                  <span class="h-8 w-8 shrink-0 rounded-lg bg-brand-500/10 dark:bg-brand-500/15 flex items-center justify-center text-brand-600 dark:text-brand-400">
+                  <span
+                    class="h-8 w-8 shrink-0 rounded-lg bg-brand-500/10 dark:bg-brand-500/15 flex items-center justify-center text-brand-600 dark:text-brand-400"
+                  >
                     <BookOpenText class="h-[15px] w-[15px]" />
                   </span>
                   <div class="min-w-0">
-                    <p class="text-[13px] font-semibold text-ink-strong leading-tight">Open Bible</p>
+                    <p class="text-[13px] font-semibold text-ink-strong leading-tight">
+                      Open Bible
+                    </p>
                     <p class="text-[11px] text-ink-muted mt-0.5">Read & search</p>
                   </div>
                 </div>
               </SCard>
             </RouterLink>
 
-            <RouterLink
-              to="/notes"
-              class="block no-underline hover:no-underline"
-            >
-              <SCard
-                hoverable
-                padding="sm"
-                class="h-full"
-              >
+            <RouterLink to="/notes" class="block no-underline hover:no-underline">
+              <SCard hoverable padding="sm" class="h-full">
                 <div class="flex items-center gap-3">
-                  <span class="h-8 w-8 shrink-0 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                  <span
+                    class="h-8 w-8 shrink-0 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400"
+                  >
                     <StickyNote class="h-[15px] w-[15px]" />
                   </span>
                   <div class="min-w-0">
@@ -595,38 +537,30 @@
               </SCard>
             </RouterLink>
 
-            <RouterLink
-              to="/plans"
-              class="block no-underline hover:no-underline"
-            >
-              <SCard
-                hoverable
-                padding="sm"
-                class="h-full"
-              >
+            <RouterLink to="/plans" class="block no-underline hover:no-underline">
+              <SCard hoverable padding="sm" class="h-full">
                 <div class="flex items-center gap-3">
-                  <span class="h-8 w-8 shrink-0 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                  <span
+                    class="h-8 w-8 shrink-0 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400"
+                  >
                     <CalendarDays class="h-[15px] w-[15px]" />
                   </span>
                   <div class="min-w-0">
-                    <p class="text-[13px] font-semibold text-ink-strong leading-tight">Reading plans</p>
+                    <p class="text-[13px] font-semibold text-ink-strong leading-tight">
+                      Reading plans
+                    </p>
                     <p class="text-[11px] text-ink-muted mt-0.5">Browse & manage</p>
                   </div>
                 </div>
               </SCard>
             </RouterLink>
 
-            <RouterLink
-              to="/presenter"
-              class="block no-underline hover:no-underline"
-            >
-              <SCard
-                hoverable
-                padding="sm"
-                class="h-full"
-              >
+            <RouterLink to="/presenter" class="block no-underline hover:no-underline">
+              <SCard hoverable padding="sm" class="h-full">
                 <div class="flex items-center gap-3">
-                  <span class="h-8 w-8 shrink-0 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-600 dark:text-violet-400">
+                  <span
+                    class="h-8 w-8 shrink-0 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-600 dark:text-violet-400"
+                  >
                     <Monitor class="h-[15px] w-[15px]" />
                   </span>
                   <div class="min-w-0">
@@ -638,25 +572,16 @@
             </RouterLink>
           </div>
         </section>
-
       </SPageContainer>
     </div>
 
     <!-- ── Right rail ── -->
-    <SRightRail
-      v-if="!isCompact"
-      title="Help & resources"
-    >
+    <SRightRail v-if="!isCompact" title="Help & resources">
       <div class="px-4 pt-3 pb-4 space-y-5">
         <div class="flex items-start gap-2.5">
-          <SBrandMark
-            :size="18"
-            class="shrink-0 mt-0.5"
-          />
+          <SBrandMark :size="18" class="shrink-0 mt-0.5" />
           <div class="min-w-0">
-            <p class="text-[13px] font-semibold text-ink-strong leading-tight">
-              SolaHub guide
-            </p>
+            <p class="text-[13px] font-semibold text-ink-strong leading-tight">SolaHub guide</p>
             <p class="text-[12px] text-ink-muted mt-0.5 leading-snug">
               A clickthrough tour of all features
             </p>
@@ -673,7 +598,9 @@
         <div class="border-t border-line-subtle" />
 
         <div class="space-y-0.5">
-          <p class="text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-subtle px-1 pb-1">
+          <p
+            class="text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-subtle px-1 pb-1"
+          >
             Resources
           </p>
           <button
@@ -701,39 +628,30 @@
     </SRightRail>
 
     <!-- Modals -->
-    <SOnboardingModal
-      :open="showOnboarding"
-      @close="showOnboarding = false"
-    />
-    <SDocumentationModal
-      :open="showDocs"
-      @close="showDocs = false"
-    />
-    <SReleaseNotesModal
-      :open="showReleaseNotes"
-      @close="showReleaseNotes = false"
-    />
+    <SOnboardingModal :open="showOnboarding" @close="showOnboarding = false" />
+    <SDocumentationModal :open="showDocs" @close="showDocs = false" />
+    <SReleaseNotesModal :open="showReleaseNotes" @close="showReleaseNotes = false" />
   </div>
 </template>
 
 <style scoped>
-.guide-step-enter-active {
-  transition:
-    max-height 0.2s ease,
-    opacity 0.15s ease;
-  max-height: 200px;
-  overflow: hidden;
-}
-.guide-step-leave-active {
-  transition:
-    max-height 0.15s ease,
-    opacity 0.1s ease;
-  max-height: 200px;
-  overflow: hidden;
-}
-.guide-step-enter-from,
-.guide-step-leave-to {
-  max-height: 0;
-  opacity: 0;
-}
+  .guide-step-enter-active {
+    transition:
+      max-height 0.2s ease,
+      opacity 0.15s ease;
+    max-height: 200px;
+    overflow: hidden;
+  }
+  .guide-step-leave-active {
+    transition:
+      max-height 0.15s ease,
+      opacity 0.1s ease;
+    max-height: 200px;
+    overflow: hidden;
+  }
+  .guide-step-enter-from,
+  .guide-step-leave-to {
+    max-height: 0;
+    opacity: 0;
+  }
 </style>

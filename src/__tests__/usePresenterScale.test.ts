@@ -29,24 +29,6 @@ function triggerResize(el: HTMLElement, width: number, height: number) {
   MockResizeObserver.callback?.([{ target: el } as unknown as ResizeObserverEntry])
 }
 
-// ── Test harness ──────────────────────────────────────────────────────────────
-
-function makeHarness() {
-  const containerRef = ref<HTMLElement | null>(null)
-  let exposedScale: ReturnType<typeof usePresenterScale>['scale'] | undefined
-
-  const TestComponent = defineComponent({
-    setup() {
-      const result = usePresenterScale(containerRef)
-      exposedScale = result.scale
-      return result
-    },
-    template: '<div ref="el" />',
-  })
-
-  return { containerRef, TestComponent, getScale: () => exposedScale?.value ?? 1 }
-}
-
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('usePresenterScale', () => {
@@ -68,7 +50,9 @@ describe('usePresenterScale', () => {
   it('exports refW = 1920 and refH = 1080', () => {
     const containerRef = ref<HTMLElement | null>(null)
     const TestComp = defineComponent({
-      setup() { return usePresenterScale(containerRef) },
+      setup() {
+        return usePresenterScale(containerRef)
+      },
       template: '<div />',
     })
     const wrapper = mount(TestComp)
@@ -80,7 +64,9 @@ describe('usePresenterScale', () => {
   it('scale defaults to 1 before any element is observed', () => {
     const containerRef = ref<HTMLElement | null>(null)
     const TestComp = defineComponent({
-      setup() { return usePresenterScale(containerRef) },
+      setup() {
+        return usePresenterScale(containerRef)
+      },
       template: '<div />',
     })
     const wrapper = mount(TestComp)
@@ -91,7 +77,9 @@ describe('usePresenterScale', () => {
   it('calculates scale correctly for a width-constrained container', async () => {
     const containerRef = ref<HTMLElement | null>(null)
     const TestComp = defineComponent({
-      setup() { return usePresenterScale(containerRef) },
+      setup() {
+        return usePresenterScale(containerRef)
+      },
       template: '<div />',
     })
     const wrapper = mount(TestComp, { attachTo: document.body })
@@ -107,7 +95,9 @@ describe('usePresenterScale', () => {
   it('calculates scale correctly for a height-constrained container', async () => {
     const containerRef = ref<HTMLElement | null>(null)
     const TestComp = defineComponent({
-      setup() { return usePresenterScale(containerRef) },
+      setup() {
+        return usePresenterScale(containerRef)
+      },
       template: '<div />',
     })
     const wrapper = mount(TestComp, { attachTo: document.body })
@@ -123,7 +113,9 @@ describe('usePresenterScale', () => {
   it('picks the smaller of width and height ratios (aspect-safe)', async () => {
     const containerRef = ref<HTMLElement | null>(null)
     const TestComp = defineComponent({
-      setup() { return usePresenterScale(containerRef) },
+      setup() {
+        return usePresenterScale(containerRef)
+      },
       template: '<div />',
     })
     const wrapper = mount(TestComp, { attachTo: document.body })
@@ -140,7 +132,9 @@ describe('usePresenterScale', () => {
   it('ignores resize events where both dimensions are 0', async () => {
     const containerRef = ref<HTMLElement | null>(null)
     const TestComp = defineComponent({
-      setup() { return usePresenterScale(containerRef) },
+      setup() {
+        return usePresenterScale(containerRef)
+      },
       template: '<div />',
     })
     const wrapper = mount(TestComp, { attachTo: document.body })
@@ -160,7 +154,9 @@ describe('usePresenterScale', () => {
   it('disconnects the ResizeObserver on unmount', async () => {
     const containerRef = ref<HTMLElement | null>(null)
     const TestComp = defineComponent({
-      setup() { return usePresenterScale(containerRef) },
+      setup() {
+        return usePresenterScale(containerRef)
+      },
       template: '<div />',
     })
     const wrapper = mount(TestComp, { attachTo: document.body })

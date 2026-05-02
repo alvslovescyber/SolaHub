@@ -3,6 +3,7 @@ using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
 using SolaHub.Application.Mappers;
 using SolaHub.Core.Common;
+using SolaHub.Core.Enums;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.ValueObjects;
 
@@ -23,7 +24,8 @@ internal sealed class GetPlanByIdQueryHandler(
             return Error.NotFound("Plans.NotFound", $"Plan {request.PlanId.Value} was not found.");
 
         var isParticipant = plan.Participants.Any(p => p.UserId == request.RequestingUserId);
-        if (!plan.IsPublic && plan.CreatedBy != request.RequestingUserId && !isParticipant)
+        var canReadPublicPlan = plan.IsPublic && plan.Status == PlanStatus.Active;
+        if (!canReadPublicPlan && plan.CreatedBy != request.RequestingUserId && !isParticipant)
             return Error.Forbidden("Plans.Forbidden", "You do not have access to this plan.");
 
         var displayNames = await BuildDisplayNameMapAsync(plan.Participants.Select(p => p.UserId), ct);

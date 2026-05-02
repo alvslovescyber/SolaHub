@@ -77,9 +77,9 @@ class CollaborationService {
   }
 
   async joinPlan(planId: string): Promise<void> {
-    if (!this.connection) return
+    await this.connect()
     this.joinedPlans.add(planId)
-    await this.connection.invoke('JoinPlan', planId)
+    await this.connection!.invoke('JoinPlan', planId)
   }
 
   async leavePlan(planId: string): Promise<void> {
@@ -89,15 +89,18 @@ class CollaborationService {
   }
 
   async broadcastProgress(planId: string, dayNumber: number): Promise<void> {
-    await this.connection?.invoke('BroadcastProgress', planId, dayNumber)
+    await this.ensurePlanConnection(planId)
+    await this.connection!.invoke('BroadcastProgress', planId, dayNumber)
   }
 
   async broadcastAnnotation(planId: string, verseRef: string, content: string): Promise<void> {
-    await this.connection?.invoke('BroadcastAnnotation', planId, verseRef, content)
+    await this.ensurePlanConnection(planId)
+    await this.connection!.invoke('BroadcastAnnotation', planId, verseRef, content)
   }
 
   async pushPresenterVerse(planId: string, verseRef: string): Promise<void> {
-    await this.connection?.invoke('PushPresenterVerse', planId, verseRef)
+    await this.ensurePlanConnection(planId)
+    await this.connection!.invoke('PushPresenterVerse', planId, verseRef)
   }
 
   on(handler: EventHandler): () => void {
@@ -108,6 +111,13 @@ class CollaborationService {
   private emit(event: CollaborationEvent): void {
     for (const handler of this.handlers) {
       handler(event)
+    }
+  }
+
+  private async ensurePlanConnection(planId: string): Promise<void> {
+    await this.connect()
+    if (!this.joinedPlans.has(planId)) {
+      await this.joinPlan(planId)
     }
   }
 

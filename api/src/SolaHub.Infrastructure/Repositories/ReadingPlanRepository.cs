@@ -61,6 +61,33 @@ public sealed class ReadingPlanRepository(AppDbContext db) : IReadingPlanReposit
             .AnyAsync(p => p.Id == planId && p.Participants.Any(pp => pp.UserId == userId), ct);
     }
 
+    public async Task AdvanceParticipantProgressAsync(
+        ReadingPlanId planId,
+        UserId userId,
+        int dayNumber,
+        CancellationToken ct = default
+    )
+    {
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            UPDATE plan_participants
+            SET current_day = GREATEST(current_day, {dayNumber})
+            WHERE plan_id = {planId.Value}
+              AND user_id = {userId.Value};
+            """,
+            ct
+        );
+
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            UPDATE reading_plans
+            SET updated_at = {DateTimeOffset.UtcNow}
+            WHERE id = {planId.Value};
+            """,
+            ct
+        );
+    }
+
     public async Task AddAsync(ReadingPlan plan, CancellationToken ct)
     {
         await db.ReadingPlans.AddAsync(plan, ct);

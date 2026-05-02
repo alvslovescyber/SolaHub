@@ -6,24 +6,21 @@ use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    if let Err(error) = tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            let app_data_dir = app
-                .path()
-                .app_data_dir()
-                .expect("Failed to get app data directory");
+            let app_data_dir = app.path().app_data_dir().map_err(|error| {
+                std::io::Error::other(format!("Failed to get app data directory: {error}"))
+            })?;
 
-            std::fs::create_dir_all(&app_data_dir)
-                .expect("Failed to create app data directory");
+            std::fs::create_dir_all(&app_data_dir).map_err(|error| {
+                std::io::Error::other(format!("Failed to create app data directory: {error}"))
+            })?;
 
             let db_path = app_data_dir.join("solahub_local.db");
-            let conn = rusqlite::Connection::open(&db_path)
-                .expect("Failed to open local SQLite database");
+            let conn = rusqlite::Connection::open(&db_path)?;
 
-            state::initialize_schema(&conn)
-                .expect("Failed to initialize database schema");
+            state::initialize_schema(&conn)?;
 
             app.manage(AppState::new(conn));
 
@@ -43,5 +40,7 @@ pub fn run() {
             commands::window::set_fullscreen,
         ])
         .run(tauri::generate_context!())
-        .expect("Error running SolaHub application");
+    {
+        eprintln!("Error running SolaHub application: {error}");
+    }
 }

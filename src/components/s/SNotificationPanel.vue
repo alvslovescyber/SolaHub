@@ -25,10 +25,7 @@
         @mousedown.self="emit('close')"
       >
         <!-- Click-away backdrop -->
-        <div
-          class="absolute inset-0 pointer-events-auto"
-          @mousedown="emit('close')"
-        />
+        <div class="absolute inset-0 pointer-events-auto" @mousedown="emit('close')" />
 
         <!-- Panel — anchored top-right, below traffic light area -->
         <div
@@ -37,9 +34,7 @@
         >
           <!-- Header -->
           <div class="flex items-center justify-between px-4 py-3 border-b border-line-subtle">
-            <p class="text-[13px] font-semibold text-ink-strong font-sans">
-              Notifications
-            </p>
+            <p class="text-[13px] font-semibold text-ink-strong font-sans">Notifications</p>
             <button
               type="button"
               class="h-6 w-6 flex items-center justify-center rounded-md text-ink-muted hover:bg-surface-canvas hover:text-ink-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
@@ -52,12 +47,12 @@
 
           <!-- Empty state -->
           <div class="flex flex-col items-center text-center px-4 py-8 text-ink-muted">
-            <span class="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-surface-canvas mb-3">
+            <span
+              class="h-10 w-10 inline-flex items-center justify-center rounded-xl bg-surface-canvas mb-3"
+            >
               <BellOff class="h-5 w-5" />
             </span>
-            <p class="text-[13px] font-medium font-sans text-ink-strong">
-              You're all clear
-            </p>
+            <p class="text-[13px] font-medium font-sans text-ink-strong">You're all clear</p>
             <p class="text-xs mt-1 leading-relaxed font-sans max-w-[220px]">
               Mentions, prayer requests, and church updates will appear here.
             </p>

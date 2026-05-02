@@ -8,7 +8,7 @@ namespace SolaHub.Application.Mappers;
 /// Centralizing this avoids the previous cross-handler reach into
 /// <c>RegisterCommandHandler.MapToUserDto</c> and keeps the projection in one place.
 /// </summary>
-internal static class UserMapper
+public static class UserMapper
 {
     public static UserDto ToDto(User user) =>
         new(

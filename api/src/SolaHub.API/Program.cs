@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using System.Text;
 using HealthChecks.NpgSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -11,6 +13,8 @@ using StackExchange.Redis;
 using SolaHub.API.Hubs;
 using SolaHub.API.Middleware;
 using SolaHub.Application;
+using SolaHub.Core.Interfaces.Repositories;
+using SolaHub.Core.ValueObjects;
 using SolaHub.Infrastructure;
 using SolaHub.Infrastructure.Auth;
 using SolaHub.Infrastructure.Persistence;
@@ -56,10 +60,18 @@ try
     builder
         .Services.AddResponseCompression(opts =>
         {
-            opts.EnableForHttps = true;
+            // Avoid compressing secret-bearing JSON responses over HTTPS.
+            opts.EnableForHttps = false;
             opts.Providers.Add<BrotliCompressionProvider>();
             opts.Providers.Add<GzipCompressionProvider>();
         });
+
+    builder.Services.Configure<ForwardedHeadersOptions>(opts =>
+    {
+        opts.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        opts.KnownIPNetworks.Clear();
+        opts.KnownProxies.Clear();
+    });
 
     // ─── JWT Authentication ────────────────────────────────────────────────────
     // Bind a snapshot of JwtOptions so JwtBearer middleware sees the same source
@@ -107,6 +119,34 @@ try
                     }
                     return Task.CompletedTask;
                 },
+                OnTokenValidated = async context =>
+                {
+                    var principal = context.Principal;
+                    var sub =
+                        principal?.FindFirstValue(ClaimTypes.NameIdentifier)
+                        ?? principal?.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+                    if (!Guid.TryParse(sub, out var userGuid))
+                    {
+                        context.Fail("Missing or invalid user identifier.");
+                        return;
+                    }
+
+                    var sessionVersionClaim = principal?.FindFirstValue("session_version");
+                    if (!int.TryParse(sessionVersionClaim, out var tokenSessionVersion))
+                    {
+                        context.Fail("Missing session version.");
+                        return;
+                    }
+
+                    var repo = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+                    var user = await repo.GetByIdAsync(
+                        UserId.From(userGuid),
+                        context.HttpContext.RequestAborted
+                    );
+
+                    if (user is null || !user.IsActive || user.SessionVersion != tokenSessionVersion)
+                        context.Fail("Token has been revoked.");
+                },
             };
         });
 
@@ -149,6 +189,7 @@ try
     var app = builder.Build();
 
     // ─── Middleware Pipeline ───────────────────────────────────────────────────
+    app.UseForwardedHeaders();
     app.UseMiddleware<GlobalExceptionMiddleware>();
     app.UseMiddleware<SecurityHeadersMiddleware>();
     app.UseMiddleware<AuthRateLimitMiddleware>();
@@ -174,7 +215,10 @@ try
     }
 
     if (!app.Environment.IsDevelopment())
+    {
+        app.UseHsts();
         app.UseHttpsRedirection();
+    }
 
     app.UseCors("TauriApp");
     app.UseAuthentication();

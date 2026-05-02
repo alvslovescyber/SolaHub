@@ -47,6 +47,7 @@ export const usePlansStore = defineStore('plans', () => {
   async function fetchPlan(id: string): Promise<void> {
     isLoading.value = true
     error.value = null
+    activePlan.value = null
     try {
       activePlan.value = await plansService.getPlan(id)
     } catch {
@@ -138,6 +139,13 @@ export const usePlansStore = defineStore('plans', () => {
     invalidateCache()
   }
 
+  function reset(): void {
+    plans.value = []
+    activePlan.value = null
+    error.value = null
+    lastFetchedAt = 0
+  }
+
   return {
     plans,
     activePlan,
@@ -156,5 +164,6 @@ export const usePlansStore = defineStore('plans', () => {
     recordProgress,
     remove,
     invalidateCache,
+    reset,
   }
 })

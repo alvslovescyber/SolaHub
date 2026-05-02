@@ -27,10 +27,7 @@
   >
     <slot name="leading" />
     <slot />
-    <span
-      v-if="$slots.shortcut"
-      class="ml-auto text-2xs text-ink-subtle"
-    >
+    <span v-if="$slots.shortcut" class="ml-auto text-2xs text-ink-subtle">
       <slot name="shortcut" />
     </span>
   </component>

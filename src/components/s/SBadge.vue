@@ -64,10 +64,7 @@
   <span
     :class="['inline-flex items-center gap-1.5 px-2 h-5 text-xs font-medium rounded', toneClass]"
   >
-    <span
-      v-if="dot"
-      :class="['h-1.5 w-1.5 rounded-full', dotClass]"
-    />
+    <span v-if="dot" :class="['h-1.5 w-1.5 rounded-full', dotClass]" />
     <slot />
   </span>
 </template>

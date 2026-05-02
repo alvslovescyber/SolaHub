@@ -64,14 +64,8 @@
       fullWidth && 'w-full',
     ]"
   >
-    <SSpinner
-      v-if="loading"
-      :size="size === 'xs' ? 'xs' : 'sm'"
-    />
-    <slot
-      v-else
-      name="leading"
-    />
+    <SSpinner v-if="loading" :size="size === 'xs' ? 'xs' : 'sm'" />
+    <slot v-else name="leading" />
     <slot />
     <slot name="trailing" />
   </button>

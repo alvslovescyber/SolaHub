@@ -29,10 +29,7 @@
       </div>
 
       <div class="s-auth-card">
-        <form
-          class="s-auth-card-fields space-y-3.5"
-          @submit.prevent="handleSubmit"
-        >
+        <form class="s-auth-card-fields space-y-3.5" @submit.prevent="handleSubmit">
           <SInput
             v-model="displayName"
             label="Display name"
@@ -58,19 +55,11 @@
             required
           />
 
-          <p
-            v-if="error"
-            class="text-xs text-red-600 dark:text-red-400"
-          >
+          <p v-if="error" class="text-xs text-red-600 dark:text-red-400">
             {{ error }}
           </p>
 
-          <SButton
-            type="submit"
-            full-width
-            :loading="isLoading"
-            size="md"
-          >
+          <SButton type="submit" full-width :loading="isLoading" size="md">
             Create account
           </SButton>
         </form>
@@ -78,10 +67,7 @@
 
       <p class="text-center text-xs text-ink-muted mt-5">
         Already have an account?
-        <RouterLink
-          to="/login"
-          class="text-brand-600 font-medium hover:underline"
-        >
+        <RouterLink to="/login" class="text-brand-600 font-medium hover:underline">
           Sign in
         </RouterLink>
       </p>

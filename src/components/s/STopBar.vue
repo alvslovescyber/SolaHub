@@ -31,44 +31,24 @@
     data-tauri-drag-region
   >
     <div class="flex items-center min-w-0 gap-3">
-      <div
-        v-if="title || subtitle"
-        class="min-w-0"
-      >
-        <h1
-          v-if="title"
-          class="text-[14px] font-semibold text-ink-strong truncate leading-snug"
-        >
+      <div v-if="title || subtitle" class="min-w-0">
+        <h1 v-if="title" class="text-[14px] font-semibold text-ink-strong truncate leading-snug">
           {{ title }}
         </h1>
-        <p
-          v-if="subtitle"
-          class="text-[12px] text-ink-muted truncate leading-snug mt-0.5"
-        >
+        <p v-if="subtitle" class="text-[12px] text-ink-muted truncate leading-snug mt-0.5">
           {{ subtitle }}
         </p>
       </div>
       <slot name="left" />
     </div>
 
-    <div
-      class="flex items-center gap-1.5"
-      data-no-drag
-    >
+    <div class="flex items-center gap-1.5" data-no-drag>
       <slot name="actions" />
-      <SIconButton
-        v-if="showBell"
-        label="Notifications"
-        size="sm"
-        @click="notifOpen = !notifOpen"
-      >
+      <SIconButton v-if="showBell" label="Notifications" size="sm" @click="notifOpen = !notifOpen">
         <Bell class="h-4 w-4" />
       </SIconButton>
     </div>
   </header>
 
-  <SNotificationPanel
-    :open="notifOpen"
-    @close="notifOpen = false"
-  />
+  <SNotificationPanel :open="notifOpen" @close="notifOpen = false" />
 </template>

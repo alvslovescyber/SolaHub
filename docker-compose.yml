@@ -22,7 +22,7 @@ services:
       start_period: 10s
 
   # ─── Adminer (lightweight DB browser) ─────────────────────────────────────
-  # Visit http://localhost:8080 — System: PostgreSQL, Server: postgres
+  # Visit http://localhost:8081 — System: PostgreSQL, Server: postgres
   adminer:
     image: adminer:4-standalone
     container_name: solahub_adminer

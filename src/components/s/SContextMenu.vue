@@ -75,7 +75,9 @@
         class="min-w-[200px] rounded-xl border border-line bg-surface-overlay shadow-pop backdrop-blur-2xl p-1.5 text-sm"
         @mousedown.stop
       >
-        <p class="px-2 pt-1 pb-1.5 text-[11px] font-semibold text-ink-subtle uppercase tracking-wide">
+        <p
+          class="px-2 pt-1 pb-1.5 text-[11px] font-semibold text-ink-subtle uppercase tracking-wide"
+        >
           {{ verse.book }} {{ verse.chapter }}:{{ verse.verse }}
         </p>
 
@@ -88,7 +90,8 @@
               class="h-[22px] w-[22px] rounded-full transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
               :style="{
                 background: c.bg,
-                boxShadow: currentHighlight === c.id ? '0 0 0 2px #3b6bff' : '0 0 0 1.5px rgba(0,0,0,0.12)',
+                boxShadow:
+                  currentHighlight === c.id ? '0 0 0 2px #3b6bff' : '0 0 0 1.5px rgba(0,0,0,0.12)',
               }"
               :title="c.label"
               @click="emit('highlight', c.id)"
@@ -102,20 +105,14 @@
           class="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg text-[13px] text-ink hover:bg-surface-canvas transition-colors"
           @click="emit('note')"
         >
-          <StickyNote
-            class="h-3.5 w-3.5 shrink-0 text-ink-muted"
-            stroke-width="2"
-          />
+          <StickyNote class="h-3.5 w-3.5 shrink-0 text-ink-muted" stroke-width="2" />
           Make a note
         </button>
         <button
           class="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg text-[13px] text-ink hover:bg-surface-canvas transition-colors"
           @click="emit('save')"
         >
-          <BookmarkPlus
-            class="h-3.5 w-3.5 shrink-0 text-ink-muted"
-            stroke-width="2"
-          />
+          <BookmarkPlus class="h-3.5 w-3.5 shrink-0 text-ink-muted" stroke-width="2" />
           Save verse
         </button>
 
@@ -125,10 +122,7 @@
             class="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded-lg text-[13px] text-ink hover:bg-surface-canvas transition-colors"
             @click="emit('clearHighlight')"
           >
-            <X
-              class="h-3.5 w-3.5 shrink-0 text-ink-muted"
-              stroke-width="2"
-            />
+            <X class="h-3.5 w-3.5 shrink-0 text-ink-muted" stroke-width="2" />
             Remove highlight
           </button>
         </template>

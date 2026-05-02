@@ -3,9 +3,17 @@ import { reactive } from 'vue'
 import { useActivityFeed } from '../useActivityFeed'
 
 // ── Store mocks — must be reactive so computed refs re-evaluate on mutation ──
-const mockAuth = reactive<{ user: { id: string; displayName: string; createdAt: string } | null }>({ user: null })
-const mockNotes = reactive<{ notes: unknown[]; isLoading: boolean }>({ notes: [], isLoading: false })
-const mockPlans = reactive<{ plans: unknown[]; isLoading: boolean }>({ plans: [], isLoading: false })
+const mockAuth = reactive<{ user: { id: string; displayName: string; createdAt: string } | null }>({
+  user: null,
+})
+const mockNotes = reactive<{ notes: unknown[]; isLoading: boolean }>({
+  notes: [],
+  isLoading: false,
+})
+const mockPlans = reactive<{ plans: unknown[]; isLoading: boolean }>({
+  plans: [],
+  isLoading: false,
+})
 
 vi.mock('@/stores/auth.store', () => ({ useAuthStore: () => mockAuth }))
 vi.mock('@/stores/notes.store', () => ({ useNotesStore: () => mockNotes }))
@@ -84,7 +92,11 @@ describe('useActivityFeed', () => {
         // Updated > 1 min later → should produce an update event
         makeNote({ id: 'n1', createdAt: old, updatedAt: isoDate(1_800_000) }),
         // Updated < 1 min later → should NOT produce an update event
-        makeNote({ id: 'n2', createdAt: old, updatedAt: new Date(new Date(old).getTime() + 30_000).toISOString() }),
+        makeNote({
+          id: 'n2',
+          createdAt: old,
+          updatedAt: new Date(new Date(old).getTime() + 30_000).toISOString(),
+        }),
       ]
       mockPlans.plans = []
 
@@ -121,9 +133,7 @@ describe('useActivityFeed', () => {
     it('does not create plan_joined if user is not a participant', () => {
       mockAuth.user = { id: 'u1', displayName: 'Alvis', createdAt: isoDate(30 * 86_400_000) }
       mockNotes.notes = []
-      mockPlans.plans = [
-        makePlan({ createdBy: 'u2', participants: [] }),
-      ]
+      mockPlans.plans = [makePlan({ createdBy: 'u2', participants: [] })]
 
       const { feed } = useActivityFeed()
       expect(feed.value.some((e) => e.type === 'plan_joined')).toBe(false)
@@ -148,8 +158,12 @@ describe('useActivityFeed', () => {
     it('groups feed events by date label', () => {
       mockAuth.user = { id: 'u1', displayName: 'Alvis', createdAt: isoDate(30 * 86_400_000) }
       mockNotes.notes = [
-        makeNote({ id: 'n1', createdAt: isoDate(30_000), updatedAt: isoDate(30_000) }),       // today
-        makeNote({ id: 'n2', createdAt: isoDate(5 * 86_400_000), updatedAt: isoDate(5 * 86_400_000) }), // this week
+        makeNote({ id: 'n1', createdAt: isoDate(30_000), updatedAt: isoDate(30_000) }), // today
+        makeNote({
+          id: 'n2',
+          createdAt: isoDate(5 * 86_400_000),
+          updatedAt: isoDate(5 * 86_400_000),
+        }), // this week
       ]
       mockPlans.plans = []
 

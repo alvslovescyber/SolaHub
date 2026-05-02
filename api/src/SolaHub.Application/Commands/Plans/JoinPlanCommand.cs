@@ -1,6 +1,7 @@
 using MediatR;
 using SolaHub.Application.Common;
 using SolaHub.Core.Common;
+using SolaHub.Core.Enums;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.ValueObjects;
 
@@ -22,6 +23,9 @@ internal sealed class JoinPlanCommandHandler(IReadingPlanRepository planReposito
                 "Plans.PrivatePlan",
                 "This plan is private. You cannot join without an invitation."
             );
+
+        if (plan.Status != PlanStatus.Active)
+            return Error.Conflict("Plans.NotActive", "Only active plans can be joined.");
 
         var addResult = plan.AddParticipant(request.UserId);
         if (addResult.IsFailure)

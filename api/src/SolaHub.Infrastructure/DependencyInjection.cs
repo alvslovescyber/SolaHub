@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using StackExchange.Redis;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.Interfaces.Services;
 using SolaHub.Infrastructure.Auth;
@@ -75,7 +76,12 @@ public static class DependencyInjection
         // ─── Distributed Cache ─────────────────────────────────────────────────
         var redisConn = config.GetConnectionString("Redis");
         if (!string.IsNullOrWhiteSpace(redisConn))
+        {
+            services.AddSingleton<IConnectionMultiplexer>(_ =>
+                ConnectionMultiplexer.Connect(redisConn)
+            );
             services.AddStackExchangeRedisCache(opts => opts.Configuration = redisConn);
+        }
         else
             services.AddDistributedMemoryCache(); // Fallback for local dev without Redis
 

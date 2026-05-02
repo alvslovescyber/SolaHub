@@ -31,6 +31,7 @@ public sealed class User : BaseEntity<UserId>
     public DateTimeOffset? LastLoginAt { get; private set; }
     public string? RefreshToken { get; private set; }
     public DateTimeOffset? RefreshTokenExpiry { get; private set; }
+    public int SessionVersion { get; private set; }
     public bool IsActive { get; private set; } = true;
 
     // ─── Factory ──────────────────────────────────────────────────────────────
@@ -113,6 +114,7 @@ public sealed class User : BaseEntity<UserId>
     {
         RefreshToken = null;
         RefreshTokenExpiry = null;
+        SessionVersion++;
         MarkUpdated();
     }
 
