@@ -27,14 +27,15 @@ export function registerGuards(router: Router): void {
     // Re-check after potential rehydration
     const freshToken = tokenStorage.getAccess()
     const isAuthenticated = !!freshToken && !isTokenExpired(freshToken)
+    const hasUser = !!auth.user
 
     // Route requires authentication
-    if (to.meta.requiresAuth && !isAuthenticated) {
+    if (to.meta.requiresAuth && (!isAuthenticated || !hasUser)) {
       return { name: 'login', query: { redirect: to.fullPath } }
     }
 
     // Route requires guest (not logged in)
-    if (to.meta.requiresGuest && isAuthenticated) {
+    if (to.meta.requiresGuest && isAuthenticated && hasUser) {
       return { name: 'dashboard' }
     }
 

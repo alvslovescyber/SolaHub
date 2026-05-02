@@ -88,6 +88,13 @@ export const usePresenterStore = defineStore('presenter', () => {
     syncDisplayState()
   }
 
+  function openOverlay(): void {
+    isBlanked.value = false
+    session.value.displayWindowOpen = false
+    session.value.overlayOpen = true
+    syncDisplayState()
+  }
+
   async function openDisplayWindow(monitorIndex = 0): Promise<void> {
     isBlanked.value = false
     if (isTauri) {
@@ -155,7 +162,12 @@ export const usePresenterStore = defineStore('presenter', () => {
       planId: session.value.planId,
     } satisfies PresenterDisplayState
 
-    displayChannel.postMessage(state)
+    try {
+      displayChannel.postMessage(state)
+    } catch {
+      // Local presentation must keep working even if a large/custom slide
+      // background cannot be cloned into the secondary display channel.
+    }
   }
 
   function broadcastCurrentVerse(): void {
@@ -177,6 +189,7 @@ export const usePresenterStore = defineStore('presenter', () => {
     prev,
     goTo,
     toggleBlank,
+    openOverlay,
     openDisplayWindow,
     closeDisplayWindow,
     closeOverlay,

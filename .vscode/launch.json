@@ -48,7 +48,7 @@
       "name": "Tauri: Dev",
       "type": "lldb-dap",
       "request": "launch",
-      "program": "${workspaceFolder}/src-tauri/target/debug/sola-hub",
+      "program": "${workspaceFolder}/src-tauri/target/debug/solahub",
       "args": [],
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "tauri: dev",

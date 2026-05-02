@@ -31,6 +31,46 @@ public sealed class PlansEndpointTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task GetPlan_AfterCreate_ReturnsPlanDetail()
+    {
+        var user = await RegisterUser(
+            _client,
+            $"plan_detail_{Guid.NewGuid():N}@example.com",
+            "Detail Owner"
+        );
+
+        Guid planId;
+        using (var createReq = new HttpRequestMessage(HttpMethod.Post, "/api/plans"))
+        {
+            createReq.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                user.AccessToken
+            );
+            createReq.Content = JsonContent.Create(
+                new
+                {
+                    title = "Detail plan",
+                    description = "Can be fetched after creation",
+                    isPublic = true,
+                }
+            );
+            var createResp = await _client.SendAsync(createReq);
+            createResp.StatusCode.Should().Be(HttpStatusCode.Created);
+            planId = (await createResp.Content.ReadFromJsonAsync<ReadingPlanStubDto>())!.Id;
+        }
+
+        using var getReq = new HttpRequestMessage(HttpMethod.Get, $"/api/plans/{planId}");
+        getReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
+        var getResp = await _client.SendAsync(getReq);
+
+        getResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var plan = await getResp.Content.ReadFromJsonAsync<ReadingPlanStubDto>();
+        plan!.Id.Should().Be(planId);
+        plan.Title.Should().Be("Detail plan");
+        plan.Participants.Should().ContainSingle(p => p.DisplayName == "Detail Owner");
+    }
+
+    [Fact]
     public async Task JoinPrivatePlan_AsNonCreator_Returns403()
     {
         var owner = await RegisterUser(
@@ -205,4 +245,12 @@ public sealed class PlansEndpointTests(ApiFactory factory)
     }
 }
 
-internal sealed record ReadingPlanStubDto(Guid Id, string Status, bool IsPublic);
+internal sealed record ReadingPlanStubDto(
+    Guid Id,
+    string Title,
+    string Status,
+    bool IsPublic,
+    IReadOnlyList<PlanParticipantStubDto> Participants
+);
+
+internal sealed record PlanParticipantStubDto(Guid UserId, string DisplayName);

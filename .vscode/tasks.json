@@ -162,7 +162,17 @@
       "group": "build",
       "isBackground": true,
       "presentation": { "reveal": "always", "panel": "dedicated", "group": "tauri" },
-      "problemMatcher": []
+      "problemMatcher": {
+        "owner": "tauri",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Running BeforeDevCommand|VITE",
+          "endsPattern": "Finished `dev` profile|Running `target/debug/solahub`|Webview URL"
+        }
+      }
     },
     {
       "label": "tauri: build",

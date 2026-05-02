@@ -170,23 +170,65 @@ const BUILT_IN_SONGS: Song[] = [
 ]
 
 const STORAGE_KEY = 'solahub:custom-songs'
+const EDITS_STORAGE_KEY = 'solahub:song-edits'
+type EditableSong = Omit<Song, 'id' | 'isCustom'>
 
 export const useSongsStore = defineStore('songs', () => {
   function loadCustom(): Song[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
-      return raw ? (JSON.parse(raw) as Song[]) : []
+      const parsed: unknown = raw ? JSON.parse(raw) : []
+      return Array.isArray(parsed) ? parsed.map(normalizeCustomSong).filter(isSong) : []
     } catch {
       return []
     }
   }
 
-  const customSongs = ref<Song[]>(loadCustom())
-  const allSongs = computed<Song[]>(() => [...BUILT_IN_SONGS, ...customSongs.value])
+  function loadEdits(): Record<string, EditableSong> {
+    try {
+      const raw = localStorage.getItem(EDITS_STORAGE_KEY)
+      const parsed: unknown = raw ? JSON.parse(raw) : {}
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
 
-  function addSong(song: Omit<Song, 'id' | 'isCustom'>): void {
+      const builtInIds = new Set(BUILT_IN_SONGS.map((song) => song.id))
+      return Object.fromEntries(
+        Object.entries(parsed)
+          .filter(([id]) => builtInIds.has(id))
+          .map(([id, value]) => [id, normalizeEditableSong(value)])
+          .filter((entry): entry is [string, EditableSong] => entry[1] !== null)
+      )
+    } catch {
+      return {}
+    }
+  }
+
+  const customSongs = ref<Song[]>(loadCustom())
+  const songEdits = ref<Record<string, EditableSong>>(loadEdits())
+  const allSongs = computed<Song[]>(() => [
+    ...BUILT_IN_SONGS.map((song) => {
+      const edit = songEdits.value[song.id]
+      return edit
+        ? { ...song, ...edit, sections: edit.sections.map((section) => ({ ...section })) }
+        : song
+    }),
+    ...customSongs.value,
+  ])
+
+  function addSong(song: EditableSong): void {
     const id = `custom-${crypto.randomUUID()}`
-    customSongs.value = [...customSongs.value, { ...song, id, isCustom: true }]
+    customSongs.value = [...customSongs.value, { ...cloneEditableSong(song), id, isCustom: true }]
+    persist()
+  }
+
+  function updateSong(id: string, song: EditableSong): void {
+    const next = cloneEditableSong(song)
+    if (customSongs.value.some((s) => s.id === id)) {
+      customSongs.value = customSongs.value.map((s) =>
+        s.id === id ? { ...next, id, isCustom: true } : s
+      )
+    } else if (BUILT_IN_SONGS.some((s) => s.id === id)) {
+      songEdits.value = { ...songEdits.value, [id]: next }
+    }
     persist()
   }
 
@@ -197,7 +239,79 @@ export const useSongsStore = defineStore('songs', () => {
 
   function persist(): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(customSongs.value))
+    localStorage.setItem(EDITS_STORAGE_KEY, JSON.stringify(songEdits.value))
   }
 
-  return { customSongs, allSongs, addSong, removeSong }
+  return { customSongs, songEdits, allSongs, addSong, updateSong, removeSong }
 })
+
+function cloneEditableSong(song: EditableSong): EditableSong {
+  return {
+    title: song.title.trim(),
+    author: song.author?.trim() || undefined,
+    year: song.year,
+    sections: song.sections.map((section) => ({
+      type: section.type,
+      label: section.label.trim(),
+      text: section.text.trim(),
+    })),
+  }
+}
+
+const SECTION_TYPES: SongSection['type'][] = ['verse', 'chorus', 'bridge', 'intro', 'outro']
+
+function isSectionType(value: unknown): value is SongSection['type'] {
+  return typeof value === 'string' && SECTION_TYPES.includes(value as SongSection['type'])
+}
+
+function normalizeSection(value: unknown): SongSection | null {
+  if (!value || typeof value !== 'object') return null
+  const section = value as Partial<Record<keyof SongSection, unknown>>
+  const text = typeof section.text === 'string' ? section.text.trim() : ''
+  if (!text) return null
+
+  const label = typeof section.label === 'string' ? section.label.trim() : ''
+  return {
+    type: isSectionType(section.type) ? section.type : 'verse',
+    label: label || 'Verse',
+    text,
+  }
+}
+
+function normalizeEditableSong(value: unknown): EditableSong | null {
+  if (!value || typeof value !== 'object') return null
+  const song = value as Partial<Record<keyof EditableSong, unknown>>
+  const title = typeof song.title === 'string' ? song.title.trim() : ''
+  if (!title) return null
+
+  const sections = Array.isArray(song.sections)
+    ? song.sections.map(normalizeSection).filter((section): section is SongSection => !!section)
+    : []
+  if (sections.length === 0) return null
+
+  const author = typeof song.author === 'string' ? song.author.trim() : ''
+  const year =
+    typeof song.year === 'number' && Number.isInteger(song.year) && song.year > 0
+      ? song.year
+      : undefined
+
+  return {
+    title,
+    author: author || undefined,
+    year,
+    sections,
+  }
+}
+
+function normalizeCustomSong(value: unknown): Song | null {
+  if (!value || typeof value !== 'object') return null
+  const song = value as Partial<Record<keyof Song, unknown>>
+  if (typeof song.id !== 'string' || !song.id.startsWith('custom-')) return null
+
+  const editable = normalizeEditableSong(value)
+  return editable ? { ...editable, id: song.id, isCustom: true } : null
+}
+
+function isSong(song: Song | null): song is Song {
+  return song !== null
+}

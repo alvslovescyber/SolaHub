@@ -51,7 +51,7 @@
       <div
         v-if="open"
         :class="[
-          'absolute z-dropdown min-w-[12rem] rounded-lg border border-line bg-surface-overlay shadow-pop',
+          'absolute z-[100] min-w-[12rem] rounded-lg border border-line bg-surface-overlay shadow-pop',
           'p-1 text-sm backdrop-blur-xl',
           placementClass,
         ]"

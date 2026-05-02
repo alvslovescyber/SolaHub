@@ -25,7 +25,7 @@
   <header
     :class="[
       'topbar-chrome-pad min-h-[52px] py-2 shrink-0 flex items-center justify-between gap-3 pr-4 border-b border-line-subtle',
-      'bg-surface-base/92 backdrop-blur-xl',
+      'relative z-30 bg-surface-base/92 backdrop-blur-xl',
       sidebarPad,
     ]"
     data-tauri-drag-region

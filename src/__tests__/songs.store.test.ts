@@ -21,9 +21,8 @@ describe('songs.store', () => {
       }
     })
 
-    it('built-in songs are not editable (have no custom id prefix)', () => {
+    it('built-in songs have static ids', () => {
       const store = useSongsStore()
-      // Built-in songs have static ids — they don't start with 'custom-'
       const builtIn = store.allSongs.filter((s) => !s.id.startsWith('custom-'))
       expect(builtIn.length).toBeGreaterThanOrEqual(5)
     })
@@ -92,6 +91,46 @@ describe('songs.store', () => {
     })
   })
 
+  describe('updateSong', () => {
+    it('updates and persists custom songs', () => {
+      const store = useSongsStore()
+      store.addSong({ title: 'Draft Song', sections: [{ type: 'verse', label: 'V', text: 'x' }] })
+      const song = store.allSongs.find((s) => s.title === 'Draft Song')!
+
+      store.updateSong(song.id, {
+        title: 'Edited Song',
+        author: 'Editor',
+        sections: [{ type: 'chorus', label: 'Chorus', text: 'edited lyric' }],
+      })
+
+      expect(store.allSongs.some((s) => s.title === 'Draft Song')).toBe(false)
+      expect(store.allSongs.find((s) => s.id === song.id)?.title).toBe('Edited Song')
+
+      const parsed = JSON.parse(localStorage.getItem('solahub:custom-songs')!)
+      expect(parsed.find((s: { id: string }) => s.id === song.id)?.title).toBe('Edited Song')
+    })
+
+    it('updates and persists built-in song edits without converting them to custom songs', () => {
+      const store = useSongsStore()
+      const builtIn = store.allSongs.find((s) => s.id === 'amazing-grace')!
+
+      store.updateSong(builtIn.id, {
+        title: 'Amazing Grace Edited',
+        author: builtIn.author,
+        year: builtIn.year,
+        sections: [{ type: 'verse', label: 'Verse 1', text: 'Edited lyrics' }],
+      })
+
+      const edited = store.allSongs.find((s) => s.id === builtIn.id)!
+      expect(edited.title).toBe('Amazing Grace Edited')
+      expect(edited.id).toBe('amazing-grace')
+      expect(edited.isCustom).toBeUndefined()
+
+      const parsed = JSON.parse(localStorage.getItem('solahub:song-edits')!)
+      expect(parsed['amazing-grace'].title).toBe('Amazing Grace Edited')
+    })
+  })
+
   describe('persistence', () => {
     it('rehydrates custom songs from localStorage on creation', () => {
       const customSongs = [
@@ -111,6 +150,57 @@ describe('songs.store', () => {
       localStorage.setItem('solahub:custom-songs', 'not-valid-json{{{')
       const store = useSongsStore()
       expect(store.allSongs.length).toBeGreaterThanOrEqual(5)
+    })
+
+    it('ignores invalid custom song payloads from localStorage', () => {
+      localStorage.setItem(
+        'solahub:custom-songs',
+        JSON.stringify([
+          { id: 'custom-valid', title: ' Valid ', sections: [{ label: 'V1', text: ' lyric ' }] },
+          { id: 'custom-empty-title', title: '', sections: [{ label: 'V1', text: 'lyric' }] },
+          { id: 'not-custom', title: 'Wrong id', sections: [{ label: 'V1', text: 'lyric' }] },
+          { id: 'custom-empty-sections', title: 'No lyrics', sections: [] },
+        ])
+      )
+
+      const store = useSongsStore()
+      expect(store.allSongs.some((s) => s.title === 'Valid')).toBe(true)
+      expect(store.allSongs.some((s) => s.title === 'Wrong id')).toBe(false)
+      expect(store.allSongs.some((s) => s.title === 'No lyrics')).toBe(false)
+    })
+
+    it('rehydrates built-in song edits from localStorage', () => {
+      localStorage.setItem(
+        'solahub:song-edits',
+        JSON.stringify({
+          'amazing-grace': {
+            title: 'Saved Amazing Grace',
+            author: 'Saved Author',
+            sections: [{ type: 'verse', label: 'V1', text: 'saved lyric' }],
+          },
+        })
+      )
+
+      const store = useSongsStore()
+      expect(store.allSongs.find((s) => s.id === 'amazing-grace')?.title).toBe(
+        'Saved Amazing Grace'
+      )
+    })
+
+    it('ignores invalid built-in edits instead of breaking allSongs', () => {
+      localStorage.setItem(
+        'solahub:song-edits',
+        JSON.stringify({
+          'amazing-grace': { title: '', sections: [{ text: 'lyric' }] },
+          'holy-holy-holy': { title: 'Edited Holy', sections: 'not-an-array' },
+          'unknown-song': { title: 'Unknown', sections: [{ text: 'lyric' }] },
+        })
+      )
+
+      const store = useSongsStore()
+      expect(store.allSongs.find((s) => s.id === 'amazing-grace')?.title).toBe('Amazing Grace')
+      expect(store.allSongs.find((s) => s.id === 'holy-holy-holy')?.title).toBe('Holy, Holy, Holy')
+      expect(store.allSongs.some((s) => s.title === 'Unknown')).toBe(false)
     })
   })
 })

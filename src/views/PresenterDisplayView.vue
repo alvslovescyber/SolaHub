@@ -48,6 +48,7 @@
       'fixed inset-0 flex flex-col items-center justify-center select-none',
       biblePrefs.presenterRootClass,
     ]"
+    :style="biblePrefs.presenterRootStyle"
   >
     <Transition name="presenter-fade" mode="out-in">
       <SPresenterSlide v-if="slide" :slide="slide" :slide-key="slide.verseRef" />

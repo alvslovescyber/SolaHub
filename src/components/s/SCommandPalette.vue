@@ -39,7 +39,7 @@
     { id: 'go-dashboard', label: 'Go to Dashboard', icon: LayoutDashboard, routeName: 'dashboard' },
     { id: 'go-bible', label: 'Open Bible', icon: BookOpenText, routeName: 'bible' },
     { id: 'go-plans', label: 'Reading Plans', icon: CalendarDays, routeName: 'plans' },
-    { id: 'go-notes', label: 'Notes', icon: StickyNote, routeName: 'notes' },
+    { id: 'go-notes', label: 'Notations', icon: StickyNote, routeName: 'notes' },
     { id: 'go-presenter', label: 'Presenter', icon: Monitor, routeName: 'presenter' },
     { id: 'go-community', label: 'Community', icon: Users, routeName: 'community' },
     { id: 'go-inbox', label: 'Inbox', icon: Inbox, routeName: 'inbox' },

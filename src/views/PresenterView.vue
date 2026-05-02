@@ -5,17 +5,22 @@
     ChevronLeft,
     ChevronRight,
     ExternalLink,
+    GripHorizontal,
     EyeOff,
     Eye,
     Monitor,
     Music2,
+    Pencil,
     Plus,
     Search,
     Trash2,
     X,
   } from 'lucide-vue-next'
   import { usePresenterStore } from '@/stores/presenter.store'
-  import { useBiblePreferencesStore } from '@/stores/biblePreferences.store'
+  import {
+    useBiblePreferencesStore,
+    type PresenterBackground,
+  } from '@/stores/biblePreferences.store'
   import { useSongsStore } from '@/stores/songs.store'
   import { bibleService, CANONICAL_BOOKS } from '@/services/bible.service'
   import { catalogMeta } from '@/constants/bibleTranslations'
@@ -44,9 +49,89 @@
 
   // ── Scale-transform preview ───────────────────────────────────────────────────
   const previewContainerRef = ref<HTMLElement | null>(null)
+  const previewColumnRef = ref<HTMLElement | null>(null)
   const overlayRef = ref<HTMLElement | null>(null)
   const verseListRef = ref<HTMLElement | null>(null)
-  const { scale, refW, refH } = usePresenterScale(previewContainerRef)
+  const {
+    scale,
+    refW,
+    refH,
+    containerWidth: previewW,
+    containerHeight: previewH,
+  } = usePresenterScale(previewContainerRef)
+
+  const PREVIEW_MIN_HEIGHT = 220
+  const PREVIEW_QUEUE_MIN_HEIGHT = 180
+  const previewHeightPx = ref<number | null>(null)
+  const resizingPreview = ref(false)
+  let previewResizeStartY = 0
+  let previewResizeStartHeight = 0
+
+  const previewFrameClass = computed(() => [
+    'w-full relative overflow-hidden rounded-xl shadow-modal border border-white/[0.06]',
+    previewHeightPx.value === null ? 'aspect-[16/9]' : '',
+  ])
+
+  const previewFrameStyle = computed(() =>
+    previewHeightPx.value === null ? undefined : { height: `${previewHeightPx.value}px` }
+  )
+
+  const previewCanvasStyle = computed(() => {
+    const scaledW = refW * scale.value
+    const scaledH = refH * scale.value
+    const offsetX = Math.max(0, (previewW.value - scaledW) / 2)
+    const offsetY = Math.max(0, (previewH.value - scaledH) / 2)
+
+    return {
+      width: `${refW}px`,
+      height: `${refH}px`,
+      transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale.value})`,
+      transformOrigin: 'top left',
+    }
+  })
+
+  function maxPreviewHeight() {
+    const available = previewColumnRef.value?.clientHeight ?? 720
+    return Math.max(PREVIEW_MIN_HEIGHT, available - PREVIEW_QUEUE_MIN_HEIGHT)
+  }
+
+  function clampPreviewHeight(height: number) {
+    return Math.round(Math.min(Math.max(height, PREVIEW_MIN_HEIGHT), maxPreviewHeight()))
+  }
+
+  function resizePreview(event: PointerEvent) {
+    if (!resizingPreview.value) return
+    const delta = event.clientY - previewResizeStartY
+    previewHeightPx.value = clampPreviewHeight(previewResizeStartHeight + delta)
+  }
+
+  function stopPreviewResize() {
+    resizingPreview.value = false
+    window.removeEventListener('pointermove', resizePreview)
+    window.removeEventListener('pointerup', stopPreviewResize)
+  }
+
+  function startPreviewResize(event: PointerEvent) {
+    const frame = previewContainerRef.value
+    if (!frame) return
+
+    event.preventDefault()
+    resizingPreview.value = true
+    previewResizeStartY = event.clientY
+    previewResizeStartHeight = frame.getBoundingClientRect().height
+    window.addEventListener('pointermove', resizePreview)
+    window.addEventListener('pointerup', stopPreviewResize, { once: true })
+  }
+
+  function resetPreviewHeight() {
+    previewHeightPx.value = null
+  }
+
+  function clampCurrentPreviewHeight() {
+    if (previewHeightPx.value !== null) {
+      previewHeightPx.value = clampPreviewHeight(previewHeightPx.value)
+    }
+  }
 
   // ── Monitor detection ─────────────────────────────────────────────────────────
   const { monitors, selectedMonitorIndex, loading: monitorsLoading } = useDisplayMonitors()
@@ -163,28 +248,79 @@
     return songs.allSongs.filter((s) => s.title.toLowerCase().includes(q))
   })
 
-  function loadSong(song: Song) {
-    const slides: SongSlide[] = song.sections.map((sec, i) => ({
+  function songSlides(song: Song): SongSlide[] {
+    return song.sections.map((sec, i) => ({
       source: 'song' as const,
       verseRef: `song.${song.id}.${i}`,
       text: sec.text,
       songTitle: song.title,
       sectionLabel: sec.label,
     }))
+  }
+
+  function loadSong(song: Song) {
+    const slides = songSlides(song)
     presenter.loadSlides(slides)
     toast.success('Song loaded', `${song.title} ready to present`)
   }
 
-  // ── Add song modal ────────────────────────────────────────────────────────────
-  const addSongModal = ref(false)
-  const newSong = ref({
+  // ── Song editor modal ────────────────────────────────────────────────────────
+  interface SongForm {
+    title: string
+    author: string
+    year: string
+    sections: SongSection[]
+  }
+
+  const songModalOpen = ref(false)
+  const editingSongId = ref<string | null>(null)
+  const songForm = ref<SongForm>({
     title: '',
     author: '',
+    year: '',
     sections: [{ type: 'verse', label: 'Verse 1', text: '' }],
   })
 
+  const songModalTitle = computed(() => (editingSongId.value ? 'Edit song' : 'Add song'))
+  const songModalDescription = computed(() =>
+    editingSongId.value
+      ? 'Update the saved title, details, and lyrics for this song.'
+      : 'Add a worship song to your library.'
+  )
+  const songModalSubmitLabel = computed(() => (editingSongId.value ? 'Save changes' : 'Save song'))
+
+  function emptySongForm(): SongForm {
+    return {
+      title: '',
+      author: '',
+      year: '',
+      sections: [{ type: 'verse', label: 'Verse 1', text: '' }],
+    }
+  }
+
+  function openAddSongModal() {
+    editingSongId.value = null
+    songForm.value = emptySongForm()
+    songModalOpen.value = true
+  }
+
+  function openEditSongModal(song: Song) {
+    editingSongId.value = song.id
+    songForm.value = {
+      title: song.title,
+      author: song.author ?? '',
+      year: song.year?.toString() ?? '',
+      sections: song.sections.map((section) => ({ ...section })),
+    }
+    songModalOpen.value = true
+  }
+
+  function closeSongModal() {
+    songModalOpen.value = false
+  }
+
   function addSongSection() {
-    const existing = newSong.value.sections
+    const existing = songForm.value.sections
     const hasChorus = existing.some((s) => s.type === 'chorus')
     const hasBridge = existing.some((s) => s.type === 'bridge')
     const hasOutro = existing.some((s) => s.type === 'outro')
@@ -208,32 +344,70 @@
       type = 'verse'
       label = `Verse ${verseCount + 1}`
     }
-    newSong.value.sections.push({ type, label, text: '' })
+    songForm.value.sections.push({ type, label, text: '' })
   }
 
   function removeSongSection(i: number) {
-    newSong.value.sections.splice(i, 1)
+    if (songForm.value.sections.length <= 1) {
+      songForm.value.sections = [{ type: 'verse', label: 'Verse 1', text: '' }]
+      return
+    }
+    songForm.value.sections.splice(i, 1)
   }
 
-  function submitNewSong() {
-    if (!newSong.value.title.trim()) return
-    const sections = newSong.value.sections.filter((s) => s.text.trim())
+  function submitSongForm() {
+    const title = songForm.value.title.trim()
+    if (!title) return
+
+    const sections = songForm.value.sections
+      .map((section) => ({
+        type: section.type,
+        label: section.label.trim() || section.type,
+        text: section.text.trim(),
+      }))
+      .filter((s) => s.text)
     if (sections.length === 0) {
       toast.error('No lyrics added', 'Enter lyrics for at least one section before saving.')
       return
     }
-    songs.addSong({
-      title: newSong.value.title.trim(),
-      author: newSong.value.author.trim() || undefined,
-      sections,
-    })
-    addSongModal.value = false
-    newSong.value = {
-      title: '',
-      author: '',
-      sections: [{ type: 'verse', label: 'Verse 1', text: '' }],
+
+    const yearText = songForm.value.year.trim()
+    const year = yearText ? Number.parseInt(yearText, 10) : undefined
+    if (yearText && (!year || year < 1)) {
+      toast.error('Invalid year', 'Enter a valid year or leave it blank.')
+      return
     }
-    toast.success('Song added', 'Your song has been added to the library.')
+
+    const payload = {
+      title,
+      author: songForm.value.author.trim() || undefined,
+      year,
+      sections,
+    }
+
+    if (editingSongId.value) {
+      const id = editingSongId.value
+      const currentIndex = presenter.session.currentIndex
+      const isLoaded = presenter.session.slides.some(
+        (slide) => slide.source === 'song' && slide.verseRef.startsWith(`song.${id}.`)
+      )
+
+      songs.updateSong(id, payload)
+      if (isLoaded) {
+        const updatedSong = songs.allSongs.find((song) => song.id === id)
+        if (updatedSong) {
+          const slides = songSlides(updatedSong)
+          presenter.loadSlides(slides)
+          presenter.goTo(Math.min(currentIndex, slides.length - 1))
+        }
+      }
+      toast.success('Song saved', `${title} has been updated.`)
+    } else {
+      songs.addSong(payload)
+      toast.success('Song saved', `${title} has been added to the library.`)
+    }
+
+    closeSongModal()
   }
 
   // ── Presenter state ───────────────────────────────────────────────────────────
@@ -271,9 +445,14 @@
     }
   }
 
-  onMounted(() => document.addEventListener('fullscreenchange', onFullscreenChange))
+  onMounted(() => {
+    document.addEventListener('fullscreenchange', onFullscreenChange)
+    window.addEventListener('resize', clampCurrentPreviewHeight)
+  })
   onBeforeUnmount(() => {
     document.removeEventListener('fullscreenchange', onFullscreenChange)
+    window.removeEventListener('resize', clampCurrentPreviewHeight)
+    stopPreviewResize()
     loadAbortController?.abort()
   })
 
@@ -293,17 +472,74 @@
   }
 
   // ── Settings options ──────────────────────────────────────────────────────────
-  const BG_OPTIONS = [
+  const BG_OPTIONS = computed<{ value: PresenterBackground; label: string; dot: string }[]>(() => [
     { value: 'black', label: 'Black', dot: '#000000' },
     { value: 'navy', label: 'Navy', dot: '#0f172a' },
     { value: 'gradient', label: 'Gradient', dot: 'linear-gradient(135deg, #1e293b, #000)' },
-  ] as const
+    { value: 'warm', label: 'Warm', dot: 'linear-gradient(135deg, #5b2333, #f59e0b)' },
+    { value: 'forest', label: 'Forest', dot: 'linear-gradient(135deg, #052e2b, #14532d)' },
+    { value: 'custom', label: 'Custom', dot: biblePrefs.presenterCustomBackground },
+  ])
+
+  const presenterCustomColor = computed(() =>
+    /^#[0-9a-f]{6}$/i.test(biblePrefs.presenterCustomBackground)
+      ? biblePrefs.presenterCustomBackground
+      : '#111827'
+  )
+
+  function updatePresenterCustomBackground(value: string) {
+    biblePrefs.setPresenterCustomBackground(value)
+    biblePrefs.setPresenterBackground('custom')
+  }
 
   const FONT_OPTIONS = [
     { value: 'comfortable', label: 'Comfortable' },
     { value: 'large', label: 'Large' },
     { value: 'auditorium', label: 'Auditorium' },
   ] as const
+
+  const MAX_BACKGROUND_IMAGE_BYTES = 2_500_000
+
+  function readPresenterImageAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result)
+          return
+        }
+        reject(new Error('Could not import image'))
+      }
+      reader.onerror = () => reject(new Error('Could not import image'))
+      reader.readAsDataURL(file)
+    })
+  }
+
+  async function importPresenterBackground(event: Event) {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0]
+    input.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Background not imported', 'Choose an image file.')
+      return
+    }
+    if (file.size > MAX_BACKGROUND_IMAGE_BYTES) {
+      toast.error('Background not imported', 'Use an image smaller than 2.5 MB.')
+      return
+    }
+
+    try {
+      const dataUrl = await readPresenterImageAsDataUrl(file)
+      biblePrefs.setPresenterCustomBackground(
+        `linear-gradient(rgba(2, 6, 23, 0.32), rgba(2, 6, 23, 0.32)), url("${dataUrl}") center / cover`
+      )
+      biblePrefs.setPresenterBackground('custom')
+      toast.success('Background imported', file.name)
+    } catch (error) {
+      toast.error('Background not imported', error instanceof Error ? error.message : undefined)
+    }
+  }
 </script>
 
 <template>
@@ -495,12 +731,12 @@
             </div>
 
             <!-- Verse list — ref'd for auto-scroll; only highlights when this chapter is in queue -->
-            <div ref="verseListRef" class="flex-1 overflow-y-auto">
+            <div ref="verseListRef" class="presenter-verse-list flex-1 overflow-y-auto">
               <button
                 v-for="(s, i) in loadedChapterSlides"
                 :key="s.verseRef"
                 :class="[
-                  'group w-full text-left px-3 py-2 border-b border-line-subtle last:border-b-0 transition-colors',
+                  'group block w-full text-left px-3 py-1.5 border-b border-line-subtle last:border-b-0 transition-colors',
                   isQueuedChapter && presenter.session.currentIndex === i
                     ? 'bg-brand-50 dark:bg-brand-500/15'
                     : 'hover:bg-surface-canvas',
@@ -520,7 +756,7 @@
                   </span>
                   <p
                     :class="[
-                      'text-[12px] font-sans leading-snug line-clamp-3',
+                      'text-[12px] font-sans leading-snug line-clamp-2',
                       isQueuedChapter && presenter.session.currentIndex === i
                         ? 'text-brand-700 dark:text-brand-200'
                         : 'text-ink',
@@ -544,24 +780,41 @@
             </SInput>
           </div>
           <div class="flex-1 overflow-y-auto">
-            <button
+            <div
               v-for="song in filteredSongs"
               :key="song.id"
-              class="group flex items-start justify-between w-full text-left px-3 py-2.5 transition-colors hover:bg-surface-canvas border-b border-line-subtle last:border-b-0"
-              @click="loadSong(song)"
+              class="group flex items-start gap-1 border-b border-line-subtle last:border-b-0 hover:bg-surface-canvas"
             >
-              <div class="min-w-0">
-                <p class="text-[13px] font-medium font-sans text-ink truncate">
-                  {{ song.title }}
-                </p>
-                <p v-if="song.author" class="text-[11px] text-ink-muted font-sans mt-0.5">
-                  {{ song.author }}{{ song.year ? ` · ${song.year}` : '' }}
-                </p>
-              </div>
-              <span class="text-[10px] text-ink-subtle shrink-0 mt-0.5"
-                >{{ song.sections.length }} slides</span
+              <button
+                type="button"
+                class="min-w-0 flex-1 flex items-start justify-between text-left px-3 py-2.5 transition-colors"
+                @click="loadSong(song)"
               >
-            </button>
+                <div class="min-w-0">
+                  <p class="text-[13px] font-medium font-sans text-ink truncate">
+                    {{ song.title }}
+                  </p>
+                  <p
+                    v-if="song.author || song.year"
+                    class="text-[11px] text-ink-muted font-sans mt-0.5"
+                  >
+                    {{ [song.author, song.year].filter(Boolean).join(' · ') }}
+                  </p>
+                </div>
+                <span class="text-[10px] text-ink-subtle shrink-0 mt-0.5 ml-2"
+                  >{{ song.sections.length }} slides</span
+                >
+              </button>
+              <SIconButton
+                size="sm"
+                variant="ghost"
+                class="mr-2 mt-2"
+                :label="`Edit ${song.title}`"
+                @click.stop="openEditSongModal(song)"
+              >
+                <Pencil class="h-3.5 w-3.5" />
+              </SIconButton>
+            </div>
             <p
               v-if="filteredSongs.length === 0"
               class="px-3 py-6 text-xs text-ink-muted text-center font-sans"
@@ -570,7 +823,7 @@
             </p>
           </div>
           <div class="px-2 py-2 border-t border-line-subtle shrink-0">
-            <SButton variant="secondary" size="sm" class="w-full" @click="addSongModal = true">
+            <SButton variant="secondary" size="sm" class="w-full" @click="openAddSongModal">
               <template #leading>
                 <Plus class="h-3.5 w-3.5" />
               </template>
@@ -581,12 +834,13 @@
       </div>
 
       <!-- ── Center: Preview + slide queue ──────────────────────────────────── -->
-      <div class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
+      <div ref="previewColumnRef" class="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
         <!-- Scale-transform preview -->
         <div class="flex-[0_0_auto] p-4 pb-2">
           <div
             ref="previewContainerRef"
-            class="w-full aspect-[16/9] relative overflow-hidden rounded-xl shadow-modal border border-white/[0.06]"
+            :class="[previewFrameClass, biblePrefs.presenterRootClass]"
+            :style="[previewFrameStyle, biblePrefs.presenterRootStyle]"
           >
             <!--
               Inner canvas is always 1920×1080 and scaled to fit.
@@ -594,12 +848,7 @@
             -->
             <div
               :class="biblePrefs.presenterRootClass"
-              :style="{
-                width: `${refW}px`,
-                height: `${refH}px`,
-                transform: `scale(${scale})`,
-                transformOrigin: 'top left',
-              }"
+              :style="[previewCanvasStyle, biblePrefs.presenterRootStyle]"
               class="absolute top-0 left-0 flex items-center justify-center"
             >
               <SPresenterSlide
@@ -623,6 +872,16 @@
               </span>
             </div>
           </div>
+          <button
+            type="button"
+            class="mt-1 flex h-4 w-full items-center justify-center rounded cursor-row-resize text-ink-subtle hover:text-ink-muted hover:bg-surface-canvas transition-colors"
+            aria-label="Resize presenter preview"
+            title="Resize presenter preview"
+            @pointerdown="startPreviewResize"
+            @dblclick="resetPreviewHeight"
+          >
+            <GripHorizontal class="h-3.5 w-3.5" />
+          </button>
         </div>
 
         <!-- Progress + navigation -->
@@ -717,6 +976,9 @@
                 <template v-if="s.source === 'song'">
                   {{ s.sectionLabel }}
                 </template>
+                <template v-else-if="s.source === 'notation'">
+                  {{ s.title }}
+                </template>
                 <template v-else> {{ s.book }} {{ s.chapter }}:{{ s.verse }} </template>
               </p>
               <p
@@ -795,6 +1057,38 @@
                 />
                 {{ bg.label }}
               </button>
+            </div>
+            <div v-if="biblePrefs.presenterBackground === 'custom'" class="mt-2 space-y-2">
+              <div class="flex items-center gap-2">
+                <input
+                  type="color"
+                  :value="presenterCustomColor"
+                  class="h-7 w-9 rounded-md border border-line bg-transparent"
+                  aria-label="Custom presenter background colour"
+                  @input="
+                    updatePresenterCustomBackground(($event.target as HTMLInputElement).value)
+                  "
+                />
+                <input
+                  :value="biblePrefs.presenterCustomBackground"
+                  class="h-8 min-w-0 flex-1 rounded-md border border-line bg-surface-base px-2 text-[12px] text-ink-strong focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+                  aria-label="Custom presenter background"
+                  @input="
+                    updatePresenterCustomBackground(($event.target as HTMLInputElement).value)
+                  "
+                />
+              </div>
+              <label
+                class="flex h-8 cursor-pointer items-center justify-center rounded-md border border-line bg-surface-raised px-2 text-[12px] font-medium text-ink-strong hover:bg-surface-canvas"
+              >
+                Import image
+                <input
+                  type="file"
+                  accept="image/*"
+                  class="sr-only"
+                  @change="importPresenterBackground"
+                />
+              </label>
             </div>
           </div>
 
@@ -879,6 +1173,7 @@
           'select-none cursor-pointer',
           presenter.isBlanked ? 'bg-black' : biblePrefs.presenterRootClass,
         ]"
+        :style="presenter.isBlanked ? undefined : biblePrefs.presenterRootStyle"
         tabindex="-1"
         @click.self="presenter.next()"
         @keydown.right="presenter.next()"
@@ -925,18 +1220,36 @@
       </div>
     </Teleport>
 
-    <!-- Add song modal -->
+    <!-- Song editor modal -->
     <SModal
-      :open="addSongModal"
-      title="Add song"
-      description="Add a worship song to your library."
+      :open="songModalOpen"
+      :title="songModalTitle"
+      :description="songModalDescription"
       size="md"
-      @close="addSongModal = false"
+      @close="closeSongModal"
     >
       <div class="space-y-4">
-        <div class="grid grid-cols-2 gap-3">
-          <SInput v-model="newSong.title" label="Title" placeholder="Amazing Grace" required />
-          <SInput v-model="newSong.author" label="Author" placeholder="John Newton (optional)" />
+        <div class="grid grid-cols-3 gap-3">
+          <SInput
+            v-model="songForm.title"
+            label="Title"
+            placeholder="Amazing Grace"
+            required
+            class="col-span-3 sm:col-span-1"
+          />
+          <SInput
+            v-model="songForm.author"
+            label="Author"
+            placeholder="John Newton"
+            class="col-span-3 sm:col-span-1"
+          />
+          <SInput
+            v-model="songForm.year"
+            label="Year"
+            placeholder="1779"
+            inputmode="numeric"
+            class="col-span-3 sm:col-span-1"
+          />
         </div>
         <div class="space-y-3">
           <div class="flex items-center justify-between">
@@ -949,7 +1262,7 @@
             </SButton>
           </div>
           <div
-            v-for="(sec, i) in newSong.sections"
+            v-for="(sec, i) in songForm.sections"
             :key="i"
             class="border border-line rounded-lg p-3 space-y-2"
           >
@@ -964,9 +1277,9 @@
         </div>
       </div>
       <template #footer>
-        <SButton variant="secondary" size="sm" @click="addSongModal = false"> Cancel </SButton>
-        <SButton size="sm" :disabled="!newSong.title.trim()" @click="submitNewSong">
-          Save song
+        <SButton variant="secondary" size="sm" @click="closeSongModal"> Cancel </SButton>
+        <SButton size="sm" :disabled="!songForm.title.trim()" @click="submitSongForm">
+          {{ songModalSubmitLabel }}
         </SButton>
       </template>
     </SModal>
@@ -981,6 +1294,18 @@
   .presenter-fade-enter-from,
   .presenter-fade-leave-to {
     opacity: 0;
+  }
+
+  .presenter-verse-list {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .presenter-verse-list > button {
+    flex: 0 0 auto;
+    min-height: 0;
   }
 
   /* HUD fades in for 2s then retreats to near-invisible */

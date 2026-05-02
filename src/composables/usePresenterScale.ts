@@ -17,6 +17,8 @@ const REF_H = 1080
  */
 export function usePresenterScale(containerRef: Ref<HTMLElement | null>) {
   const scale = ref(1)
+  const containerWidth = ref(0)
+  const containerHeight = ref(0)
   let ro: ResizeObserver | null = null
   let rafId: number | null = null
 
@@ -24,6 +26,8 @@ export function usePresenterScale(containerRef: Ref<HTMLElement | null>) {
     const w = el.clientWidth
     const h = el.clientHeight
     if (w > 0 && h > 0) {
+      containerWidth.value = w
+      containerHeight.value = h
       scale.value = Math.min(w / REF_W, h / REF_H)
     }
   }
@@ -62,5 +66,5 @@ export function usePresenterScale(containerRef: Ref<HTMLElement | null>) {
     }
   })
 
-  return { scale, refW: REF_W, refH: REF_H }
+  return { scale, refW: REF_W, refH: REF_H, containerWidth, containerHeight }
 }

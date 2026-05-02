@@ -25,7 +25,7 @@
     { name: 'Dashboard', icon: LayoutDashboard, route: 'dashboard', section: 'dashboard' },
     { name: 'Bible', icon: BookOpen, route: 'bible', section: 'bible' },
     { name: 'Plans', icon: CalendarDays, route: 'plans', section: 'plans' },
-    { name: 'Notes', icon: StickyNote, route: 'notes', section: 'notes' },
+    { name: 'Notations', icon: StickyNote, route: 'notes', section: 'notes' },
     ...(auth.isPresenter
       ? [{ name: 'Presenter', icon: Monitor, route: 'presenter', section: 'presenter' }]
       : []),

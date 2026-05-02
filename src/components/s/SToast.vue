@@ -21,7 +21,9 @@
 
 <template>
   <Teleport to="body">
-    <div class="fixed top-4 right-4 z-toast flex flex-col gap-2 w-[320px] pointer-events-none">
+    <div
+      class="fixed top-[calc(var(--s-topbar-height)+1rem)] right-4 z-toast flex flex-col gap-2 w-[320px] pointer-events-none"
+    >
       <TransitionGroup name="toast" tag="div" class="flex flex-col gap-2">
         <div
           v-for="t in toasts as Toast[]"

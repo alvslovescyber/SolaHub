@@ -63,11 +63,11 @@ function attachListeners(page: Page, report: PageReport) {
 }
 
 async function signIn(page: Page) {
-  await page.goto('/login')
+  await page.goto('/#/login')
   await page.getByPlaceholder('you@example.com').fill(EMAIL)
   await page.getByPlaceholder('Enter your password').fill(PASSWORD)
   await Promise.all([
-    page.waitForURL((u) => !u.pathname.startsWith('/login'), { timeout: 8_000 }).catch(() => {}),
+    page.waitForURL((u) => !u.hash.startsWith('#/login'), { timeout: 8_000 }).catch(() => {}),
     page.getByRole('button', { name: /sign in with email/i }).click(),
   ])
 }

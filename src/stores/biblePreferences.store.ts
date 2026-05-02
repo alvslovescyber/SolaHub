@@ -1,11 +1,12 @@
 import { computed, ref } from 'vue'
+import type { CSSProperties } from 'vue'
 import { defineStore } from 'pinia'
 import { BIBLE_TRANSLATION_CATALOG } from '@/constants/bibleTranslations'
 
 const STORAGE_KEY = 'solahub:bible-preferences'
 
 export type PresenterFontScale = 'comfortable' | 'large' | 'auditorium'
-export type PresenterBackground = 'black' | 'navy' | 'gradient'
+export type PresenterBackground = 'black' | 'navy' | 'gradient' | 'warm' | 'forest' | 'custom'
 export type SongsIntegrationPlaceholder = 'none' | 'planning_center' | 'song_select' | 'openlp'
 export type ReaderFontScale = 's' | 'm' | 'l'
 export type ReaderLineHeight = 'compact' | 'normal' | 'relaxed'
@@ -20,6 +21,7 @@ interface Persisted {
   presenterFontScale: PresenterFontScale
   presenterShowVerseRef: boolean
   presenterBackground: PresenterBackground
+  presenterCustomBackground: string
   songsShowCopyright: boolean
   songsIntegration: SongsIntegrationPlaceholder
   readerFontScale: ReaderFontScale
@@ -36,6 +38,7 @@ const DEFAULTS: Persisted = {
   presenterFontScale: 'comfortable',
   presenterShowVerseRef: true,
   presenterBackground: 'black',
+  presenterCustomBackground: 'linear-gradient(135deg, #111827 0%, #334155 58%, #0f766e 100%)',
   songsShowCopyright: true,
   songsIntegration: 'none',
   readerFontScale: 'm',
@@ -90,10 +93,17 @@ function load(): Persisted {
     ) as PresenterFontScale
 
     const presenterBackground = (
-      ['black', 'navy', 'gradient'].includes(String(p.presenterBackground))
+      ['black', 'navy', 'gradient', 'warm', 'forest', 'custom'].includes(
+        String(p.presenterBackground)
+      )
         ? p.presenterBackground
         : DEFAULTS.presenterBackground
     ) as PresenterBackground
+
+    const presenterCustomBackground =
+      typeof p.presenterCustomBackground === 'string' && p.presenterCustomBackground.trim()
+        ? p.presenterCustomBackground.trim()
+        : DEFAULTS.presenterCustomBackground
 
     const songsIntegration = (
       ['none', 'planning_center', 'song_select', 'openlp'].includes(String(p.songsIntegration))
@@ -128,6 +138,7 @@ function load(): Persisted {
       presenterFontScale,
       presenterShowVerseRef: p.presenterShowVerseRef !== false,
       presenterBackground,
+      presenterCustomBackground,
       songsShowCopyright: p.songsShowCopyright !== false,
       songsIntegration,
       readerFontScale,
@@ -154,6 +165,7 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
   const presenterFontScale = ref<PresenterFontScale>(initial.presenterFontScale)
   const presenterShowVerseRef = ref(initial.presenterShowVerseRef)
   const presenterBackground = ref<PresenterBackground>(initial.presenterBackground)
+  const presenterCustomBackground = ref(initial.presenterCustomBackground)
   const songsShowCopyright = ref(initial.songsShowCopyright)
   const songsIntegration = ref<SongsIntegrationPlaceholder>(initial.songsIntegration)
   const readerFontScale = ref<ReaderFontScale>(initial.readerFontScale)
@@ -170,6 +182,7 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
       presenterFontScale: presenterFontScale.value,
       presenterShowVerseRef: presenterShowVerseRef.value,
       presenterBackground: presenterBackground.value,
+      presenterCustomBackground: presenterCustomBackground.value,
       songsShowCopyright: songsShowCopyright.value,
       songsIntegration: songsIntegration.value,
       readerFontScale: readerFontScale.value,
@@ -268,6 +281,13 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
     persist()
   }
 
+  function setPresenterCustomBackground(v: string): void {
+    const next = v.trim()
+    if (!next) return
+    presenterCustomBackground.value = next.slice(0, 500)
+    persist()
+  }
+
   function setSongsShowCopyright(on: boolean): void {
     songsShowCopyright.value = on
     persist()
@@ -344,8 +364,27 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
         black: 'bg-black',
         navy: 'bg-slate-950',
         gradient: 'bg-gradient-to-b from-slate-950 via-black to-black',
+        warm: '',
+        forest: '',
+        custom: '',
       })[presenterBackground.value]
   )
+
+  const presenterBackgroundCss = computed(
+    () =>
+      ({
+        black: '#000000',
+        navy: '#020617',
+        gradient: 'linear-gradient(180deg, #020617 0%, #0f172a 48%, #000000 100%)',
+        warm: 'linear-gradient(135deg, #5b2333 0%, #b45309 58%, #f59e0b 100%)',
+        forest: 'linear-gradient(135deg, #052e2b 0%, #14532d 55%, #111827 100%)',
+        custom: presenterCustomBackground.value,
+      })[presenterBackground.value]
+  )
+
+  const presenterRootStyle = computed<CSSProperties>(() => ({
+    background: presenterBackgroundCss.value,
+  }))
 
   // Pixel-based font sizes for the 1920×1080 scale-transform canvas preview.
   // Not viewport-relative so text renders crisply at any container size.
@@ -366,6 +405,7 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
     presenterFontScale,
     presenterShowVerseRef,
     presenterBackground,
+    presenterCustomBackground,
     songsShowCopyright,
     songsIntegration,
     readerFontScale,
@@ -386,6 +426,7 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
     setPresenterFontScale,
     setPresenterShowVerseRef,
     setPresenterBackground,
+    setPresenterCustomBackground,
     setSongsShowCopyright,
     setSongsIntegration,
     setReaderFontScale,
@@ -394,6 +435,8 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
     presenterVerseFontSize,
     presenterRefFontSize,
     presenterRootClass,
+    presenterRootStyle,
+    presenterBackgroundCss,
     presenterCanvasFontPx,
     presenterCanvasRefPx,
     presenterCanvasLabelPx,

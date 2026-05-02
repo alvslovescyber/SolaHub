@@ -24,7 +24,8 @@
     () => open,
     (v) => {
       if (typeof document !== 'undefined') document.body.style.overflow = v ? 'hidden' : ''
-    }
+    },
+    { immediate: true }
   )
 
   onMounted(() => document.addEventListener('keydown', onKey))
@@ -44,7 +45,7 @@
       >
         <div
           :class="[
-            'w-full rounded-xl bg-surface-base shadow-modal border border-line overflow-hidden',
+            'w-full max-h-[calc(100vh-2rem)] rounded-xl bg-surface-base shadow-modal border border-line overflow-hidden flex flex-col',
             sizeClass,
           ]"
           role="dialog"
@@ -52,7 +53,7 @@
         >
           <header
             v-if="title || $slots.header"
-            class="flex items-start justify-between gap-4 px-5 py-4 border-b border-line-subtle"
+            class="flex items-start justify-between gap-4 px-5 py-4 border-b border-line-subtle shrink-0"
           >
             <div class="min-w-0">
               <slot name="header">
@@ -68,12 +69,12 @@
               <X class="h-4 w-4" />
             </SIconButton>
           </header>
-          <div class="px-5 py-4">
+          <div class="px-5 py-4 overflow-y-auto min-h-0">
             <slot />
           </div>
           <footer
             v-if="$slots.footer"
-            class="flex items-center justify-end gap-2 px-5 py-3 border-t border-line-subtle bg-surface-canvas"
+            class="flex items-center justify-end gap-2 px-5 py-3 border-t border-line-subtle bg-surface-canvas shrink-0"
           >
             <slot name="footer" />
           </footer>

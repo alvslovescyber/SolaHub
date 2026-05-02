@@ -18,10 +18,10 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
 
     public async Task<IReadOnlyList<User>> GetByIdsAsync(IEnumerable<UserId> ids, CancellationToken ct)
     {
-        var guidIds = ids.Select(id => id.Value).ToList();
-        if (guidIds.Count == 0) return [];
+        var userIds = ids.Distinct().ToList();
+        if (userIds.Count == 0) return [];
         return await db.Users.AsNoTracking()
-            .Where(u => guidIds.Contains(u.Id.Value))
+            .Where(u => userIds.Contains(u.Id))
             .ToListAsync(ct);
     }
 

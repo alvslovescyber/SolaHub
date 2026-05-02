@@ -2,8 +2,9 @@
   import { computed } from 'vue'
   import { Monitor } from 'lucide-vue-next'
   import { useBiblePreferencesStore } from '@/stores/biblePreferences.store'
-  import { isScriptureSlide, isSongSlide } from '@/types/presenter.types'
+  import { isNotationSlide, isScriptureSlide, isSongSlide } from '@/types/presenter.types'
   import type { PresenterSlide } from '@/types/presenter.types'
+  import SNotationSlideCanvas from './SNotationSlideCanvas.vue'
 
   const props = withDefaults(
     defineProps<{
@@ -33,6 +34,9 @@
     props.slide && isScriptureSlide(props.slide) ? props.slide : null
   )
   const song = computed(() => (props.slide && isSongSlide(props.slide) ? props.slide : null))
+  const notation = computed(() =>
+    props.slide && isNotationSlide(props.slide) ? props.slide : null
+  )
 
   const textStyle = computed(() =>
     props.canvasMode
@@ -57,6 +61,8 @@
       ? { fontSize: `${biblePrefs.presenterCanvasLabelPx}px`, marginTop: '56px' }
       : { marginTop: '2.5rem' }
   )
+
+  const notationMode = computed(() => (props.canvasMode ? 'canvas' : 'display'))
 </script>
 
 <template>
@@ -64,11 +70,22 @@
     <!-- Blanked: render an invisible element so out-in transition works -->
     <div v-if="blanked" :key="'blanked'" />
 
+    <!-- Notation slide -->
+    <SNotationSlideCanvas
+      v-else-if="notation"
+      :key="slideKey"
+      class="overflow-hidden shadow-modal"
+      :slide="notation"
+      :mode="notationMode"
+    />
+
     <!-- Slide content -->
     <div
-      v-else-if="slide"
+      v-else-if="scripture || song"
       :key="slideKey"
-      :class="canvasMode ? 'text-center' : 'text-center px-16 max-w-5xl w-full'"
+      :class="
+        canvasMode ? 'text-center' : 'text-center w-full max-w-5xl px-[clamp(1.5rem,6vw,4rem)]'
+      "
       :style="canvasMode ? { maxWidth: '1600px', padding: '0 160px' } : undefined"
     >
       <!-- Song section label -->
@@ -82,7 +99,7 @@
 
       <!-- Main text -->
       <p class="text-white font-serif leading-tight whitespace-pre-line" :style="textStyle">
-        {{ slide.text }}
+        {{ scripture?.text ?? song?.text }}
       </p>
 
       <!-- Scripture reference -->
