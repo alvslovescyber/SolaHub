@@ -1,7 +1,7 @@
 using MediatR;
-using SolaHub.Application.Commands.Notes;
 using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
+using SolaHub.Application.Mappers;
 using SolaHub.Core.Common;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.ValueObjects;
@@ -19,7 +19,7 @@ internal sealed class GetUserNotesQueryHandler(IVerseNoteRepository noteReposito
     )
     {
         var notes = await noteRepository.GetByUserAsync(request.UserId, ct);
-        var dtos = notes.Select(CreateNoteCommandHandler.MapToDto).ToList().AsReadOnly();
+        var dtos = notes.Select(NoteMapper.ToDto).ToList().AsReadOnly();
         return Result<IReadOnlyList<NoteDto>>.Success(dtos);
     }
 }

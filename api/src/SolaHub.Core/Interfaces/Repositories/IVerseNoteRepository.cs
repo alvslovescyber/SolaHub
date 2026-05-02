@@ -7,6 +7,7 @@ public interface IVerseNoteRepository
 {
     Task<VerseNote?> GetByIdAsync(VerseNoteId id, CancellationToken ct = default);
     Task<IReadOnlyList<VerseNote>> GetByUserAsync(UserId userId, CancellationToken ct = default);
+
     /// <summary>
     /// When <paramref name="sharedOnly"/> is false: notes for the verse owned by
     /// <paramref name="requestingUserId"/> or marked shared. When true: only shared notes for the verse.

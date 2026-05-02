@@ -4,6 +4,8 @@ import { defineStore } from 'pinia'
 export type Theme = 'light' | 'dark' | 'system'
 export type SidebarSection =
   | 'dashboard'
+  | 'calendar'
+  | 'inbox'
   | 'bible'
   | 'plans'
   | 'notes'

@@ -203,14 +203,8 @@ public sealed class AuthEndpointTests(ApiFactory factory)
     [Fact]
     public async Task Logout_WithRefreshTokenFromAnotherUser_Returns403()
     {
-        var userA = await RegisterAuthUser(
-            $"logout_a_{Guid.NewGuid():N}@example.com",
-            "User A"
-        );
-        var userB = await RegisterAuthUser(
-            $"logout_b_{Guid.NewGuid():N}@example.com",
-            "User B"
-        );
+        var userA = await RegisterAuthUser($"logout_a_{Guid.NewGuid():N}@example.com", "User A");
+        var userB = await RegisterAuthUser($"logout_b_{Guid.NewGuid():N}@example.com", "User B");
 
         using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/logout");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userA.AccessToken);

@@ -2,7 +2,12 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import router from '@/router'
 import App from '@/App.vue'
+import { isTauri } from '@/lib/platform'
 import '@/assets/styles/main.css'
+
+if (isTauri) {
+  document.documentElement.classList.add('is-tauri')
+}
 
 const app = createApp(App)
 

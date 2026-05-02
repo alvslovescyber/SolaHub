@@ -60,6 +60,22 @@ export const useAuthStore = defineStore('auth', () => {
     void router.push({ name: 'login', query: { reason: 'session-expired' } })
   }
 
+  /**
+   * Restore the user object on app boot. If a refresh token exists in storage
+   * we trade it in for a fresh access token + user payload; on failure we
+   * silently clear tokens so the router guard sends the visitor to /login.
+   */
+  async function rehydrate(): Promise<void> {
+    if (user.value) return
+    if (!tokenStorage.getRefresh()) return
+    try {
+      const response = await authService.refresh()
+      user.value = response.user
+    } catch {
+      tokenStorage.clear()
+    }
+  }
+
   return {
     user,
     isLoading,
@@ -71,6 +87,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     handleSessionExpired,
+    rehydrate,
   }
 })
 

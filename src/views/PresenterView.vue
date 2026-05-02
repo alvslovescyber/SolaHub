@@ -3,9 +3,7 @@
   import { Monitor, ChevronLeft, ChevronRight, Maximize2, ExternalLink } from 'lucide-vue-next'
   import { usePresenterStore } from '@/stores/presenter.store'
   import { useBibleStore } from '@/stores/bible.store'
-  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
-  import AppButton from '@/components/ui/AppButton.vue'
-  import AppCard from '@/components/ui/AppCard.vue'
+  import { SButton, SCard, SEmptyState, SPageContainer, STopBar } from '@/components/s'
   import type { PresenterSlide } from '@/types/presenter.types'
 
   const presenter = usePresenterStore()
@@ -28,111 +26,121 @@
 </script>
 
 <template>
-  <div class="flex flex-col h-full overflow-hidden">
-    <AppPageHeader title="Presenter" subtitle="Project Scripture to the congregation">
+  <div class="flex flex-col flex-1 min-w-0">
+    <STopBar title="Presenter" subtitle="Project Scripture to the congregation">
       <template #actions>
-        <AppButton
+        <SButton
           variant="secondary"
           size="sm"
           :disabled="!presenter.session.displayWindowOpen"
           @click="presenter.closeDisplayWindow()"
         >
-          Close Display
-        </AppButton>
-        <AppButton size="sm" @click="presenter.openDisplayWindow()">
-          <ExternalLink class="h-4 w-4" />
-          Open Display
-        </AppButton>
+          Close display
+        </SButton>
+        <SButton size="sm" variant="primary" @click="presenter.openDisplayWindow()">
+          <template #leading>
+            <ExternalLink class="h-3.5 w-3.5" />
+          </template>
+          Open display
+        </SButton>
       </template>
-    </AppPageHeader>
+    </STopBar>
 
-    <div class="flex-1 overflow-y-auto p-6 space-y-6">
-      <!-- Load slides from current Bible chapter -->
-      <AppCard>
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-semibold text-slate-900 dark:text-white">Load from Bible</p>
-            <p class="text-xs text-slate-500 mt-0.5">
-              Load the current chapter ({{ bible.selectedBook }} {{ bible.selectedChapter }}) as
-              slides
-            </p>
-          </div>
-          <AppButton size="sm" variant="secondary" @click="loadCurrentChapterAsSlides">
-            <Monitor class="h-4 w-4" />
-            Load
-          </AppButton>
+    <SPageContainer max="2xl" padding="lg">
+      <SCard padding="md" class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-semibold text-ink-strong">Load from Bible</p>
+          <p class="text-xs text-ink-muted mt-0.5">
+            Load the current chapter ({{ bible.selectedBook }} {{ bible.selectedChapter }}) as
+            slides
+          </p>
         </div>
-      </AppCard>
+        <SButton size="sm" variant="secondary" @click="loadCurrentChapterAsSlides">
+          <template #leading>
+            <Monitor class="h-3.5 w-3.5" />
+          </template>
+          Load chapter
+        </SButton>
+      </SCard>
 
-      <!-- Slide preview -->
-      <div v-if="presenter.session.slides.length > 0">
-        <!-- Current slide preview -->
+      <div v-if="presenter.session.slides.length > 0" class="mt-6">
         <div
-          class="rounded-xl bg-slate-900 dark:bg-black aspect-video flex flex-col items-center justify-center p-8 shadow-2xl"
+          class="rounded-xl bg-slate-950 dark:bg-black aspect-video flex flex-col items-center justify-center p-8 shadow-modal"
         >
           <div v-if="slide" class="presenter-slide">
             {{ slide.text }}
           </div>
-          <div v-else class="text-slate-500 text-sm">No slide selected</div>
-
+          <div v-else class="text-slate-400 text-sm">No slide selected</div>
           <p v-if="slide" class="text-slate-400 text-sm mt-6">
             {{ slide.book }} {{ slide.chapter }}:{{ slide.verse }}
           </p>
         </div>
 
-        <!-- Progress bar -->
-        <div class="mt-3 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+        <div class="mt-3 h-1 bg-line rounded-full overflow-hidden">
           <div
-            class="h-full bg-primary-600 rounded-full transition-all duration-300"
+            class="h-full bg-brand-500 rounded-full transition-all duration-300"
             :style="{ width: `${progress}%` }"
           />
         </div>
-
-        <p class="text-center text-xs text-slate-500 mt-1">
+        <p class="text-center text-2xs text-ink-muted mt-1">
           {{ presenter.session.currentIndex + 1 }} / {{ presenter.session.slides.length }}
         </p>
 
-        <!-- Controls -->
-        <div class="flex items-center justify-center gap-4 mt-4">
-          <AppButton variant="secondary" :disabled="!presenter.hasPrev" @click="presenter.prev()">
-            <ChevronLeft class="h-4 w-4" />
+        <div class="flex items-center justify-center gap-2 mt-4">
+          <SButton
+            variant="secondary"
+            size="sm"
+            :disabled="!presenter.hasPrev"
+            @click="presenter.prev()"
+          >
+            <template #leading>
+              <ChevronLeft class="h-3.5 w-3.5" />
+            </template>
             Previous
-          </AppButton>
-
-          <AppButton variant="secondary" @click="presenter.toggleFullscreen()">
-            <Maximize2 class="h-4 w-4" />
-            {{ presenter.session.isFullscreen ? 'Exit Fullscreen' : 'Fullscreen' }}
-          </AppButton>
-
-          <AppButton :disabled="!presenter.hasNext" @click="presenter.next()">
+          </SButton>
+          <SButton variant="secondary" size="sm" @click="presenter.toggleFullscreen()">
+            <template #leading>
+              <Maximize2 class="h-3.5 w-3.5" />
+            </template>
+            {{ presenter.session.isFullscreen ? 'Exit fullscreen' : 'Fullscreen' }}
+          </SButton>
+          <SButton size="sm" :disabled="!presenter.hasNext" @click="presenter.next()">
             Next
-            <ChevronRight class="h-4 w-4" />
-          </AppButton>
+            <template #trailing>
+              <ChevronRight class="h-3.5 w-3.5" />
+            </template>
+          </SButton>
         </div>
 
-        <!-- Slide list -->
-        <div class="mt-6 space-y-1 max-h-48 overflow-y-auto">
+        <SCard padding="none" class="mt-6 max-h-64 overflow-y-auto">
           <button
             v-for="(s, i) in presenter.session.slides"
             :key="i"
             :class="[
-              'w-full text-left px-3 py-2 rounded-lg text-xs transition-colors',
+              'w-full text-left px-4 py-2.5 border-b border-line-subtle last:border-b-0 text-xs transition-colors',
               i === presenter.session.currentIndex
-                ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+                ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
+                : 'text-ink hover:bg-surface-canvas',
             ]"
             @click="presenter.goTo(i)"
           >
-            <span class="font-medium">{{ s.book }} {{ s.chapter }}:{{ s.verse }}</span>
-            <span class="ml-2 text-slate-400 line-clamp-1">{{ s.text }}</span>
+            <span class="font-semibold">{{ s.book }} {{ s.chapter }}:{{ s.verse }}</span>
+            <span class="ml-2 text-ink-muted line-clamp-1">{{ s.text }}</span>
           </button>
-        </div>
+        </SCard>
       </div>
 
-      <div v-else class="text-center text-slate-400 pt-8">
-        <Monitor class="h-10 w-10 mx-auto mb-3 opacity-30" />
-        <p class="text-sm">Load slides from the Bible to begin presenting.</p>
-      </div>
-    </div>
+      <SCard v-else padding="none" class="mt-6">
+        <SEmptyState
+          tone="violet"
+          title="Ready when Sunday is"
+          description="Open the Bible, navigate to a chapter, then return here to load it as slides for the congregation."
+        >
+          <template #icon>
+            <Monitor class="h-5 w-5" />
+          </template>
+        </SEmptyState>
+      </SCard>
+    </SPageContainer>
   </div>
 </template>

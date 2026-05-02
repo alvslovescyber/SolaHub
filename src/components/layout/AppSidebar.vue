@@ -114,7 +114,9 @@
           <p class="text-xs font-semibold text-slate-900 dark:text-white truncate">
             {{ auth.user.displayName }}
           </p>
-          <p class="text-[10px] text-slate-500 truncate">{{ auth.user.email }}</p>
+          <p class="text-[10px] text-slate-500 truncate">
+            {{ auth.user.email }}
+          </p>
         </div>
       </button>
 

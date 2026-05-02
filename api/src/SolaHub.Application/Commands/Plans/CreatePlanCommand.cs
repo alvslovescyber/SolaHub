@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
+using SolaHub.Application.Mappers;
 using SolaHub.Core.Common;
 using SolaHub.Core.Entities;
 using SolaHub.Core.Interfaces.Repositories;
@@ -54,29 +55,6 @@ internal sealed class CreatePlanCommandHandler(IReadingPlanRepository planReposi
         var plan = planResult.Value;
         await planRepository.AddAsync(plan, ct);
 
-        return MapToDto(plan);
+        return ReadingPlanMapper.ToDto(plan);
     }
-
-    internal static ReadingPlanDto MapToDto(ReadingPlan plan) =>
-        new(
-            plan.Id.Value,
-            plan.Title,
-            plan.Description,
-            plan.Status.ToString(),
-            plan.IsPublic,
-            plan.CreatedBy.Value,
-            plan.CreatedAt,
-            plan.Days.Select(d => new PlanDayDto(
-                    d.DayNumber,
-                    d.Title,
-                    d.VerseRefs.Select(v => v.Key).ToList()
-                ))
-                .ToList(),
-            plan.Participants.Select(p => new PlanParticipantDto(
-                    p.UserId.Value,
-                    p.CurrentDay,
-                    p.JoinedAt
-                ))
-                .ToList()
-        );
 }

@@ -16,6 +16,9 @@ export function useBible() {
     currentBook,
     isLoadingChapter,
     isLoadingSearch,
+    chapterError,
+    searchError,
+    booksError,
   } = storeToRefs(store)
 
   onMounted(() => {
@@ -34,6 +37,9 @@ export function useBible() {
     currentBook,
     isLoadingChapter,
     isLoadingSearch,
+    chapterError,
+    searchError,
+    booksError,
     loadChapter: store.loadChapter,
     search: store.search,
     selectVerse: store.selectVerse,

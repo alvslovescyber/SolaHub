@@ -10,6 +10,7 @@ using SolaHub.API.Hubs;
 using SolaHub.API.Middleware;
 using SolaHub.Application;
 using SolaHub.Infrastructure;
+using SolaHub.Infrastructure.Auth;
 using SolaHub.Infrastructure.Persistence;
 
 // ─── Bootstrap Logger ──────────────────────────────────────────────────────────
@@ -46,16 +47,24 @@ try
     );
 
     // ─── Application + Infrastructure ─────────────────────────────────────────
+    // Infrastructure registers JwtOptions and validates it at startup.
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
 
     // ─── JWT Authentication ────────────────────────────────────────────────────
-    var jwtKey =
-        builder.Configuration["Jwt:SecretKey"]
-        ?? throw new InvalidOperationException("Jwt:SecretKey is required.");
-
-    if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
-        throw new InvalidOperationException("Jwt:SecretKey must be at least 32 bytes.");
+    // Bind a snapshot of JwtOptions so JwtBearer middleware sees the same source
+    // of truth as the rest of the auth stack (handlers, refresh-hasher, token svc).
+    var jwtOptions =
+        builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
+        ?? throw new InvalidOperationException(
+            $"Configuration section '{JwtOptions.SectionName}' is missing."
+        );
+    var secretValidation = jwtOptions.ValidateSecret();
+    if (
+        secretValidation is not null
+        && secretValidation != System.ComponentModel.DataAnnotations.ValidationResult.Success
+    )
+        throw new InvalidOperationException(secretValidation.ErrorMessage);
 
     builder
         .Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -64,11 +73,13 @@ try
             opts.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(jwtOptions.SecretKey)
+                ),
                 ValidateIssuer = true,
-                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidIssuer = jwtOptions.Issuer,
                 ValidateAudience = true,
-                ValidAudience = builder.Configuration["Jwt:Audience"],
+                ValidAudience = jwtOptions.Audience,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.FromSeconds(30), // tight clock skew
             };
@@ -108,11 +119,7 @@ try
         opts.AddPolicy(
             "TauriApp",
             policy =>
-                policy
-                    .WithOrigins(corsOrigins)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials()
+                policy.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials()
         )
     );
 
@@ -132,11 +139,9 @@ try
             "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
         // RequestPath does not include query string — avoids logging SignalR access_token.
         opts.GetLevel = (ctx, _, ex) =>
-            ex is not null || ctx.Response.StatusCode >= 500
-                ? LogEventLevel.Error
-                : ctx.Request.Path.StartsWithSegments("/hubs")
-                    ? LogEventLevel.Debug
-                    : LogEventLevel.Information;
+            ex is not null || ctx.Response.StatusCode >= 500 ? LogEventLevel.Error
+            : ctx.Request.Path.StartsWithSegments("/hubs") ? LogEventLevel.Debug
+            : LogEventLevel.Information;
     });
 
     if (app.Environment.IsDevelopment())
@@ -224,16 +229,15 @@ static async Task MigrateWithRetryAsync(WebApplication app)
     await db.Database.MigrateAsync();
 }
 
-// Expose Program for WebApplicationFactory in integration tests
-public partial class Program { }
-
 static string[] ResolveCorsOrigins(IConfiguration configuration, IHostEnvironment environment)
 {
     var configured = configuration["Cors:AllowedOrigins"];
     if (!string.IsNullOrWhiteSpace(configured))
     {
-        return configured
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return configured.Split(
+            ',',
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+        );
     }
 
     if (environment.IsDevelopment() || environment.IsEnvironment("Test"))
@@ -252,3 +256,6 @@ static string[] ResolveCorsOrigins(IConfiguration configuration, IHostEnvironmen
         "Cors:AllowedOrigins must be configured (comma-separated) for this environment."
     );
 }
+
+// Expose Program for WebApplicationFactory in integration tests
+public partial class Program { }

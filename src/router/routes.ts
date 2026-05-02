@@ -18,14 +18,27 @@ export const routes: RouteRecordRaw[] = [
   // ─── App (authenticated) ────────────────────────────────────────────────────
   {
     path: '/',
-    component: () => import('@/components/layout/AppLayout.vue'),
+    component: () => import('@/components/s/SAppShell.vue'),
     meta: { requiresAuth: true },
     children: [
+      // STUDY
       {
         path: '',
         name: 'dashboard',
         component: () => import('@/views/DashboardView.vue'),
       },
+      {
+        path: 'calendar',
+        name: 'calendar',
+        component: () => import('@/views/CalendarView.vue'),
+      },
+      {
+        path: 'inbox',
+        name: 'inbox',
+        component: () => import('@/views/InboxView.vue'),
+      },
+
+      // SCRIPTURE
       {
         path: 'bible',
         name: 'bible',
@@ -47,6 +60,8 @@ export const routes: RouteRecordRaw[] = [
         name: 'notes',
         component: () => import('@/views/NotesView.vue'),
       },
+
+      // SUNDAY
       {
         path: 'presenter',
         name: 'presenter',
@@ -58,6 +73,8 @@ export const routes: RouteRecordRaw[] = [
         name: 'community',
         component: () => import('@/views/CommunityView.vue'),
       },
+
+      // BOTTOM
       {
         path: 'settings',
         name: 'settings',

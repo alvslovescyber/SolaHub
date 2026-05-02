@@ -8,6 +8,8 @@ namespace SolaHub.Infrastructure.Repositories;
 
 public sealed class UserRepository(AppDbContext db) : IUserRepository
 {
+    // Reads that are followed by an Update (login, refresh) keep tracking enabled —
+    // change tracking is what makes the subsequent SaveChangesAsync efficient.
     public Task<User?> GetByIdAsync(UserId id, CancellationToken ct) =>
         db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
 
@@ -23,7 +25,7 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
     public Task<bool> ExistsByEmailAsync(string email, CancellationToken ct)
     {
         var normalized = email.Trim().ToLowerInvariant();
-        return db.Users.AnyAsync(u => u.Email.Value == normalized, ct);
+        return db.Users.AsNoTracking().AnyAsync(u => u.Email.Value == normalized, ct);
     }
 
     public async Task AddAsync(User user, CancellationToken ct)
@@ -34,7 +36,10 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
 
     public async Task UpdateAsync(User user, CancellationToken ct)
     {
-        db.Users.Update(user);
+        // See ReadingPlanRepository.UpdateAsync — avoid Update() on already-tracked
+        // entities so newly added owned children aren't mis-flagged as Modified.
+        if (db.Entry(user).State == EntityState.Detached)
+            db.Users.Update(user);
         await db.SaveChangesAsync(ct);
     }
 

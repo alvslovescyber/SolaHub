@@ -56,10 +56,12 @@ public sealed class NotesEndpointTests(ApiFactory factory)
             createResp.StatusCode.Should().Be(HttpStatusCode.Created);
         }
 
-        using (var req = new HttpRequestMessage(
-            HttpMethod.Get,
-            $"/api/notes/verse/{verseRef}?sharedOnly=false"
-        ))
+        using (
+            var req = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"/api/notes/verse/{verseRef}?sharedOnly=false"
+            )
+        )
         {
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userB.AccessToken);
             var listResp = await _client.SendAsync(req);
@@ -96,10 +98,12 @@ public sealed class NotesEndpointTests(ApiFactory factory)
             createResp.StatusCode.Should().Be(HttpStatusCode.Created);
         }
 
-        using (var req = new HttpRequestMessage(
-            HttpMethod.Get,
-            $"/api/notes/verse/{verseRef}?sharedOnly=false"
-        ))
+        using (
+            var req = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"/api/notes/verse/{verseRef}?sharedOnly=false"
+            )
+        )
         {
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", userB.AccessToken);
             var listResp = await _client.SendAsync(req);
@@ -133,10 +137,12 @@ public sealed class NotesEndpointTests(ApiFactory factory)
             createResp.StatusCode.Should().Be(HttpStatusCode.Created);
         }
 
-        using (var req = new HttpRequestMessage(
-            HttpMethod.Get,
-            $"/api/notes/verse/{verseRef}?sharedOnly=true"
-        ))
+        using (
+            var req = new HttpRequestMessage(
+                HttpMethod.Get,
+                $"/api/notes/verse/{verseRef}?sharedOnly=true"
+            )
+        )
         {
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
             var listResp = await _client.SendAsync(req);

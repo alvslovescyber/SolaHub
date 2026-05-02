@@ -1,3 +1,4 @@
+using FluentValidation;
 using MediatR;
 using SolaHub.Application.Common;
 using SolaHub.Core.Common;
@@ -8,6 +9,14 @@ using SolaHub.Core.ValueObjects;
 namespace SolaHub.Application.Commands.Auth;
 
 public sealed record RevokeTokenCommand(UserId RequestingUserId, string RefreshToken) : ICommand;
+
+public sealed class RevokeTokenCommandValidator : AbstractValidator<RevokeTokenCommand>
+{
+    public RevokeTokenCommandValidator()
+    {
+        RuleFor(x => x.RefreshToken).NotEmpty();
+    }
+}
 
 internal sealed class RevokeTokenCommandHandler(
     IUserRepository userRepository,

@@ -1,11 +1,9 @@
 <script setup lang="ts">
-  import { ref, watch, computed } from 'vue'
-  import { Search, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+  import { computed, onBeforeUnmount, ref, watch } from 'vue'
+  import { ChevronLeft, ChevronRight, Search, BookOpenText, X } from 'lucide-vue-next'
   import { useBible } from '@/composables/useBible'
-  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
-  import AppInput from '@/components/ui/AppInput.vue'
-  import AppSpinner from '@/components/ui/AppSpinner.vue'
-  import AppButton from '@/components/ui/AppButton.vue'
+  import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
+  import { SIconButton, SInput, SSpinner, STopBar } from '@/components/s'
 
   const {
     books,
@@ -22,17 +20,29 @@
     selectVerse,
   } = useBible()
 
+  const { isCompact } = useResponsiveLayout()
   const searchInput = ref('')
   const showSearch = ref(false)
+  const showBookList = ref(true)
 
-  let searchTimeout: ReturnType<typeof setTimeout>
+  let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
   function onSearchInput() {
-    clearTimeout(searchTimeout)
-    searchTimeout = setTimeout(() => {
-      void search(searchInput.value)
-    }, 300)
+    if (searchTimeout) clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => void search(searchInput.value), 250)
   }
+
+  onBeforeUnmount(() => {
+    if (searchTimeout) {
+      clearTimeout(searchTimeout)
+      searchTimeout = null
+    }
+  })
+
+  const groupedBooks = computed(() => ({
+    OT: books.value.filter((b) => b.testament === 'OT'),
+    NT: books.value.filter((b) => b.testament === 'NT'),
+  }))
 
   const canPrevChapter = computed(() => selectedChapter.value > 1)
   const canNextChapter = computed(() =>
@@ -42,93 +52,161 @@
   function prevChapter() {
     if (canPrevChapter.value) void loadChapter(selectedBook.value, selectedChapter.value - 1)
   }
-
   function nextChapter() {
     if (canNextChapter.value) void loadChapter(selectedBook.value, selectedChapter.value + 1)
   }
 
-  // Load Genesis 1 on mount if nothing selected
   watch(
     books,
     (b) => {
-      if (b.length > 0 && !currentChapter.value) {
-        void loadChapter('GEN', 1)
-      }
+      if (b.length > 0 && !currentChapter.value) void loadChapter('GEN', 1)
     },
     { immediate: true }
   )
+
+  // On compact widths, hide the book list by default
+  watch(isCompact, (compact) => (showBookList.value = !compact), { immediate: true })
+
+  function pickChapter(short: string, chapter: number) {
+    void loadChapter(short, chapter)
+    if (isCompact.value) showBookList.value = false
+  }
+
+  function jumpToSearchResult(book: string, chapter: number) {
+    void loadChapter(book, chapter)
+    showSearch.value = false
+  }
 </script>
 
 <template>
-  <div class="flex flex-col h-full overflow-hidden">
-    <AppPageHeader title="Bible" subtitle="Search and read Scripture">
+  <div class="flex flex-1 min-w-0 flex-col">
+    <STopBar
+      title="Bible"
+      :subtitle="currentBook?.longName ?? 'Read, search, and highlight Scripture'"
+    >
       <template #actions>
-        <AppButton variant="ghost" size="sm" @click="showSearch = !showSearch">
+        <SIconButton
+          v-if="isCompact"
+          label="Toggle book list"
+          size="sm"
+          @click="showBookList = !showBookList"
+        >
+          <BookOpenText class="h-4 w-4" />
+        </SIconButton>
+        <SIconButton label="Search Bible" size="sm" @click="showSearch = !showSearch">
           <Search class="h-4 w-4" />
-          Search
-        </AppButton>
+        </SIconButton>
       </template>
-    </AppPageHeader>
+    </STopBar>
 
-    <div class="flex-1 flex overflow-hidden">
-      <!-- Book list -->
-      <div class="w-40 shrink-0 border-r border-slate-200 dark:border-slate-700 overflow-y-auto">
-        <div class="p-2 space-y-0.5">
-          <button
-            v-for="book in books"
-            :key="book.shortName"
-            :class="[
-              'w-full text-left px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
-              selectedBook === book.shortName
-                ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800',
-            ]"
-            @click="loadChapter(book.shortName, 1)"
+    <div class="flex flex-1 min-h-0">
+      <!-- Book list rail -->
+      <Transition name="rail">
+        <aside
+          v-if="showBookList"
+          class="w-52 shrink-0 border-r border-line-subtle bg-surface-base/60 backdrop-blur-xl overflow-hidden flex flex-col"
+        >
+          <header
+            class="px-3 py-2.5 border-b border-line-subtle flex items-center justify-between sticky top-0"
           >
-            {{ book.longName }}
-          </button>
-        </div>
-      </div>
+            <p class="text-2xs font-semibold uppercase tracking-wider text-ink-subtle">
+              Books · {{ books.length }}
+            </p>
+            <SIconButton v-if="isCompact" label="Hide" size="xs" @click="showBookList = false">
+              <X class="h-3.5 w-3.5" />
+            </SIconButton>
+          </header>
+          <div class="flex-1 overflow-y-auto py-2">
+            <template v-for="(group, label) in groupedBooks" :key="label">
+              <p
+                class="sticky top-0 z-10 px-3 py-1.5 text-2xs font-semibold uppercase tracking-wider text-ink-subtle bg-surface-base/85 backdrop-blur"
+              >
+                {{ label === 'OT' ? 'Old Testament' : 'New Testament' }}
+              </p>
+              <button
+                v-for="book in group"
+                :key="book.shortName"
+                :class="[
+                  'group flex items-center justify-between w-full text-left px-3 py-1.5 text-sm transition-colors',
+                  selectedBook === book.shortName
+                    ? 's-sidebar-item-active mx-1.5 my-0.5 rounded-md'
+                    : 'text-ink hover:bg-surface-canvas',
+                ]"
+                @click="pickChapter(book.shortName, 1)"
+              >
+                <span class="truncate font-medium">{{ book.longName }}</span>
+                <span
+                  :class="[
+                    'text-2xs',
+                    selectedBook === book.shortName
+                      ? 'text-brand-700 dark:text-brand-300'
+                      : 'text-ink-subtle group-hover:text-ink-muted',
+                  ]"
+                  >{{ book.chapters }}</span
+                >
+              </button>
+            </template>
+          </div>
+        </aside>
+      </Transition>
 
-      <!-- Main content -->
-      <div class="flex-1 flex flex-col overflow-hidden">
+      <!-- Reading pane -->
+      <div class="flex flex-1 flex-col min-w-0">
         <!-- Search overlay -->
         <Transition name="fade">
           <div
             v-if="showSearch"
-            class="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+            class="border-b border-line-subtle bg-surface-base/80 backdrop-blur-xl px-6 py-3.5"
           >
-            <AppInput
+            <SInput
               v-model="searchInput"
-              placeholder="Search Bible (e.g. 'love one another')..."
+              size="sm"
+              placeholder="Search across all of Scripture…"
+              autofocus
               @input="onSearchInput"
-            />
+            >
+              <template #leading>
+                <Search class="h-3.5 w-3.5" />
+              </template>
+              <template v-if="searchInput" #trailing>
+                <button
+                  type="button"
+                  class="text-ink-muted hover:text-ink-strong"
+                  aria-label="Clear search"
+                  @click="searchInput = ''"
+                >
+                  <X class="h-3.5 w-3.5" />
+                </button>
+              </template>
+            </SInput>
 
             <div v-if="isLoadingSearch" class="mt-3 flex justify-center">
-              <AppSpinner size="sm" />
+              <SSpinner size="sm" />
             </div>
 
             <p
               v-else-if="searchInput && searchResults.length === 0"
-              class="mt-3 text-sm text-slate-400 text-center"
+              class="mt-3 text-sm text-ink-muted text-center"
             >
-              No results found.
+              No results for "{{ searchInput }}"
             </p>
 
             <div
               v-else-if="searchResults.length > 0"
-              class="mt-3 space-y-1 max-h-64 overflow-y-auto"
+              class="mt-3 space-y-1 max-h-72 overflow-y-auto"
             >
               <button
                 v-for="(result, i) in searchResults"
                 :key="i"
-                class="w-full text-left p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                @click="loadChapter(result.book, result.chapter); showSearch = false"
+                class="w-full text-left p-2.5 rounded-md hover:bg-surface-canvas transition-colors"
+                @click="jumpToSearchResult(result.book, result.chapter)"
               >
-                <p class="text-xs font-semibold text-primary-600 mb-0.5">
+                <p
+                  class="text-2xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300"
+                >
                   {{ result.book }} {{ result.chapter }}:{{ result.verse }}
                 </p>
-                <p class="text-sm text-slate-700 dark:text-slate-300 line-clamp-2">
+                <p class="text-sm text-ink mt-0.5 line-clamp-2">
                   {{ result.text }}
                 </p>
               </button>
@@ -136,56 +214,85 @@
           </div>
         </Transition>
 
-        <!-- Chapter navigation -->
+        <!-- Sticky chapter nav -->
         <div
-          class="flex items-center justify-between px-6 py-2 border-b border-slate-200 dark:border-slate-700 text-sm"
+          class="sticky top-0 z-10 flex items-center justify-between px-6 py-2.5 border-b border-line-subtle bg-surface-base/85 backdrop-blur-xl"
         >
-          <button
+          <SIconButton
+            label="Previous chapter"
+            size="sm"
             :disabled="!canPrevChapter"
-            class="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
             @click="prevChapter"
           >
             <ChevronLeft class="h-4 w-4" />
-          </button>
-
-          <span class="font-semibold text-slate-700 dark:text-slate-300">
+          </SIconButton>
+          <span class="text-sm font-semibold text-ink-strong tracking-tight">
             {{ currentBook?.longName ?? selectedBook }} {{ selectedChapter }}
           </span>
-
-          <button
+          <SIconButton
+            label="Next chapter"
+            size="sm"
             :disabled="!canNextChapter"
-            class="p-1 rounded text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
             @click="nextChapter"
           >
             <ChevronRight class="h-4 w-4" />
-          </button>
+          </SIconButton>
         </div>
 
-        <!-- Bible text -->
-        <div class="flex-1 overflow-y-auto px-8 py-6">
-          <div v-if="isLoadingChapter" class="flex justify-center pt-8">
-            <AppSpinner />
+        <!-- Reading area -->
+        <div class="flex-1 overflow-y-auto">
+          <div v-if="isLoadingChapter" class="flex justify-center pt-16">
+            <SSpinner />
           </div>
 
-          <div v-else-if="currentChapter" class="bible-verse max-w-2xl mx-auto">
-            <span
-              v-for="verse in currentChapter.verses"
-              :key="verse.verse"
-              :class="[
-                'cursor-pointer hover:bg-yellow-50 dark:hover:bg-yellow-900/10 rounded px-0.5 transition-colors',
-                selectedVerse === verse.verse && 'verse-highlight',
-              ]"
-              @click="selectVerse(verse.verse)"
-            >
-              <sup>{{ verse.verse }}</sup
-              >{{ verse.text }}
-              {{ ' ' }}
-            </span>
-          </div>
+          <article v-else-if="currentChapter" class="bible-verse max-w-[640px] mx-auto px-8 py-10">
+            <header class="mb-8 text-center">
+              <p
+                class="text-2xs font-semibold uppercase tracking-[0.2em] text-ink-subtle font-sans"
+              >
+                Chapter
+              </p>
+              <h1 class="mt-1 text-4xl font-serif font-semibold text-ink-strong tracking-tight">
+                {{ selectedChapter }}
+              </h1>
+            </header>
+            <p>
+              <span
+                v-for="verse in currentChapter.verses"
+                :key="verse.verse"
+                :class="[
+                  'cursor-pointer rounded px-0.5 transition-colors',
+                  'hover:bg-amber-50 dark:hover:bg-amber-500/10',
+                  selectedVerse === verse.verse && 'verse-highlight',
+                ]"
+                @click="selectVerse(verse.verse)"
+              >
+                <sup>{{ verse.verse }}</sup
+                >{{ verse.text }}{{ ' ' }}
+              </span>
+            </p>
+          </article>
 
-          <div v-else class="text-center text-slate-400 pt-16">Select a book to start reading</div>
+          <div v-else class="text-center text-ink-muted pt-16 text-sm">
+            Choose a book of Scripture to begin reading
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+  .rail-enter-active,
+  .rail-leave-active {
+    transition:
+      width 200ms ease,
+      opacity 200ms ease;
+    overflow: hidden;
+  }
+  .rail-enter-from,
+  .rail-leave-to {
+    width: 0;
+    opacity: 0;
+  }
+</style>

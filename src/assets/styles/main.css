@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── Tauri drag region ───────────────────────────────────────────────────── */
+/* ─── Tauri drag region ──────────────────────────────────────────────────── */
 [data-tauri-drag-region] {
   -webkit-app-region: drag;
   cursor: default;
@@ -13,89 +13,182 @@
 
 [data-tauri-drag-region] button,
 [data-tauri-drag-region] a,
-[data-tauri-drag-region] input {
+[data-tauri-drag-region] input,
+[data-tauri-drag-region] [data-no-drag] {
   -webkit-app-region: no-drag;
 }
 
-/* ─── Sidebar glass effect ────────────────────────────────────────────────── */
-.sidebar-glass {
-  background: var(--surface-sidebar);
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  border-right: 1px solid var(--border-subtle);
+[data-no-drag] {
+  -webkit-app-region: no-drag;
 }
 
-/* ─── Card surface ────────────────────────────────────────────────────────── */
-.card {
-  background: var(--surface-elevated);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--transition-base);
+/* ─── Vibrancy surfaces (Tauri macOS sidebar effect compatible) ──────────── */
+.s-vibrancy-sidebar {
+  position: relative;
+  background-color: var(--s-surface-sidebar);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
 }
 
-.card:hover {
-  box-shadow: var(--shadow-md);
+/* Almost-imperceptible warm tint at the very top of the sidebar (Kinabase-style). */
+.s-vibrancy-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 22% at 80% 0%, var(--s-aurora-peach), transparent 80%);
+  opacity: 0.65;
+  z-index: 0;
 }
 
-/* ─── Prose (Bible text) ──────────────────────────────────────────────────── */
+.s-vibrancy-sidebar > * {
+  position: relative;
+  z-index: 1;
+}
+
+.s-vibrancy-window {
+  background: var(--s-surface-vibrancy);
+  backdrop-filter: blur(32px) saturate(1.7);
+  -webkit-backdrop-filter: blur(32px) saturate(1.7);
+}
+
+/* Canvas left intentionally neutral — no aurora wash on main content. */
+.s-canvas-aurora {
+  position: relative;
+}
+
+/* ─── Card primitive ─────────────────────────────────────────────────────── */
+.s-card {
+  background: var(--s-surface-raised);
+  border: 1px solid var(--s-border-default);
+  border-radius: var(--s-radius-lg);
+  box-shadow: var(--s-shadow-card);
+}
+
+.s-card--flat {
+  background: var(--s-surface-raised);
+  border: 1px solid var(--s-border-default);
+  border-radius: var(--s-radius-lg);
+  box-shadow: none;
+}
+
+.s-card--quiet {
+  background: transparent;
+  border: 1px solid var(--s-border-subtle);
+  border-radius: var(--s-radius-lg);
+}
+
+/* ─── Login gradient (subtle, neutral with a hint of warmth) ─────────────── */
+.s-auth-gradient {
+  position: relative;
+  background:
+    radial-gradient(45% 38% at 14% 18%, rgba(255, 217, 194, 0.55) 0%, transparent 70%),
+    radial-gradient(45% 38% at 86% 90%, rgba(199, 240, 224, 0.45) 0%, transparent 70%),
+    linear-gradient(180deg, #f6f7fa 0%, #eef1f6 100%);
+}
+
+.dark .s-auth-gradient {
+  background:
+    radial-gradient(45% 38% at 14% 18%, rgba(244, 114, 82, 0.12) 0%, transparent 70%),
+    radial-gradient(45% 38% at 86% 90%, rgba(16, 185, 129, 0.1) 0%, transparent 70%), #0b0d12;
+}
+
+/* ─── Modal overlay (blurs entire window incl. sidebar) ──────────────────── */
+.s-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+}
+
+.dark .s-modal-backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* ─── Sidebar item (Kinabase-style: soft blue tint + blue text, no shadow) ─ */
+.s-sidebar-item-active {
+  background: rgba(59, 107, 255, 0.08);
+  color: var(--s-brand-600);
+}
+
+.s-sidebar-item-active :where(svg) {
+  color: var(--s-brand-600);
+}
+
+.dark .s-sidebar-item-active {
+  background: rgba(99, 136, 255, 0.14);
+  color: #c0d0ff;
+}
+
+.dark .s-sidebar-item-active :where(svg) {
+  color: #c0d0ff;
+}
+
+/* ─── Bible prose ────────────────────────────────────────────────────────── */
 .bible-verse {
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: 'Source Serif 4', 'Source Serif Pro', 'Iowan Old Style', 'Georgia', serif;
   font-size: 1.05rem;
   line-height: 1.9;
-  color: var(--text-primary);
+  color: var(--s-text-default);
+  font-feature-settings: 'liga', 'dlig', 'onum';
 }
 
 .bible-verse sup {
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.65em;
-  color: var(--color-primary-600);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.62em;
+  color: var(--s-brand-600);
   font-weight: 600;
-  margin-right: 2px;
+  margin-right: 4px;
+  vertical-align: baseline;
+  position: relative;
+  top: -0.5em;
   user-select: none;
 }
 
 .bible-verse .verse-highlight {
-  background-color: rgb(251 191 36 / 0.25);
-  border-radius: 2px;
-  padding: 0 2px;
+  background: linear-gradient(180deg, rgba(245, 179, 71, 0.32), rgba(245, 179, 71, 0.18));
+  border-radius: 3px;
+  padding: 0 3px;
 }
 
-/* ─── Presenter mode ──────────────────────────────────────────────────────── */
+/* ─── Presenter slides ───────────────────────────────────────────────────── */
 .presenter-slide {
   font-size: clamp(1.5rem, 4vw, 3.5rem);
-  font-family: 'Georgia', serif;
+  font-family: 'Source Serif 4', 'Georgia', serif;
   line-height: 1.6;
   text-align: center;
   color: #ffffff;
-  text-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
 }
 
-/* ─── Slide-in transitions ────────────────────────────────────────────────── */
-.slide-enter-active,
-.slide-leave-active {
-  transition:
-    transform var(--transition-base),
-    opacity var(--transition-base);
-}
-
-.slide-enter-from {
-  transform: translateX(24px);
-  opacity: 0;
-}
-
-.slide-leave-to {
-  transform: translateX(-24px);
-  opacity: 0;
-}
-
-/* ─── Fade transition ─────────────────────────────────────────────────────── */
+/* ─── Transitions ────────────────────────────────────────────────────────── */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity var(--transition-base);
+  transition: opacity var(--s-ease-base);
 }
-
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition:
+    transform var(--s-ease-base),
+    opacity var(--s-ease-base);
+}
+.slide-enter-from {
+  transform: translateX(8px);
+  opacity: 0;
+}
+.slide-leave-to {
+  transform: translateX(-8px);
+  opacity: 0;
+}
+
+/* ─── Scrollbar inside vibrant areas ─────────────────────────────────────── */
+.s-vibrancy-sidebar ::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.12);
+  background-clip: padding-box;
 }

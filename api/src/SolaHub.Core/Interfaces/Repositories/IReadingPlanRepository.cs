@@ -11,6 +11,17 @@ public interface IReadingPlanRepository
         ChurchId churchId,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Lightweight participant check (no aggregate load) used by the realtime hub
+    /// to authorize per-plan operations without re-fetching the full plan tree.
+    /// </summary>
+    Task<bool> IsParticipantAsync(
+        ReadingPlanId planId,
+        UserId userId,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(ReadingPlan plan, CancellationToken ct = default);
     Task UpdateAsync(ReadingPlan plan, CancellationToken ct = default);
     Task DeleteAsync(ReadingPlanId id, CancellationToken ct = default);

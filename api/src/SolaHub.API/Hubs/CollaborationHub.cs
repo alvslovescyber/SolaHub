@@ -11,8 +11,10 @@ namespace SolaHub.API.Hubs;
 /// Clients join plan-specific groups to receive targeted updates.
 /// </summary>
 [Authorize]
-public sealed class CollaborationHub(IServiceScopeFactory scopeFactory, ILogger<CollaborationHub> logger)
-    : Hub
+public sealed class CollaborationHub(
+    IServiceScopeFactory scopeFactory,
+    ILogger<CollaborationHub> logger
+) : Hub
 {
     private static string PlanGroup(Guid planId) => $"plan:{planId}";
 
@@ -29,8 +31,9 @@ public sealed class CollaborationHub(IServiceScopeFactory scopeFactory, ILogger<
         var userId = RequireUserId();
         await using var scope = scopeFactory.CreateAsyncScope();
         var repo = scope.ServiceProvider.GetRequiredService<IReadingPlanRepository>();
-        var plan = await repo.GetByIdAsync(ReadingPlanId.From(planId), ct);
-        if (plan is null || !plan.Participants.Any(p => p.UserId == userId))
+        // Lightweight existence + participant check; avoids loading the full aggregate per call.
+        var isParticipant = await repo.IsParticipantAsync(ReadingPlanId.From(planId), userId, ct);
+        if (!isParticipant)
             throw new HubException("You are not a participant in this plan.");
     }
 
@@ -53,11 +56,7 @@ public sealed class CollaborationHub(IServiceScopeFactory scopeFactory, ILogger<
         if (Guid.TryParse(sub, out var guid))
         {
             if (exception is not null)
-                logger.LogWarning(
-                    exception,
-                    "User {UserId} disconnected with error",
-                    guid
-                );
+                logger.LogWarning(exception, "User {UserId} disconnected with error", guid);
             else
                 logger.LogDebug("User {UserId} disconnected cleanly", guid);
         }
@@ -99,10 +98,7 @@ public sealed class CollaborationHub(IServiceScopeFactory scopeFactory, ILogger<
 
         await Clients
             .OthersInGroup(group)
-            .SendAsync(
-                "UserLeft",
-                new { UserId = userId.Value, LeftAt = DateTimeOffset.UtcNow }
-            );
+            .SendAsync("UserLeft", new { UserId = userId.Value, LeftAt = DateTimeOffset.UtcNow });
     }
 
     // ─── Progress broadcasting ─────────────────────────────────────────────────

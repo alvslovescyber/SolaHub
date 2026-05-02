@@ -9,18 +9,37 @@
 }
 
 html {
-  font-size: 16px;
+  font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-  background-color: var(--surface-base);
-  color: var(--text-primary);
-  line-height: 1.6;
-  overflow: hidden; /* Tauri app — no browser scroll */
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'SF Pro Text',
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  background-color: var(--s-surface-canvas);
+  color: var(--s-text-default);
+  line-height: 1.55;
+  letter-spacing: -0.005em;
+  overflow: hidden;
+}
+
+/* When running inside Tauri with macOS sidebar vibrancy, let the system
+ * material show through where the sidebar lives. Web fallback keeps the
+ * solid canvas background. */
+html.is-tauri,
+html.is-tauri body {
+  background: transparent;
 }
 
 #app {
@@ -30,7 +49,7 @@ body {
   flex-direction: column;
 }
 
-/* ─── Typography ──────────────────────────────────────────────────────────── */
+/* ─── Typography ─────────────────────────────────────────────────────────── */
 h1,
 h2,
 h3,
@@ -38,34 +57,37 @@ h4,
 h5,
 h6 {
   font-weight: 600;
-  line-height: 1.3;
-  color: var(--text-primary);
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  color: var(--s-text-strong);
 }
 
 p {
-  color: var(--text-secondary);
+  color: var(--s-text-default);
 }
 
 a {
-  color: var(--color-primary-600);
+  color: var(--s-text-link);
   text-decoration: none;
-  transition: color var(--transition-fast);
+  transition: color var(--s-ease-fast);
 }
 
 a:hover {
-  color: var(--color-primary-700);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-/* ─── Focus ring ──────────────────────────────────────────────────────────── */
+/* ─── Focus ring ─────────────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid var(--border-focus);
+  outline: 2px solid var(--s-border-focus);
   outline-offset: 2px;
+  border-radius: 6px;
 }
 
-/* ─── Scrollbar styling ───────────────────────────────────────────────────── */
+/* ─── Scrollbar (macOS style) ────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -73,10 +95,24 @@ a:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-default);
-  border-radius: 99px;
+  background: rgba(15, 23, 42, 0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: rgba(15, 23, 42, 0.28);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+  background-clip: padding-box;
 }

@@ -248,6 +248,10 @@ public sealed class PlansController(ISender sender) : ControllerBase
 // ─── Request records ───────────────────────────────────────────────────────────
 public sealed record CreatePlanRequest(string Title, string? Description, bool IsPublic);
 
-public sealed record AddPlanDayRequest(int DayNumber, string Title, IReadOnlyList<string> VerseRefs);
+public sealed record AddPlanDayRequest(
+    int DayNumber,
+    string Title,
+    IReadOnlyList<string> VerseRefs
+);
 
 public sealed record RecordProgressRequest(int DayNumber);

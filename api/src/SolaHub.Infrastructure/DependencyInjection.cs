@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.Interfaces.Services;
 using SolaHub.Infrastructure.Auth;
@@ -16,6 +17,19 @@ public static class DependencyInjection
         IConfiguration config
     )
     {
+        // ─── JWT Options (validated at startup, fail-fast on misconfig) ────────
+        services
+            .AddOptions<JwtOptions>()
+            .Bind(config.GetSection(JwtOptions.SectionName))
+            .ValidateDataAnnotations()
+            .Validate(
+                o =>
+                    o.ValidateSecret()
+                    == System.ComponentModel.DataAnnotations.ValidationResult.Success,
+                "Jwt:SecretKey must be at least 32 bytes for HMAC-SHA256."
+            )
+            .ValidateOnStart();
+
         // ─── Database ──────────────────────────────────────────────────────────
         var connectionString =
             config.GetConnectionString("DefaultConnection")
@@ -57,4 +71,12 @@ public static class DependencyInjection
 
         return services;
     }
+
+    /// <summary>
+    /// Returns the resolved <see cref="JwtOptions"/> from a built service provider.
+    /// Used by the API host to feed JWT bearer validation parameters from the same
+    /// source-of-truth as the rest of the auth stack.
+    /// </summary>
+    public static JwtOptions ResolveJwtOptions(this IServiceProvider services) =>
+        services.GetRequiredService<IOptions<JwtOptions>>().Value;
 }

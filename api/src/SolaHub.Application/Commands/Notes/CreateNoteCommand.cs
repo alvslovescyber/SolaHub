@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
+using SolaHub.Application.Mappers;
 using SolaHub.Core.Common;
 using SolaHub.Core.Entities;
 using SolaHub.Core.Interfaces.Repositories;
@@ -61,17 +62,6 @@ internal sealed class CreateNoteCommandHandler(IVerseNoteRepository noteReposito
             return noteResult.Error;
 
         await noteRepository.AddAsync(noteResult.Value, ct);
-        return MapToDto(noteResult.Value);
+        return NoteMapper.ToDto(noteResult.Value);
     }
-
-    internal static NoteDto MapToDto(VerseNote note) =>
-        new(
-            note.Id.Value,
-            note.VerseRef.Key,
-            note.Content,
-            note.IsShared,
-            note.Tags.ToList(),
-            note.CreatedAt,
-            note.UpdatedAt
-        );
 }

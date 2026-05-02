@@ -1,9 +1,8 @@
 <script setup lang="ts">
   import { ref } from 'vue'
-  import { BookOpen } from 'lucide-vue-next'
+  import { RouterLink } from 'vue-router'
   import { useAuth } from '@/composables/useAuth'
-  import AppInput from '@/components/ui/AppInput.vue'
-  import AppButton from '@/components/ui/AppButton.vue'
+  import { SBrandMark, SButton, SInput } from '@/components/s'
 
   const { register, isLoading, error } = useAuth()
 
@@ -17,45 +16,62 @@
 </script>
 
 <template>
-  <div class="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-    <div class="w-full max-w-sm">
-      <div class="flex flex-col items-center mb-8">
-        <div
-          class="h-12 w-12 rounded-2xl bg-primary-600 flex items-center justify-center mb-3 shadow-lg shadow-primary-200 dark:shadow-primary-900/40"
-        >
-          <BookOpen class="h-6 w-6 text-white" />
-        </div>
-        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Create account</h1>
-        <p class="text-sm text-slate-500 mt-1">Start your SolaHub journey</p>
+  <div class="s-auth-gradient h-screen w-screen flex items-center justify-center p-6">
+    <div class="w-full max-w-[380px]">
+      <div class="flex flex-col items-center mb-7">
+        <SBrandMark :size="44" />
+        <h1 class="mt-3 text-xl font-semibold text-ink-strong tracking-tight">
+          Create your account
+        </h1>
+        <p class="text-sm text-ink-muted mt-1">
+          Begin reading, journaling, and worshiping together
+        </p>
       </div>
 
-      <form class="card p-6 space-y-4" @submit.prevent="handleSubmit">
-        <AppInput v-model="displayName" label="Display name" placeholder="John Smith" required />
-        <AppInput
-          v-model="email"
-          label="Email"
-          type="email"
-          placeholder="you@example.com"
-          required
-        />
-        <AppInput
-          v-model="password"
-          label="Password"
-          type="password"
-          placeholder="Min 8 chars, upper, lower, digit"
-          required
-        />
+      <div
+        class="rounded-xl border border-white/60 bg-white/70 backdrop-blur-2xl shadow-modal p-6 dark:bg-surface-raised/70 dark:border-line"
+      >
+        <form class="space-y-3.5" @submit.prevent="handleSubmit">
+          <SInput
+            v-model="displayName"
+            label="Display name"
+            placeholder="Jane Doe"
+            autocomplete="name"
+            required
+            autofocus
+          />
+          <SInput
+            v-model="email"
+            label="Email"
+            type="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+            required
+          />
+          <SInput
+            v-model="password"
+            label="Password"
+            type="password"
+            placeholder="Min 8 chars, upper, lower, digit"
+            autocomplete="new-password"
+            required
+          />
 
-        <div v-if="error" class="text-sm text-red-500">{{ error }}</div>
+          <p v-if="error" class="text-xs text-red-600 dark:text-red-400">
+            {{ error }}
+          </p>
 
-        <AppButton type="submit" class="w-full" :loading="isLoading"> Create account </AppButton>
-      </form>
+          <SButton type="submit" full-width :loading="isLoading" size="md">
+            Create account
+          </SButton>
+        </form>
+      </div>
 
-      <p class="text-center text-sm text-slate-500 mt-4">
+      <p class="text-center text-xs text-ink-muted mt-5">
         Already have an account?
-        <RouterLink to="/login" class="text-primary-600 hover:underline font-medium"
-          >Sign in</RouterLink
-        >
+        <RouterLink to="/login" class="text-brand-600 font-medium hover:underline">
+          Sign in
+        </RouterLink>
       </p>
     </div>
   </div>

@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
+using SolaHub.Application.Mappers;
 using SolaHub.Core.Common;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.Interfaces.Services;
@@ -24,9 +25,6 @@ internal sealed class RefreshTokenCommandHandler(
     IRefreshTokenHasher refreshTokenHasher
 ) : IRequestHandler<RefreshTokenCommand, Result<AuthResponse>>
 {
-    private static readonly TimeSpan AccessTokenExpiry = TimeSpan.FromMinutes(15);
-    private static readonly TimeSpan RefreshTokenExpiry = TimeSpan.FromDays(30);
-
     public async Task<Result<AuthResponse>> Handle(
         RefreshTokenCommand request,
         CancellationToken ct
@@ -45,12 +43,13 @@ internal sealed class RefreshTokenCommandHandler(
             );
 
         // Rotate refresh token on every use — prevents stolen-token reuse
+        var now = DateTimeOffset.UtcNow;
         var newAccessToken = tokenService.GenerateAccessToken(user);
         var newRefreshToken = tokenService.GenerateRefreshToken();
         var newHash = refreshTokenHasher.Hash(newRefreshToken);
         var tokenResult = user.UpdateRefreshToken(
             newHash,
-            DateTimeOffset.UtcNow.Add(RefreshTokenExpiry)
+            now.Add(tokenService.RefreshTokenLifetime)
         );
         if (tokenResult.IsFailure)
             return tokenResult.Error;
@@ -60,8 +59,8 @@ internal sealed class RefreshTokenCommandHandler(
         return new AuthResponse(
             newAccessToken,
             newRefreshToken,
-            DateTimeOffset.UtcNow.Add(AccessTokenExpiry),
-            RegisterCommandHandler.MapToUserDto(user)
+            now.Add(tokenService.AccessTokenLifetime),
+            UserMapper.ToDto(user)
         );
     }
 }

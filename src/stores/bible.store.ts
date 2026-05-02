@@ -18,6 +18,10 @@ export const useBibleStore = defineStore('bible', () => {
   const isLoadingSearch = ref(false)
   const isLoadingBooks = ref(false)
 
+  const chapterError = ref<string | null>(null)
+  const searchError = ref<string | null>(null)
+  const booksError = ref<string | null>(null)
+
   const currentVerseRef = computed(() => {
     if (!selectedVerse.value) return null
     return `${selectedBook.value}.${selectedChapter.value}.${selectedVerse.value}`
@@ -30,8 +34,12 @@ export const useBibleStore = defineStore('bible', () => {
   async function loadBooks(): Promise<void> {
     if (books.value.length > 0) return // already cached
     isLoadingBooks.value = true
+    booksError.value = null
     try {
       books.value = await bibleService.getBooks()
+    } catch (e) {
+      booksError.value = toMessage(e, 'Failed to load Bible books.')
+      throw e
     } finally {
       isLoadingBooks.value = false
     }
@@ -43,8 +51,12 @@ export const useBibleStore = defineStore('bible', () => {
     selectedVerse.value = null
 
     isLoadingChapter.value = true
+    chapterError.value = null
     try {
       currentChapter.value = await bibleService.getChapter(book, chapter)
+    } catch (e) {
+      chapterError.value = toMessage(e, `Failed to load ${book} ${chapter}.`)
+      throw e
     } finally {
       isLoadingChapter.value = false
     }
@@ -54,12 +66,17 @@ export const useBibleStore = defineStore('bible', () => {
     searchQuery.value = query
     if (!query.trim()) {
       searchResults.value = []
+      searchError.value = null
       return
     }
 
     isLoadingSearch.value = true
+    searchError.value = null
     try {
       searchResults.value = await bibleService.search(query)
+    } catch (e) {
+      searchError.value = toMessage(e, 'Search failed. Please try again.')
+      throw e
     } finally {
       isLoadingSearch.value = false
     }
@@ -85,6 +102,9 @@ export const useBibleStore = defineStore('bible', () => {
     isLoadingChapter,
     isLoadingSearch,
     isLoadingBooks,
+    chapterError,
+    searchError,
+    booksError,
     currentVerseRef,
     currentBook,
     loadBooks,
@@ -94,3 +114,17 @@ export const useBibleStore = defineStore('bible', () => {
     navigateTo,
   }
 })
+
+function toMessage(e: unknown, fallback: string): string {
+  if (
+    typeof e === 'object' &&
+    e !== null &&
+    'response' in e &&
+    typeof (e as { response?: { data?: { description?: string } } }).response?.data?.description ===
+      'string'
+  ) {
+    return (e as { response: { data: { description: string } } }).response.data.description
+  }
+  if (e instanceof Error && e.message) return e.message
+  return fallback
+}

@@ -1,15 +1,20 @@
 <script setup lang="ts">
-  import { onMounted } from 'vue'
+  import { onMounted, computed } from 'vue'
   import { useRouter } from 'vue-router'
-  import { ArrowLeft, Users, CheckCircle, Trash2 } from 'lucide-vue-next'
+  import { ArrowLeft, CheckCircle, Trash2, Users } from 'lucide-vue-next'
   import { usePlansStore } from '@/stores/plans.store'
   import { useAuthStore } from '@/stores/auth.store'
-  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
-  import AppButton from '@/components/ui/AppButton.vue'
-  import AppCard from '@/components/ui/AppCard.vue'
-  import AppBadge from '@/components/ui/AppBadge.vue'
-  import AppAvatar from '@/components/ui/AppAvatar.vue'
-  import AppSpinner from '@/components/ui/AppSpinner.vue'
+  import { planStatusTone } from '@/lib/plans'
+  import {
+    SAvatar,
+    SBadge,
+    SButton,
+    SCard,
+    SDivider,
+    SPageContainer,
+    SSpinner,
+    STopBar,
+  } from '@/components/s'
 
   const props = defineProps<{ id: string }>()
   const plans = usePlansStore()
@@ -18,8 +23,10 @@
 
   onMounted(() => plans.fetchPlan(props.id))
 
-  const myParticipant = () => plans.activePlan?.participants.find((p) => p.userId === auth.user?.id)
-  const isOwner = () => plans.activePlan?.createdBy === auth.user?.id
+  const myParticipant = computed(() =>
+    plans.activePlan?.participants.find((p) => p.userId === auth.user?.id)
+  )
+  const isOwner = computed(() => plans.activePlan?.createdBy === auth.user?.id)
 
   async function markDay(dayNumber: number) {
     await plans.recordProgress(props.id, dayNumber)
@@ -30,99 +37,106 @@
     await plans.remove(props.id)
     await router.push({ name: 'plans' })
   }
+
+  const statusTone = planStatusTone
 </script>
 
 <template>
-  <div class="flex flex-col h-full overflow-hidden">
-    <AppPageHeader
-      :title="plans.activePlan?.title ?? 'Loading...'"
+  <div class="flex flex-col flex-1 min-w-0">
+    <STopBar
+      :title="plans.activePlan?.title ?? 'Loading…'"
       :subtitle="plans.activePlan?.description ?? undefined"
     >
-      <template #actions>
-        <AppButton variant="ghost" size="sm" @click="router.back()">
-          <ArrowLeft class="h-4 w-4" />
+      <template #left>
+        <SButton variant="ghost" size="xs" @click="router.back()">
+          <template #leading>
+            <ArrowLeft class="h-3 w-3" />
+          </template>
           Back
-        </AppButton>
-        <AppButton v-if="isOwner()" variant="danger" size="sm" @click="deletePlan">
-          <Trash2 class="h-4 w-4" />
-          Delete Plan
-        </AppButton>
+        </SButton>
       </template>
-    </AppPageHeader>
+      <template #actions>
+        <SButton v-if="isOwner" variant="secondary" size="sm" @click="deletePlan">
+          <template #leading>
+            <Trash2 class="h-3.5 w-3.5" />
+          </template>
+          Delete
+        </SButton>
+      </template>
+    </STopBar>
 
-    <div class="flex-1 overflow-y-auto p-6">
-      <AppSpinner v-if="plans.isLoading" />
+    <SPageContainer max="2xl" padding="lg">
+      <SSpinner v-if="plans.isLoading" size="sm" />
 
       <div v-else-if="plans.activePlan" class="space-y-6">
-        <!-- Status -->
         <div class="flex items-center gap-2">
-          <AppBadge
-            :variant="plans.activePlan.status === 'Active' ? 'success' : plans.activePlan.status === 'Draft' ? 'primary' : 'default'"
-            size="sm"
-          >
+          <SBadge :tone="statusTone(plans.activePlan.status)" variant="soft" dot>
             {{ plans.activePlan.status }}
-          </AppBadge>
-          <AppBadge v-if="plans.activePlan.isPublic" variant="default" size="sm">Public</AppBadge>
+          </SBadge>
+          <SBadge v-if="plans.activePlan.isPublic" tone="brand" variant="soft"> Public </SBadge>
         </div>
 
-        <!-- Participants -->
-        <section>
-          <h2
-            class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2"
+        <SCard padding="md">
+          <div
+            class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-muted"
           >
-            <Users class="h-4 w-4" />
+            <Users class="h-3.5 w-3.5" />
             Participants ({{ plans.activePlan.participants.length }})
-          </h2>
+          </div>
+          <SDivider class="my-3" />
           <div class="flex flex-wrap gap-2">
             <div
               v-for="p in plans.activePlan.participants"
               :key="p.userId"
-              class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800"
+              class="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-surface-canvas border border-line-subtle"
             >
-              <AppAvatar :name="p.userId" size="sm" />
-              <span class="text-xs text-slate-700 dark:text-slate-300">Day {{ p.currentDay }}</span>
+              <SAvatar :name="p.userId" size="xs" />
+              <span class="text-xs text-ink">Day {{ p.currentDay }}</span>
             </div>
           </div>
-        </section>
+        </SCard>
 
-        <!-- Days -->
-        <section>
-          <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
-            Reading Schedule ({{ plans.activePlan.days.length }} days)
-          </h2>
-          <div class="space-y-2">
-            <AppCard
+        <SCard padding="none">
+          <header class="px-4 py-3 border-b border-line-subtle">
+            <p class="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+              Reading schedule · {{ plans.activePlan.days.length }} days
+            </p>
+          </header>
+          <ul>
+            <li
               v-for="day in plans.activePlan.days"
               :key="day.dayNumber"
-              :class="
-                myParticipant()?.currentDay === day.dayNumber ? 'ring-2 ring-primary-500' : ''
-              "
+              :class="[
+                'flex items-center justify-between gap-3 px-4 py-3 border-b border-line-subtle last:border-b-0',
+                myParticipant?.currentDay === day.dayNumber &&
+                  'bg-brand-50/40 dark:bg-brand-500/10',
+              ]"
             >
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="text-sm font-medium text-slate-900 dark:text-white">
-                    Day {{ day.dayNumber }}: {{ day.title }}
-                  </p>
-                  <p class="text-xs text-slate-500 mt-0.5">{{ day.verseRefs.join(', ') }}</p>
-                </div>
-                <div class="flex items-center gap-2">
-                  <AppBadge
-                    v-if="(myParticipant()?.currentDay ?? 0) >= day.dayNumber"
-                    variant="success"
-                    size="sm"
-                  >
-                    <CheckCircle class="h-3 w-3 mr-1" />
-                    Done
-                  </AppBadge>
-                  <AppButton v-else size="sm" variant="secondary" @click="markDay(day.dayNumber)">
-                    Mark done
-                  </AppButton>
-                </div>
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-ink-strong truncate">
+                  Day {{ day.dayNumber }} · {{ day.title }}
+                </p>
+                <p class="text-xs text-ink-muted mt-0.5 truncate">
+                  {{ day.verseRefs.join(', ') }}
+                </p>
               </div>
-            </AppCard>
-          </div>
-        </section>
+              <div class="shrink-0">
+                <SBadge
+                  v-if="(myParticipant?.currentDay ?? 0) >= day.dayNumber"
+                  tone="success"
+                  variant="soft"
+                >
+                  <CheckCircle class="h-3 w-3" />
+                  Done
+                </SBadge>
+                <SButton v-else size="xs" variant="secondary" @click="markDay(day.dayNumber)">
+                  Mark done
+                </SButton>
+              </div>
+            </li>
+          </ul>
+        </SCard>
       </div>
-    </div>
+    </SPageContainer>
   </div>
 </template>

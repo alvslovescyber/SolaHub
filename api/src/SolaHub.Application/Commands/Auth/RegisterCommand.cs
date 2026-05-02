@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
+using SolaHub.Application.Mappers;
 using SolaHub.Core.Common;
 using SolaHub.Core.Entities;
 using SolaHub.Core.Interfaces.Repositories;
@@ -53,9 +54,6 @@ internal sealed class RegisterCommandHandler(
     IRefreshTokenHasher refreshTokenHasher
 ) : IRequestHandler<RegisterCommand, Result<AuthResponse>>
 {
-    private static readonly TimeSpan AccessTokenExpiry = TimeSpan.FromMinutes(15);
-    private static readonly TimeSpan RefreshTokenExpiry = TimeSpan.FromDays(30);
-
     public async Task<Result<AuthResponse>> Handle(RegisterCommand request, CancellationToken ct)
     {
         // Check uniqueness before hashing (expensive operation)
@@ -71,9 +69,10 @@ internal sealed class RegisterCommandHandler(
             return userResult.Error;
 
         var user = userResult.Value;
+        var now = DateTimeOffset.UtcNow;
         var accessToken = tokenService.GenerateAccessToken(user);
         var refreshToken = tokenService.GenerateRefreshToken();
-        var refreshExpiry = DateTimeOffset.UtcNow.Add(RefreshTokenExpiry);
+        var refreshExpiry = now.Add(tokenService.RefreshTokenLifetime);
 
         var tokenResult = user.UpdateRefreshToken(
             refreshTokenHasher.Hash(refreshToken),
@@ -87,19 +86,8 @@ internal sealed class RegisterCommandHandler(
         return new AuthResponse(
             accessToken,
             refreshToken,
-            DateTimeOffset.UtcNow.Add(AccessTokenExpiry),
-            MapToUserDto(user)
+            now.Add(tokenService.AccessTokenLifetime),
+            UserMapper.ToDto(user)
         );
     }
-
-    internal static UserDto MapToUserDto(User user) =>
-        new(
-            user.Id.Value,
-            user.DisplayName,
-            user.Email.Value,
-            user.Role.ToString(),
-            user.ChurchId?.Value,
-            user.IsEmailVerified,
-            user.IsActive
-        );
 }

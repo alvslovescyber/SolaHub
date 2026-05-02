@@ -1,7 +1,7 @@
 using MediatR;
-using SolaHub.Application.Commands.Plans;
 using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
+using SolaHub.Application.Mappers;
 using SolaHub.Core.Common;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.ValueObjects;
@@ -19,7 +19,7 @@ internal sealed class GetUserPlansQueryHandler(IReadingPlanRepository planReposi
     )
     {
         var plans = await planRepository.GetByUserAsync(request.UserId, ct);
-        var dtos = plans.Select(CreatePlanCommandHandler.MapToDto).ToList().AsReadOnly();
+        var dtos = plans.Select(ReadingPlanMapper.ToDto).ToList().AsReadOnly();
         return Result<IReadOnlyList<ReadingPlanDto>>.Success(dtos);
     }
 }

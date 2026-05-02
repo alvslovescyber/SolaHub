@@ -47,9 +47,17 @@ public sealed class PlansEndpointTests(ApiFactory factory)
         Guid planId;
         using (var createReq = new HttpRequestMessage(HttpMethod.Post, "/api/plans"))
         {
-            createReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", owner.AccessToken);
+            createReq.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                owner.AccessToken
+            );
             createReq.Content = JsonContent.Create(
-                new { title = "Private study", description = (string?)null, isPublic = false }
+                new
+                {
+                    title = "Private study",
+                    description = (string?)null,
+                    isPublic = false,
+                }
             );
             var createResp = await _client.SendAsync(createReq);
             createResp.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -58,7 +66,10 @@ public sealed class PlansEndpointTests(ApiFactory factory)
         }
 
         using var joinReq = new HttpRequestMessage(HttpMethod.Post, $"/api/plans/{planId}/join");
-        joinReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", stranger.AccessToken);
+        joinReq.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            stranger.AccessToken
+        );
         var joinResp = await _client.SendAsync(joinReq);
         joinResp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -66,14 +77,26 @@ public sealed class PlansEndpointTests(ApiFactory factory)
     [Fact]
     public async Task AddDay_Publish_ActivatesPlan()
     {
-        var user = await RegisterUser(_client, $"plan_pub_{Guid.NewGuid():N}@example.com", "Publisher");
+        var user = await RegisterUser(
+            _client,
+            $"plan_pub_{Guid.NewGuid():N}@example.com",
+            "Publisher"
+        );
 
         Guid planId;
         using (var createReq = new HttpRequestMessage(HttpMethod.Post, "/api/plans"))
         {
-            createReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
+            createReq.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                user.AccessToken
+            );
             createReq.Content = JsonContent.Create(
-                new { title = "Public plan", description = (string?)null, isPublic = true }
+                new
+                {
+                    title = "Public plan",
+                    description = (string?)null,
+                    isPublic = true,
+                }
             );
             var createResp = await _client.SendAsync(createReq);
             createResp.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -84,7 +107,10 @@ public sealed class PlansEndpointTests(ApiFactory factory)
 
         using (var dayReq = new HttpRequestMessage(HttpMethod.Post, $"/api/plans/{planId}/days"))
         {
-            dayReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
+            dayReq.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                user.AccessToken
+            );
             dayReq.Content = JsonContent.Create(
                 new
                 {
@@ -99,7 +125,10 @@ public sealed class PlansEndpointTests(ApiFactory factory)
 
         using (var pubReq = new HttpRequestMessage(HttpMethod.Post, $"/api/plans/{planId}/publish"))
         {
-            pubReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
+            pubReq.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                user.AccessToken
+            );
             var pubResp = await _client.SendAsync(pubReq);
             pubResp.StatusCode.Should().Be(HttpStatusCode.OK);
             var published = await pubResp.Content.ReadFromJsonAsync<ReadingPlanStubDto>();
@@ -110,14 +139,26 @@ public sealed class PlansEndpointTests(ApiFactory factory)
     [Fact]
     public async Task ArchivePlan_SetsArchivedStatus()
     {
-        var user = await RegisterUser(_client, $"plan_arc_{Guid.NewGuid():N}@example.com", "Archiver");
+        var user = await RegisterUser(
+            _client,
+            $"plan_arc_{Guid.NewGuid():N}@example.com",
+            "Archiver"
+        );
 
         Guid planId;
         using (var createReq = new HttpRequestMessage(HttpMethod.Post, "/api/plans"))
         {
-            createReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
+            createReq.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                user.AccessToken
+            );
             createReq.Content = JsonContent.Create(
-                new { title = "To archive", description = (string?)null, isPublic = true }
+                new
+                {
+                    title = "To archive",
+                    description = (string?)null,
+                    isPublic = true,
+                }
             );
             var createResp = await _client.SendAsync(createReq);
             createResp.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -126,7 +167,10 @@ public sealed class PlansEndpointTests(ApiFactory factory)
 
         using (var dayReq = new HttpRequestMessage(HttpMethod.Post, $"/api/plans/{planId}/days"))
         {
-            dayReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
+            dayReq.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                user.AccessToken
+            );
             dayReq.Content = JsonContent.Create(
                 new
                 {
@@ -140,13 +184,19 @@ public sealed class PlansEndpointTests(ApiFactory factory)
 
         using (var pubReq = new HttpRequestMessage(HttpMethod.Post, $"/api/plans/{planId}/publish"))
         {
-            pubReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
+            pubReq.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                user.AccessToken
+            );
             (await _client.SendAsync(pubReq)).EnsureSuccessStatusCode();
         }
 
         using (var arcReq = new HttpRequestMessage(HttpMethod.Post, $"/api/plans/{planId}/archive"))
         {
-            arcReq.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
+            arcReq.Headers.Authorization = new AuthenticationHeaderValue(
+                "Bearer",
+                user.AccessToken
+            );
             var arcResp = await _client.SendAsync(arcReq);
             arcResp.StatusCode.Should().Be(HttpStatusCode.OK);
             var archived = await arcResp.Content.ReadFromJsonAsync<ReadingPlanStubDto>();

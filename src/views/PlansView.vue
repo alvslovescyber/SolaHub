@@ -1,13 +1,23 @@
 <script setup lang="ts">
-  import { ref, onMounted } from 'vue'
+  import { computed, onMounted, ref } from 'vue'
   import { useRouter } from 'vue-router'
-  import { Plus, CalendarDays } from 'lucide-vue-next'
+  import { Plus, CalendarDays, Search } from 'lucide-vue-next'
   import { usePlansStore } from '@/stores/plans.store'
-  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
-  import AppButton from '@/components/ui/AppButton.vue'
-  import AppCard from '@/components/ui/AppCard.vue'
-  import AppBadge from '@/components/ui/AppBadge.vue'
-  import AppSpinner from '@/components/ui/AppSpinner.vue'
+  import { planStatusTone } from '@/lib/plans'
+  import {
+    SBadge,
+    SButton,
+    SCard,
+    SCheckbox,
+    SEmptyState,
+    SInput,
+    SModal,
+    SPageContainer,
+    SPageTabs,
+    SSpinner,
+    STextarea,
+    STopBar,
+  } from '@/components/s'
 
   const plans = usePlansStore()
   const router = useRouter()
@@ -16,6 +26,25 @@
   const title = ref('')
   const description = ref('')
   const isPublic = ref(true)
+  const search = ref('')
+
+  const tab = ref('all')
+  const tabs = computed(() => [
+    { id: 'all', label: 'All', count: plans.plans.length },
+    { id: 'active', label: 'Active', count: plans.activePlans.length },
+    { id: 'drafts', label: 'Drafts', count: plans.draftPlans.length },
+  ])
+
+  const filtered = computed(() => {
+    let list = plans.plans
+    if (tab.value === 'active') list = plans.activePlans
+    if (tab.value === 'drafts') list = plans.draftPlans
+    const q = search.value.trim().toLowerCase()
+    if (!q) return list
+    return list.filter(
+      (p) => p.title.toLowerCase().includes(q) || (p.description ?? '').toLowerCase().includes(q)
+    )
+  })
 
   onMounted(() => plans.fetchMyPlans())
 
@@ -32,91 +61,107 @@
     await router.push({ name: 'plan-detail', params: { id: plan.id } })
   }
 
-  const statusVariant = (status: string) => {
-    const map: Record<string, 'success' | 'warning' | 'default'> = {
-      Active: 'success',
-      Draft: 'default',
-      Archived: 'warning',
-      Completed: 'primary',
-    }
-    return map[status] ?? 'default'
-  }
+  const statusTone = planStatusTone
 </script>
 
 <template>
-  <div class="flex flex-col h-full overflow-hidden">
-    <AppPageHeader title="Reading Plans" subtitle="Collaborative Bible reading">
+  <div class="flex flex-col flex-1 min-w-0">
+    <STopBar
+      title="Reading plans"
+      subtitle="Walk through Scripture, on your own or with your church"
+    >
       <template #actions>
-        <AppButton size="sm" @click="showCreate = !showCreate">
-          <Plus class="h-4 w-4" />
-          New Plan
-        </AppButton>
+        <SButton size="sm" variant="primary" @click="showCreate = true">
+          <template #leading>
+            <Plus class="h-3.5 w-3.5" />
+          </template>
+          New plan
+        </SButton>
       </template>
-    </AppPageHeader>
+    </STopBar>
 
-    <div class="flex-1 overflow-y-auto p-6 space-y-4">
-      <!-- Create form -->
-      <Transition name="fade">
-        <AppCard v-if="showCreate" class="space-y-3">
-          <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">New Reading Plan</p>
-          <input
-            v-model="title"
-            placeholder="Plan title (e.g. Gospels in 30 days)"
-            class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          <textarea
-            v-model="description"
-            rows="2"
-            placeholder="Description (optional)"
-            class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-          />
-          <label
-            class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer"
-          >
-            <input v-model="isPublic" type="checkbox" class="rounded accent-primary-600" />
-            Make public (others can join)
-          </label>
-          <div class="flex gap-2 justify-end">
-            <AppButton variant="secondary" size="sm" @click="showCreate = false">Cancel</AppButton>
-            <AppButton size="sm" :loading="plans.isSaving" @click="createPlan">Create</AppButton>
-          </div>
-        </AppCard>
-      </Transition>
+    <SPageTabs v-model="tab" :tabs="tabs" />
 
-      <AppSpinner v-if="plans.isLoading" />
+    <div class="px-6 pt-4 shrink-0">
+      <SInput v-model="search" size="sm" placeholder="Search plans">
+        <template #leading>
+          <Search class="h-3.5 w-3.5" />
+        </template>
+      </SInput>
+    </div>
 
-      <div
-        v-else-if="plans.plans.length === 0 && !showCreate"
-        class="text-center text-slate-400 pt-16"
-      >
-        <CalendarDays class="h-10 w-10 mx-auto mb-3 opacity-30" />
-        <p class="text-sm">No reading plans yet.</p>
-      </div>
+    <SPageContainer max="2xl" padding="md">
+      <SSpinner v-if="plans.isLoading" size="sm" />
 
-      <div v-else class="space-y-3">
-        <AppCard
-          v-for="plan in plans.plans"
+      <SCard v-else-if="filtered.length === 0" padding="none">
+        <SEmptyState
+          tone="brand"
+          title="No reading plans yet"
+          description="Build a plan or pick a classic — like the Gospels in 30 days — to start your journey."
+        >
+          <template #icon>
+            <CalendarDays class="h-5 w-5" />
+          </template>
+          <template #actions>
+            <SButton size="sm" @click="showCreate = true"> Create your first plan </SButton>
+          </template>
+        </SEmptyState>
+      </SCard>
+
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <SCard
+          v-for="plan in filtered"
           :key="plan.id"
           hoverable
+          padding="md"
           @click="router.push({ name: 'plan-detail', params: { id: plan.id } })"
         >
-          <div class="flex items-start justify-between">
-            <div>
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ plan.title }}</p>
-              <p v-if="plan.description" class="text-xs text-slate-500 mt-0.5 line-clamp-1">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-ink-strong truncate">
+                {{ plan.title }}
+              </p>
+              <p v-if="plan.description" class="text-xs text-ink-muted mt-0.5 line-clamp-2">
                 {{ plan.description }}
               </p>
-              <p class="text-xs text-slate-400 mt-1">
-                {{ plan.participants.length }} participant{{
-                  plan.participants.length !== 1 ? 's' : ''
-                }}
-                · {{ plan.days.length }} day{{ plan.days.length !== 1 ? 's' : '' }}
-              </p>
             </div>
-            <AppBadge :variant="statusVariant(plan.status)">{{ plan.status }}</AppBadge>
+            <SBadge :tone="statusTone(plan.status)" variant="soft" dot>
+              {{ plan.status }}
+            </SBadge>
           </div>
-        </AppCard>
+          <div class="mt-3 flex items-center gap-3 text-2xs text-ink-muted">
+            <span
+              >{{ plan.participants.length }} participant{{
+                plan.participants.length !== 1 ? 's' : ''
+              }}</span
+            >
+            <span>·</span>
+            <span>{{ plan.days.length }} day{{ plan.days.length !== 1 ? 's' : '' }}</span>
+            <span v-if="plan.isPublic" class="ml-auto">Public</span>
+          </div>
+        </SCard>
       </div>
-    </div>
+    </SPageContainer>
+
+    <SModal :open="showCreate" title="New reading plan" size="md" @close="showCreate = false">
+      <div class="space-y-3">
+        <SInput v-model="title" label="Title" placeholder="Gospels in 30 days" required />
+        <STextarea
+          v-model="description"
+          label="Description"
+          placeholder="A short overview to help others decide if this plan is for them."
+          :rows="3"
+        />
+        <SCheckbox
+          v-model="isPublic"
+          label="Make public"
+          description="Allow anyone in your church to join this reading plan."
+        />
+      </div>
+      <template #footer>
+        <SButton variant="secondary" size="sm" @click="showCreate = false"> Cancel </SButton>
+        <SButton size="sm" :loading="plans.isSaving" @click="createPlan"> Create plan </SButton>
+      </template>
+    </SModal>
   </div>
 </template>

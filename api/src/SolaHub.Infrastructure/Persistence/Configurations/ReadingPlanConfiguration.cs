@@ -37,47 +37,58 @@ internal sealed class ReadingPlanConfiguration : IEntityTypeConfiguration<Readin
         builder.Property(p => p.CreatedAt).IsRequired();
         builder.Property(p => p.UpdatedAt).IsRequired();
 
-        // Owned collection: plan days
-        builder.OwnsMany(
-            p => p.Days,
-            days =>
-            {
-                days.ToTable("reading_plan_days");
-                days.WithOwner().HasForeignKey("plan_id");
-                days.HasKey("plan_id", nameof(ReadingPlanDay.DayNumber));
+        // Owned collection: plan days.
+        // We map the navigation against the backing list field rather than the
+        // read-only `Days` property so EF Core's change tracker can correctly
+        // distinguish new vs existing children. Going through the property would
+        // re-wrap `_days` in a fresh ReadOnlyCollection<T> on every access, which
+        // confuses owned-collection snapshotting and causes new entries to be
+        // emitted as UPDATE (0 rows) instead of INSERT.
+        builder
+            .OwnsMany(
+                p => p.Days,
+                days =>
+                {
+                    days.ToTable("reading_plan_days");
+                    days.WithOwner().HasForeignKey("plan_id");
+                    days.HasKey("plan_id", nameof(ReadingPlanDay.DayNumber));
 
-                days.Property(d => d.DayNumber).IsRequired();
-                days.Property(d => d.Title).HasMaxLength(200).IsRequired();
+                    days.Property(d => d.DayNumber).IsRequired();
+                    days.Property(d => d.Title).HasMaxLength(200).IsRequired();
 
-                // VerseRefs is a computed property from _verseRefKeys — not a navigation
-                days.Ignore(d => d.VerseRefs);
+                    days.Ignore(d => d.VerseRefs);
 
-                // Store verse ref keys as JSONB array via backing field
-                days.Property<List<string>>("_verseRefKeys")
-                    .HasColumnName("verse_refs")
-                    .HasColumnType("jsonb")
-                    .UsePropertyAccessMode(PropertyAccessMode.Field);
-            }
-        );
+                    days.Property<List<string>>("_verseRefKeys")
+                        .HasColumnName("verse_refs")
+                        .HasColumnType("jsonb")
+                        .UsePropertyAccessMode(PropertyAccessMode.Field);
+                }
+            )
+            .Navigation(p => p.Days)
+            .HasField("_days")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        // Owned collection: participants
-        builder.OwnsMany(
-            p => p.Participants,
-            participants =>
-            {
-                participants.ToTable("plan_participants");
-                participants.WithOwner().HasForeignKey("plan_id");
-                participants.HasKey("plan_id", nameof(PlanParticipant.UserId));
+        builder
+            .OwnsMany(
+                p => p.Participants,
+                participants =>
+                {
+                    participants.ToTable("plan_participants");
+                    participants.WithOwner().HasForeignKey("plan_id");
+                    participants.HasKey("plan_id", nameof(PlanParticipant.UserId));
 
-                participants
-                    .Property(pp => pp.UserId)
-                    .HasConversion(id => id.Value, value => UserId.From(value))
-                    .IsRequired();
+                    participants
+                        .Property(pp => pp.UserId)
+                        .HasConversion(id => id.Value, value => UserId.From(value))
+                        .IsRequired();
 
-                participants.Property(pp => pp.CurrentDay).IsRequired();
-                participants.Property(pp => pp.JoinedAt).IsRequired();
-            }
-        );
+                    participants.Property(pp => pp.CurrentDay).IsRequired();
+                    participants.Property(pp => pp.JoinedAt).IsRequired();
+                }
+            )
+            .Navigation(p => p.Participants)
+            .HasField("_participants")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasIndex(p => p.CreatedBy);
         builder.HasIndex(p => p.ChurchId).HasFilter("church_id IS NOT NULL");

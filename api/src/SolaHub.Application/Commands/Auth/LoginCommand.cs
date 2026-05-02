@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
+using SolaHub.Application.Mappers;
 using SolaHub.Core.Common;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.Interfaces.Services;
@@ -26,17 +27,14 @@ internal sealed class LoginCommandHandler(
     IRefreshTokenHasher refreshTokenHasher
 ) : IRequestHandler<LoginCommand, Result<AuthResponse>>
 {
-    private static readonly TimeSpan AccessTokenExpiry = TimeSpan.FromMinutes(15);
-    private static readonly TimeSpan RefreshTokenExpiry = TimeSpan.FromDays(30);
-
     public async Task<Result<AuthResponse>> Handle(LoginCommand request, CancellationToken ct)
     {
         var user = await userRepository.GetByEmailAsync(request.Email, ct);
 
-        // Always verify to prevent timing-based user enumeration attacks
-        var dummyHash = "$2a$12$Ik1jqbHknHuD0HcjJKrqDuhOHWG0VVsIGm0eCJJH8VN6S2r8rPr4q";
+        // Always verify against a real BCrypt hash to prevent timing-based user enumeration.
+        const string DummyHash = "$2a$12$Ik1jqbHknHuD0HcjJKrqDuhOHWG0VVsIGm0eCJJH8VN6S2r8rPr4q";
         var isValid =
-            passwordHasher.Verify(request.Password, user?.PasswordHash ?? dummyHash)
+            passwordHasher.Verify(request.Password, user?.PasswordHash ?? DummyHash)
             && user is not null;
 
         if (!isValid)
@@ -49,12 +47,13 @@ internal sealed class LoginCommandHandler(
             );
 
         user.RecordLogin();
+        var now = DateTimeOffset.UtcNow;
         var accessToken = tokenService.GenerateAccessToken(user);
         var newRefreshToken = tokenService.GenerateRefreshToken();
         var refreshHash = refreshTokenHasher.Hash(newRefreshToken);
         var tokenResult = user.UpdateRefreshToken(
             refreshHash,
-            DateTimeOffset.UtcNow.Add(RefreshTokenExpiry)
+            now.Add(tokenService.RefreshTokenLifetime)
         );
         if (tokenResult.IsFailure)
             return tokenResult.Error;
@@ -64,8 +63,8 @@ internal sealed class LoginCommandHandler(
         return new AuthResponse(
             accessToken,
             newRefreshToken,
-            DateTimeOffset.UtcNow.Add(AccessTokenExpiry),
-            RegisterCommandHandler.MapToUserDto(user)
+            now.Add(tokenService.AccessTokenLifetime),
+            UserMapper.ToDto(user)
         );
     }
 }

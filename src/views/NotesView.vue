@@ -1,12 +1,20 @@
 <script setup lang="ts">
-  import { ref, onMounted } from 'vue'
-  import { Plus, Trash2 } from 'lucide-vue-next'
+  import { computed, onMounted, ref } from 'vue'
+  import { Plus, Search, StickyNote, Trash2 } from 'lucide-vue-next'
   import { useNotesStore } from '@/stores/notes.store'
-  import AppPageHeader from '@/components/layout/AppPageHeader.vue'
-  import AppButton from '@/components/ui/AppButton.vue'
-  import AppCard from '@/components/ui/AppCard.vue'
-  import AppBadge from '@/components/ui/AppBadge.vue'
-  import AppSpinner from '@/components/ui/AppSpinner.vue'
+  import {
+    SButton,
+    SCard,
+    SChip,
+    SEmptyState,
+    SIconButton,
+    SInput,
+    SModal,
+    SPageContainer,
+    SSpinner,
+    STextarea,
+    STopBar,
+  } from '@/components/s'
 
   const notes = useNotesStore()
 
@@ -14,11 +22,23 @@
   const newContent = ref('')
   const newVerseRef = ref('')
   const newTags = ref('')
+  const search = ref('')
 
   onMounted(() => notes.fetchMyNotes())
 
+  const filtered = computed(() => {
+    const q = search.value.trim().toLowerCase()
+    if (!q) return notes.notes
+    return notes.notes.filter(
+      (n) =>
+        n.verseRef.toLowerCase().includes(q) ||
+        n.content.toLowerCase().includes(q) ||
+        n.tags.some((t) => t.toLowerCase().includes(q))
+    )
+  })
+
   function confirmDelete(id: string) {
-    if (window.confirm('Delete this note?')) notes.remove(id)
+    if (window.confirm('Delete this note?')) void notes.remove(id)
   }
 
   async function createNote() {
@@ -40,89 +60,92 @@
 </script>
 
 <template>
-  <div class="flex flex-col h-full overflow-hidden">
-    <AppPageHeader title="Notes" subtitle="Your verse annotations">
+  <div class="flex flex-col flex-1 min-w-0">
+    <STopBar title="Notes" subtitle="Verse-by-verse reflections and study notes">
       <template #actions>
-        <AppButton size="sm" @click="showCreate = !showCreate">
-          <Plus class="h-4 w-4" />
-          New Note
-        </AppButton>
+        <SButton size="sm" variant="primary" @click="showCreate = true">
+          <template #leading>
+            <Plus class="h-3.5 w-3.5" />
+          </template>
+          New note
+        </SButton>
       </template>
-    </AppPageHeader>
+    </STopBar>
 
-    <div class="flex-1 overflow-y-auto p-6 space-y-4">
-      <!-- Create form -->
-      <Transition name="fade">
-        <AppCard v-if="showCreate" class="space-y-3">
-          <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">New Note</p>
-          <input
-            v-model="newVerseRef"
-            placeholder="Verse ref (e.g. JHN.3.16)"
-            class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          <textarea
-            v-model="newContent"
-            rows="4"
-            placeholder="Your note..."
-            class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-          />
-          <input
-            v-model="newTags"
-            placeholder="Tags (comma-separated, e.g. faith, grace)"
-            class="w-full px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          />
-          <div class="flex gap-2 justify-end">
-            <AppButton variant="secondary" size="sm" @click="showCreate = false">Cancel</AppButton>
-            <AppButton size="sm" :loading="notes.isSaving" @click="createNote">Save</AppButton>
-          </div>
-        </AppCard>
-      </Transition>
+    <div class="px-6 pt-4 shrink-0 max-w-2xl">
+      <SInput v-model="search" size="sm" placeholder="Search notes, verses, or tags">
+        <template #leading>
+          <Search class="h-3.5 w-3.5" />
+        </template>
+      </SInput>
+    </div>
 
-      <!-- Loading -->
-      <div v-if="notes.isLoading" class="flex justify-center pt-8">
-        <AppSpinner />
-      </div>
+    <SPageContainer max="lg" padding="md">
+      <SSpinner v-if="notes.isLoading" size="sm" />
 
-      <!-- Empty state -->
-      <div
-        v-else-if="notes.notes.length === 0 && !showCreate"
-        class="text-center text-slate-400 pt-16"
-      >
-        <p class="text-sm">No notes yet. Create your first verse note.</p>
-      </div>
+      <SCard v-else-if="filtered.length === 0" padding="none">
+        <SEmptyState
+          tone="sun"
+          title="No notes yet"
+          description="Highlight a verse and write what God is teaching you. Notes live here, organised by reference."
+        >
+          <template #icon>
+            <StickyNote class="h-5 w-5" />
+          </template>
+          <template #actions>
+            <SButton size="sm" @click="showCreate = true"> Create your first note </SButton>
+          </template>
+        </SEmptyState>
+      </SCard>
 
-      <!-- Notes list -->
-      <div v-else class="space-y-3">
-        <AppCard v-for="note in notes.notes" :key="note.id" class="relative group">
-          <div class="flex items-start justify-between gap-4">
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-semibold text-primary-600 dark:text-primary-400 mb-1">
+      <div v-else class="space-y-2.5">
+        <SCard v-for="note in filtered" :key="note.id" padding="md" class="group">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p
+                class="text-2xs font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300"
+              >
                 {{ note.verseRef }}
               </p>
-              <p
-                class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap"
-              >
+              <p class="mt-1.5 text-sm text-ink leading-relaxed whitespace-pre-wrap">
                 {{ note.content }}
               </p>
-              <div v-if="note.tags.length > 0" class="flex flex-wrap gap-1 mt-2">
-                <AppBadge v-for="tag in note.tags" :key="tag" variant="primary" size="sm">
+              <div v-if="note.tags.length > 0" class="mt-2 flex flex-wrap gap-1">
+                <SChip v-for="tag in note.tags" :key="tag" tone="brand">
                   {{ tag }}
-                </AppBadge>
+                </SChip>
               </div>
             </div>
-            <button
-              class="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-              @click="confirmDelete(note.id)"
-            >
-              <Trash2 class="h-4 w-4" />
-            </button>
+            <div class="opacity-0 group-hover:opacity-100 transition-opacity">
+              <SIconButton size="sm" label="Delete note" @click="confirmDelete(note.id)">
+                <Trash2 class="h-3.5 w-3.5 text-red-500" />
+              </SIconButton>
+            </div>
           </div>
-          <p class="text-[10px] text-slate-400 mt-2">
+          <p class="mt-2 text-2xs text-ink-subtle">
             {{ new Date(note.updatedAt).toLocaleDateString() }}
-            <span v-if="note.isShared" class="ml-2 text-emerald-500">Shared</span>
+            <span v-if="note.isShared" class="ml-2 text-emerald-500 font-medium">Shared</span>
           </p>
-        </AppCard>
+        </SCard>
       </div>
-    </div>
+    </SPageContainer>
+
+    <SModal :open="showCreate" title="New note" size="md" @close="showCreate = false">
+      <div class="space-y-3">
+        <SInput v-model="newVerseRef" label="Verse reference" placeholder="JHN.3.16" required />
+        <STextarea
+          v-model="newContent"
+          label="Reflection"
+          placeholder="Your note…"
+          :rows="5"
+          required
+        />
+        <SInput v-model="newTags" label="Tags" placeholder="faith, grace (comma separated)" />
+      </div>
+      <template #footer>
+        <SButton variant="secondary" size="sm" @click="showCreate = false"> Cancel </SButton>
+        <SButton size="sm" :loading="notes.isSaving" @click="createNote"> Save note </SButton>
+      </template>
+    </SModal>
   </div>
 </template>

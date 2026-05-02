@@ -21,8 +21,10 @@ export const authService = {
   async logout(): Promise<void> {
     const refreshToken = tokenStorage.getRefresh()
     if (refreshToken) {
-      await http.post('/api/auth/logout', { refreshToken }).catch(() => {
-        // Best-effort: clear local tokens even if server call fails
+      // Best-effort server-side revoke. Surface failures to the console so dev
+      // problems don't get hidden, but never block the local sign-out.
+      await http.post('/api/auth/logout', { refreshToken }).catch((err: unknown) => {
+        console.warn('[auth] server logout failed; clearing local tokens anyway', err)
       })
     }
     tokenStorage.clear()

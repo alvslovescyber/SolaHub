@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
+using SolaHub.Application.Mappers;
 using SolaHub.Core.Common;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.ValueObjects;
@@ -36,7 +37,10 @@ public sealed class AddPlanDayCommandValidator : AbstractValidator<AddPlanDayCom
 internal sealed class AddPlanDayCommandHandler(IReadingPlanRepository planRepository)
     : IRequestHandler<AddPlanDayCommand, Result<ReadingPlanDto>>
 {
-    public async Task<Result<ReadingPlanDto>> Handle(AddPlanDayCommand request, CancellationToken ct)
+    public async Task<Result<ReadingPlanDto>> Handle(
+        AddPlanDayCommand request,
+        CancellationToken ct
+    )
     {
         var plan = await planRepository.GetByIdAsync(request.PlanId, ct);
         if (plan is null)
@@ -61,6 +65,6 @@ internal sealed class AddPlanDayCommandHandler(IReadingPlanRepository planReposi
             return addResult.Error;
 
         await planRepository.UpdateAsync(plan, ct);
-        return CreatePlanCommandHandler.MapToDto(plan);
+        return ReadingPlanMapper.ToDto(plan);
     }
 }

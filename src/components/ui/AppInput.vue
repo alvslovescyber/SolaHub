@@ -47,6 +47,8 @@
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     />
 
-    <p v-if="error" class="text-xs text-red-500">{{ error }}</p>
+    <p v-if="error" class="text-xs text-red-500">
+      {{ error }}
+    </p>
   </div>
 </template>

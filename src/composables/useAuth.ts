@@ -14,5 +14,6 @@ export function useAuth() {
     login: store.login,
     logout: store.logout,
     register: store.register,
+    handleSessionExpired: store.handleSessionExpired,
   }
 }

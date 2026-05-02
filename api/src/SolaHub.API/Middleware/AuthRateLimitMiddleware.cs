@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Caching.Distributed;
 
 namespace SolaHub.API.Middleware;
@@ -5,7 +6,11 @@ namespace SolaHub.API.Middleware;
 /// <summary>
 /// Simple fixed-window rate limit for unauthenticated auth endpoints (login, register, refresh).
 /// </summary>
-public sealed class AuthRateLimitMiddleware(RequestDelegate next, IDistributedCache cache)
+public sealed class AuthRateLimitMiddleware(
+    RequestDelegate next,
+    IDistributedCache cache,
+    ILogger<AuthRateLimitMiddleware> logger
+)
 {
     private const int MaxRequestsPerWindow = 60;
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
@@ -18,24 +23,71 @@ public sealed class AuthRateLimitMiddleware(RequestDelegate next, IDistributedCa
             var key =
                 $"solahub:ratelimit:auth:{ip}:{context.Request.Path.Value ?? ""}:{Window.Ticks}";
 
-            var raw = await cache.GetStringAsync(key, context.RequestAborted);
-            var count = raw is null ? 0 : int.Parse(raw, System.Globalization.CultureInfo.InvariantCulture);
+            var count = 0;
+            try
+            {
+                var raw = await cache.GetStringAsync(key, context.RequestAborted);
+                if (
+                    raw is not null
+                    && !int.TryParse(
+                        raw,
+                        NumberStyles.Integer,
+                        CultureInfo.InvariantCulture,
+                        out count
+                    )
+                )
+                {
+                    // Corrupted/legacy cache entry – treat as fresh window and log.
+                    logger.LogWarning(
+                        "Discarding non-integer rate-limit counter for key {Key}: {Raw}",
+                        key,
+                        raw
+                    );
+                    count = 0;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Fail open on cache outages so a flaky cache cannot lock out auth.
+                logger.LogWarning(
+                    ex,
+                    "Distributed cache read failed for rate limit; failing open."
+                );
+                await next(context);
+                return;
+            }
+
             if (count >= MaxRequestsPerWindow)
             {
                 context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
                 context.Response.Headers.RetryAfter = ((int)Window.TotalSeconds).ToString(
-                    System.Globalization.CultureInfo.InvariantCulture
+                    CultureInfo.InvariantCulture
                 );
                 await context.Response.WriteAsync("Too many requests. Try again later.");
                 return;
             }
 
-            await cache.SetStringAsync(
-                key,
-                (count + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
-                new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = Window },
-                context.RequestAborted
-            );
+            try
+            {
+                await cache.SetStringAsync(
+                    key,
+                    (count + 1).ToString(CultureInfo.InvariantCulture),
+                    new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = Window },
+                    context.RequestAborted
+                );
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Distributed cache write failed for rate limit; continuing.");
+            }
         }
 
         await next(context);

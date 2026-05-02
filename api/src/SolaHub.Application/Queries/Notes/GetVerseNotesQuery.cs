@@ -1,7 +1,7 @@
 using MediatR;
-using SolaHub.Application.Commands.Notes;
 using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
+using SolaHub.Application.Mappers;
 using SolaHub.Core.Common;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.ValueObjects;
@@ -31,6 +31,6 @@ internal sealed class GetVerseNotesQueryHandler(IVerseNoteRepository noteReposit
             request.SharedOnly,
             ct
         );
-        return notes.Select(CreateNoteCommandHandler.MapToDto).ToList().AsReadOnly();
+        return notes.Select(NoteMapper.ToDto).ToList().AsReadOnly();
     }
 }

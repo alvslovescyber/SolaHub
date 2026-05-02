@@ -50,7 +50,10 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                 services.Remove(descriptor);
 
             services.AddDbContext<AppDbContext>(opts =>
-                opts.UseNpgsql(_postgres.GetConnectionString()).UseSnakeCaseNamingConvention()
+                opts.UseNpgsql(_postgres.GetConnectionString())
+                    .UseSnakeCaseNamingConvention()
+                    .EnableSensitiveDataLogging()
+                    .LogTo(Console.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information)
             );
         });
     }
