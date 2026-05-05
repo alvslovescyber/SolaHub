@@ -3,6 +3,9 @@ node_modules/
 .pnp
 .pnp.js
 
+# ─── Cloudflare Wrangler ──────────────────────────────────────────────────────
+.wrangler/
+
 # ─── Build outputs ────────────────────────────────────────────────────────────
 dist/
 dist-ssr/
