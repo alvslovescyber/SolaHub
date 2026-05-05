@@ -7,28 +7,30 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.1.0)'
+        description: 'Release tag (e.g. v0.1.1)'
         required: true
-        default: 'v0.1.0'
+        default: 'v0.1.1'
 
 permissions:
   contents: write
 
 env:
   NODE_VERSION: '22'
+  R2_PUBLIC_BASE: 'https://pub-c5a5d4bded77499abee30a6e8fd383b8.r2.dev'
+  R2_BUCKET: 'solahub-downloads'
 
 jobs:
   build-macos:
-    name: macOS (${{ matrix.arch }})
+    name: macOS (${{ matrix.label }})
     runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
         include:
           - arch: aarch64-apple-darwin
-            label: 'Apple Silicon'
+            label: Apple Silicon
           - arch: x86_64-apple-darwin
-            label: 'Intel'
+            label: Intel
 
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +38,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -46,30 +48,34 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: ./src-tauri -> target
 
       - name: Install frontend deps
         run: npm ci
 
-      - name: Build Tauri app
+      - name: Build & sign Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+          SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
         with:
           tagName: ${{ github.ref_name || inputs.tag }}
-          releaseName: 'SolaHub ${{ github.ref_name || inputs.tag }}'
+          releaseName: SolaHub ${{ github.ref_name || inputs.tag }}
           releaseBody: |
             ## What's new
             See the [changelog](https://github.com/alvslovescyber/SolaHub/blob/main/CHANGELOG.md) for details.
 
-            ### Installation
-            - **macOS Apple Silicon**: Download the `.dmg` file ending in `_aarch64.dmg`
-            - **macOS Intel**: Download the `.dmg` file ending in `_x64.dmg`
-            - **Windows**: Download `_x64-setup.exe` (recommended) or the `.msi` package
+            ### Download
+            - **macOS Apple Silicon** — `SolaHub_*_aarch64.dmg`
+            - **macOS Intel** — `SolaHub_*_x64.dmg`
+            - **Windows** — `SolaHub_*_x64-setup.exe`
           releaseDraft: false
           prerelease: true
           args: --target ${{ matrix.arch }}
+          includeUpdaterJson: true
 
   build-windows:
     name: Windows (x64)
@@ -81,7 +87,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: npm
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -89,21 +95,107 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: ./src-tauri -> target
 
       - name: Install frontend deps
         run: npm ci
 
-      - name: Build Tauri app
+      - name: Build & sign Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+          SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
         with:
           tagName: ${{ github.ref_name || inputs.tag }}
-          releaseName: 'SolaHub ${{ github.ref_name || inputs.tag }}'
+          releaseName: SolaHub ${{ github.ref_name || inputs.tag }}
           releaseBody: |
             ## What's new
             See the [changelog](https://github.com/alvslovescyber/SolaHub/blob/main/CHANGELOG.md) for details.
           releaseDraft: false
           prerelease: true
+          includeUpdaterJson: true
+
+  publish-r2:
+    name: Publish update artifacts to R2
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Download everything the release produced
+      - name: Download release artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${{ github.ref_name || inputs.tag }}
+          gh release download "$TAG" \
+            --repo ${{ github.repository }} \
+            --pattern "latest.json" \
+            --pattern "*.nsis.zip" \
+            --pattern "*.app.tar.gz" \
+            --pattern "*.dmg" \
+            --pattern "*-setup.exe" \
+            --dir ./dist
+          echo "--- Downloaded ---"
+          ls -lh ./dist/
+
+      # Rewrite the binary URLs in latest.json to point at R2 instead of
+      # the private GitHub release (which end users cannot reach)
+      - name: Rewrite latest.json URLs to R2
+        run: |
+          python3 << 'EOF'
+          import json, os
+
+          R2 = os.environ["R2_PUBLIC_BASE"]
+
+          with open("dist/latest.json") as f:
+              data = json.load(f)
+
+          for platform, info in data.get("platforms", {}).items():
+              original_url = info.get("url", "")
+              filename = original_url.split("/")[-1]
+              info["url"] = f"{R2}/{filename}"
+              print(f"  {platform}: {filename}")
+
+          with open("dist/latest.json", "w") as f:
+              json.dump(data, f, indent=2)
+
+          print("\nFinal latest.json:")
+          print(json.dumps(data, indent=2))
+          EOF
+        env:
+          R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
+
+      # Upload update binaries first so they exist before latest.json goes live
+      - name: Upload update binaries to R2
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          cd dist
+          for file in *.nsis.zip *.app.tar.gz *.dmg *-setup.exe; do
+            [ -f "$file" ] || continue
+            echo "Uploading $file ..."
+            npx wrangler r2 object put "${{ env.R2_BUCKET }}/$file" \
+              --file "$file" \
+              --content-type "application/octet-stream" \
+              --remote
+          done
+
+      # latest.json goes last — once it's live, users will be offered the update
+      - name: Publish latest.json to R2
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx wrangler r2 object put "${{ env.R2_BUCKET }}/latest.json" \
+            --file dist/latest.json \
+            --content-type "application/json" \
+            --remote
+          echo "✅ latest.json live at ${{ env.R2_PUBLIC_BASE }}/latest.json"

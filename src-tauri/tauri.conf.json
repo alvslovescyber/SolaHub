@@ -52,20 +52,13 @@
       "dmg": {
         "background": "assets/dmg-background.png",
         "windowSize": { "width": 660, "height": 400 },
-        "appPosition": { "x": 180, "y": 200 },
-        "applicationsPosition": { "x": 480, "y": 200 }
+        "appPosition": { "x": 180, "y": 200 }
       }
     },
     "windows": {
       "nsis": {
-        "headerImage": "assets/nsis-header.bmp",
-        "sidebarImage": "assets/nsis-sidebar.bmp",
         "installMode": "currentUser",
         "shortcutName": "SolaHub"
-      },
-      "wix": {
-        "bannerPath": "assets/wix-banner.bmp",
-        "dialogImagePath": "assets/wix-dialog.bmp"
       }
     }
   }

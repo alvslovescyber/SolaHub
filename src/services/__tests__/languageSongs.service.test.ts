@@ -38,8 +38,8 @@ describe('fetchLanguageIndex', () => {
   it('returns only songs matching the requested language', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => TREE_FIXTURE,
-    } as Response)
+      json: () => Promise.resolve(TREE_FIXTURE),
+    })
 
     const songs = await fetchLanguageIndex('Malayalam')
 
@@ -50,8 +50,8 @@ describe('fetchLanguageIndex', () => {
   it('parses ids with language prefix and track number', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => TREE_FIXTURE,
-    } as Response)
+      json: () => Promise.resolve(TREE_FIXTURE),
+    })
 
     const songs = await fetchLanguageIndex('Malayalam')
     expect(songs[0].id).toBe('lang-malayalam-1')
@@ -61,8 +61,8 @@ describe('fetchLanguageIndex', () => {
   it('splits English title from native title', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => TREE_FIXTURE,
-    } as Response)
+      json: () => Promise.resolve(TREE_FIXTURE),
+    })
 
     const songs = await fetchLanguageIndex('Malayalam')
     const first = songs[0]
@@ -73,16 +73,16 @@ describe('fetchLanguageIndex', () => {
   it('returns Tamil and Hindi songs correctly', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => TREE_FIXTURE,
-    } as Response)
+      json: () => Promise.resolve(TREE_FIXTURE),
+    })
     const tamil = await fetchLanguageIndex('Tamil')
     expect(tamil).toHaveLength(1)
     expect(tamil[0].language).toBe('Tamil')
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => TREE_FIXTURE,
-    } as Response)
+      json: () => Promise.resolve(TREE_FIXTURE),
+    })
     const hindi = await fetchLanguageIndex('Hindi')
     expect(hindi).toHaveLength(1)
     expect(hindi[0].id).toBe('lang-hindi-5')
@@ -91,15 +91,15 @@ describe('fetchLanguageIndex', () => {
   it('skips non-matching filenames silently', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ tree: [{ path: 'txt/SomeFile NoMatch.txt', type: 'blob' }] }),
-    } as Response)
+      json: () => Promise.resolve({ tree: [{ path: 'txt/SomeFile NoMatch.txt', type: 'blob' }] }),
+    })
 
     const songs = await fetchLanguageIndex('Malayalam')
     expect(songs).toHaveLength(0)
   })
 
   it('throws when GitHub API returns a non-ok response', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 403 } as Response)
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 403 })
     await expect(fetchLanguageIndex('Malayalam')).rejects.toThrow('GitHub API error: 403')
   })
 })
@@ -116,7 +116,7 @@ Chorus line two
 2 Verse two line two
 `.trim()
 
-// Fixture with only native script (Malayalam)
+// Fixture with native Malayalam script mixed with romanized labels
 const TXT_NATIVE_ONLY = `
 Chorus നിൻ ദൈവം
 
@@ -127,8 +127,8 @@ describe('fetchSongSections', () => {
   it('parses a verse-chorus song into correct sections', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => TXT_VERSE_CHORUS,
-    } as Response)
+      text: () => Promise.resolve(TXT_VERSE_CHORUS),
+    })
 
     const sections = await fetchSongSections('txt/1 Song Name VV Malayalam 2021 1.txt')
 
@@ -152,8 +152,8 @@ Chorus line
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => txtWithRepeat,
-    } as Response)
+      text: () => Promise.resolve(txtWithRepeat),
+    })
 
     const sections = await fetchSongSections('txt/1 Song VV Malayalam 2021 1.txt')
     const verses = sections.filter((s) => s.type === 'verse')
@@ -173,8 +173,8 @@ Chorus B
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => txtMultiChorus,
-    } as Response)
+      text: () => Promise.resolve(txtMultiChorus),
+    })
 
     const sections = await fetchSongSections('txt/1 Song VV Tamil 2021 1.txt')
     const choruses = sections.filter((s) => s.type === 'chorus')
@@ -184,8 +184,8 @@ Chorus B
   it('treats unstructured plain text as a single chorus block', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => 'Just some plain text with no structure',
-    } as Response)
+      text: () => Promise.resolve('Just some plain text with no structure'),
+    })
 
     const sections = await fetchSongSections('txt/1 Song VV Malayalam 2021 1.txt')
     // A single non-numbered block is classified as chorus (first non-numbered = chorus).
@@ -197,16 +197,26 @@ Chorus B
   it('falls back to a single verse when content is empty', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => '',
-    } as Response)
+      text: () => Promise.resolve(''),
+    })
 
     const sections = await fetchSongSections('txt/1 Song VV Malayalam 2021 1.txt')
     expect(sections).toHaveLength(1)
     expect(sections[0].type).toBe('verse')
   })
 
+  it('parses native-script content correctly', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(TXT_NATIVE_ONLY),
+    })
+
+    const sections = await fetchSongSections('txt/1 Song VV Malayalam 2021 1.txt')
+    expect(sections.length).toBeGreaterThan(0)
+  })
+
   it('throws when content fetch fails', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 404 } as Response)
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 404 })
     await expect(
       fetchSongSections('txt/1 Song VV Malayalam 2021 1.txt')
     ).rejects.toThrow('Failed to fetch song content: 404')
@@ -215,8 +225,8 @@ Chorus B
   it('URL-encodes the filename when fetching raw content', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => 'Raw content',
-    } as Response)
+      text: () => Promise.resolve('Raw content'),
+    })
 
     await fetchSongSections('txt/1 Song With Spaces VV Malayalam 2021 1.txt')
 

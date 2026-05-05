@@ -3,7 +3,7 @@ use tauri::{ipc::Channel, AppHandle, Url};
 use tauri_plugin_updater::UpdaterExt;
 
 const DEFAULT_UPDATE_ENDPOINT: &str =
-    "https://github.com/alvslovescyber/SolaHub/releases/latest/download/latest.json";
+    "https://pub-c5a5d4bded77499abee30a6e8fd383b8.r2.dev/latest.json";
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
