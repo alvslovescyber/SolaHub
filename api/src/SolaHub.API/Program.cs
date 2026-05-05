@@ -244,7 +244,9 @@ try
 
     app.MapControllers();
     app.MapHub<CollaborationHub>("/hubs/collaboration");
-    app.MapHealthChecks("/health");
+    // Liveness: always 200 when the process is alive (Railway healthcheck target).
+    app.MapHealthChecks("/health", new() { Predicate = _ => false });
+    // Readiness: includes DB check — used for deeper monitoring.
     app.MapHealthChecks(
         "/health/ready",
         new() { Predicate = check => check.Tags.Contains("ready") }
