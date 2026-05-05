@@ -188,14 +188,34 @@ jobs:
           echo "--- Downloaded ---"
           ls -lh ./dist/
 
-      # Rewrite the binary URLs in latest.json to point at R2 instead of
-      # the private GitHub release (which end users cannot reach)
-      - name: Rewrite latest.json URLs to R2
+      # Upload installers first — downloads page and updater both reference them
+      - name: Upload installers to R2
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          cd dist
+          for file in *.nsis.zip *.app.tar.gz *.dmg *-setup.exe *.msi; do
+            [ -f "$file" ] || continue
+            echo "Uploading $file ..."
+            npx wrangler r2 object put "${{ env.R2_BUCKET }}/$file" \
+              --file "$file" \
+              --content-type "application/octet-stream" \
+              --remote
+          done
+
+      # Rewrite and publish latest.json only when it was generated (signed builds)
+      - name: Rewrite latest.json URLs to R2 and publish
+        if: hashFiles('dist/latest.json') != ''
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           python3 << 'EOF'
-          import json, os
+          import json, os, subprocess
 
           R2 = os.environ["R2_PUBLIC_BASE"]
+          BUCKET = os.environ["R2_BUCKET"]
 
           with open("dist/latest.json") as f:
               data = json.load(f)
@@ -212,36 +232,14 @@ jobs:
           print("\nFinal latest.json:")
           print(json.dumps(data, indent=2))
           EOF
-        env:
-          R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
-
-      # Upload update binaries first so they exist before latest.json goes live
-      - name: Upload update binaries to R2
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          cd dist
-          for file in *.nsis.zip *.app.tar.gz *.dmg *-setup.exe; do
-            [ -f "$file" ] || continue
-            echo "Uploading $file ..."
-            npx wrangler r2 object put "${{ env.R2_BUCKET }}/$file" \
-              --file "$file" \
-              --content-type "application/octet-stream" \
-              --remote
-          done
-
-      # latest.json goes last — once it's live, users will be offered the update
-      - name: Publish latest.json to R2
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
           npx wrangler r2 object put "${{ env.R2_BUCKET }}/latest.json" \
             --file dist/latest.json \
             --content-type "application/json" \
             --remote
           echo "✅ latest.json live at ${{ env.R2_PUBLIC_BASE }}/latest.json"
+        env:
+          R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
+          R2_BUCKET: ${{ env.R2_BUCKET }}
 
       # Regenerate the download page with the current version and upload it
       - name: Publish downloads page to R2
