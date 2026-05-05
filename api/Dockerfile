@@ -21,10 +21,8 @@ RUN dotnet publish src/SolaHub.API/SolaHub.API.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
-RUN adduser --disabled-password --gecos "" appuser && chown -R appuser /app
-USER appuser
-
-COPY --from=build --chown=appuser /app/publish .
+COPY --from=build /app/publish .
+USER $APP_UID
 
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_URLS=http://+:8080
