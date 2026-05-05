@@ -121,9 +121,9 @@
     :aria-label="tooltipLabel"
     :class="[
       'relative h-8 min-w-[5.35rem] overflow-hidden rounded-md px-2.5',
-      'inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold text-ink-strong shadow-xs',
-      'border border-line bg-surface-raised hover:border-line-strong hover:bg-surface-canvas active:bg-surface-sunken',
-      'dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-brand-400/30 dark:hover:bg-white/[0.06]',
+      'inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold text-ink-strong',
+      'border border-black/[0.08] bg-black/[0.04] hover:border-black/[0.13] hover:bg-black/[0.07] active:bg-black/[0.11]',
+      'dark:border-white/[0.10] dark:bg-white/[0.05] dark:hover:border-white/[0.16] dark:hover:bg-white/[0.08]',
       'transition-colors duration-150',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60',
       'disabled:cursor-wait disabled:opacity-80',

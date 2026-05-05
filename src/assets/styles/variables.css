@@ -21,13 +21,13 @@
   --s-surface-sunken: #f4f4f5;
   --s-surface-raised: #ffffff;
   --s-surface-overlay: rgba(255, 255, 255, 0.96);
-  --s-surface-sidebar: rgba(247, 247, 248, 0.62);
+  --s-surface-sidebar: rgba(247, 247, 248, 0.60);
   --s-surface-vibrancy: rgba(255, 255, 255, 0.72);
 
   --s-titlebar-pad: 0px;
 
   /* ─── Aurora (very subtle ambient washes, used sparingly) ────────────────── */
-  --s-aurora-peach: rgba(255, 180, 160, 0.18);
+  --s-aurora-peach: rgba(255, 180, 160, 0.30);
   --s-aurora-rose: rgba(255, 165, 200, 0.14);
   --s-aurora-violet: rgba(178, 168, 255, 0.12);
   --s-aurora-blue: rgba(140, 175, 255, 0.16);
@@ -102,7 +102,7 @@ html.is-tauri.is-mac {
 }
 
 .dark {
-  --s-aurora-peach: rgba(244, 114, 82, 0.1);
+  --s-aurora-peach: rgba(244, 114, 82, 0.18);
   --s-aurora-rose: rgba(236, 72, 153, 0.1);
   --s-aurora-violet: rgba(139, 92, 246, 0.1);
   --s-aurora-blue: rgba(59, 107, 255, 0.14);
@@ -113,7 +113,7 @@ html.is-tauri.is-mac {
   --s-surface-sunken: #0a0c11;
   --s-surface-raised: #14181f;
   --s-surface-overlay: rgba(20, 24, 31, 0.92);
-  --s-surface-sidebar: rgba(15, 18, 24, 0.78);
+  --s-surface-sidebar: rgba(15, 18, 24, 0.62);
   --s-surface-vibrancy: rgba(20, 24, 31, 0.55);
 
   --s-text-strong: #f5f7fb;

@@ -176,5 +176,176 @@ describe('languageSongs store', () => {
       expect(song?.author).toBe('Malayalam Worship')
       expect(song?.isCustom).toBe(false)
     })
+
+    it('exposes nativeTitle when meta has one', async () => {
+      const meta: LanguageSongMeta = {
+        id: 'lang-malayalam-7',
+        title: 'Praise Him',
+        nativeTitle: 'അവനെ സ്തുതിക്കുക',
+        language: 'Malayalam',
+        filePath: 'txt/7 Praise Him അവനെ സ്തുതിക്കുക VV Malayalam 2021 7.txt',
+      }
+      mockFetchIndex.mockResolvedValueOnce([meta])
+
+      const store = useLanguageSongsStore()
+      await store.downloadPack('Malayalam')
+
+      const song = store.allLanguageSongs.find((s) => s.id === meta.id)
+      expect(song?.nativeTitle).toBe('അവനെ സ്തുതിക്കുക')
+    })
+
+    it('sets nativeTitle to undefined when meta nativeTitle is empty', async () => {
+      const meta: LanguageSongMeta = { ...makeMeta('Tamil', 3), nativeTitle: '' }
+      mockFetchIndex.mockResolvedValueOnce([meta])
+
+      const store = useLanguageSongsStore()
+      await store.downloadPack('Tamil')
+
+      const song = store.allLanguageSongs.find((s) => s.id === meta.id)
+      expect(song?.nativeTitle).toBeUndefined()
+    })
+
+    it('starts with empty sections before any content is fetched', async () => {
+      mockFetchIndex.mockResolvedValueOnce([makeMeta('Malayalam', 1)])
+
+      const store = useLanguageSongsStore()
+      await store.downloadPack('Malayalam')
+
+      const song = store.allLanguageSongs[0]
+      expect(song?.sections).toHaveLength(0)
+    })
+
+    it('reflects cached sections after loadSongById is called', async () => {
+      const meta = makeMeta('Malayalam', 1)
+      mockFetchIndex.mockResolvedValueOnce([meta])
+      const sections = [{ type: 'verse' as const, label: 'Verse 1', text: 'Glory' }]
+      mockFetchSections.mockResolvedValueOnce(sections)
+
+      const store = useLanguageSongsStore()
+      await store.downloadPack('Malayalam')
+      await store.loadSongById(meta.id)
+
+      const song = store.allLanguageSongs.find((s) => s.id === meta.id)
+      expect(song?.sections).toHaveLength(1)
+      expect(song?.sections[0].text).toBe('Glory')
+    })
+  })
+
+  describe('loadSongById', () => {
+    it('fetches and returns sections for a known song id', async () => {
+      const meta = makeMeta('Malayalam', 5)
+      mockFetchIndex.mockResolvedValueOnce([meta])
+      const sections = [
+        { type: 'chorus' as const, label: 'Chorus', text: 'Hallelujah' },
+        { type: 'verse' as const, label: 'Verse 1', text: 'First verse' },
+      ]
+      mockFetchSections.mockResolvedValueOnce(sections)
+
+      const store = useLanguageSongsStore()
+      await store.downloadPack('Malayalam')
+
+      const result = await store.loadSongById(meta.id)
+      expect(result).toHaveLength(2)
+      expect(result[0].text).toBe('Hallelujah')
+    })
+
+    it('returns empty array for an unknown id', async () => {
+      const store = useLanguageSongsStore()
+      const result = await store.loadSongById('lang-malayalam-9999')
+      expect(result).toHaveLength(0)
+      expect(mockFetchSections).not.toHaveBeenCalled()
+    })
+
+    it('finds a song across different language packs', async () => {
+      const tamilMeta = makeMeta('Tamil', 10)
+      mockFetchIndex.mockResolvedValueOnce([makeMeta('Malayalam', 1)])
+      mockFetchIndex.mockResolvedValueOnce([tamilMeta])
+      const sections = [{ type: 'verse' as const, label: 'Verse 1', text: 'Tamil lyric' }]
+      mockFetchSections.mockResolvedValueOnce(sections)
+
+      const store = useLanguageSongsStore()
+      await store.downloadPack('Malayalam')
+      await store.downloadPack('Tamil')
+
+      const result = await store.loadSongById(tamilMeta.id)
+      expect(result[0].text).toBe('Tamil lyric')
+    })
+
+    it('does not re-fetch on a second call for the same song', async () => {
+      const meta = makeMeta('Malayalam', 2)
+      mockFetchIndex.mockResolvedValueOnce([meta])
+      const sections = [{ type: 'verse' as const, label: 'Verse 1', text: 'Cached' }]
+      mockFetchSections.mockResolvedValueOnce(sections)
+
+      const store = useLanguageSongsStore()
+      await store.downloadPack('Malayalam')
+
+      await store.loadSongById(meta.id)
+      await store.loadSongById(meta.id)
+
+      expect(mockFetchSections).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('song search filtering', () => {
+    it('matches by English title', async () => {
+      const meta: LanguageSongMeta = {
+        id: 'lang-malayalam-1',
+        title: 'Worthy Is the Lamb',
+        nativeTitle: 'കുഞ്ഞാടു യോഗ്യൻ',
+        language: 'Malayalam',
+        filePath: 'txt/1 Song VV Malayalam 2021 1.txt',
+      }
+      mockFetchIndex.mockResolvedValueOnce([meta])
+
+      const store = useLanguageSongsStore()
+      await store.downloadPack('Malayalam')
+
+      const q = 'worthy'
+      const match = store.allLanguageSongs.filter(
+        (s) => s.title.toLowerCase().includes(q) || (s.nativeTitle?.toLowerCase().includes(q) ?? false)
+      )
+      expect(match).toHaveLength(1)
+    })
+
+    it('matches by native script', async () => {
+      const meta: LanguageSongMeta = {
+        id: 'lang-malayalam-1',
+        title: 'Worthy Is the Lamb',
+        nativeTitle: 'കുഞ്ഞാടു യോഗ്യൻ',
+        language: 'Malayalam',
+        filePath: 'txt/1 Song VV Malayalam 2021 1.txt',
+      }
+      mockFetchIndex.mockResolvedValueOnce([meta])
+
+      const store = useLanguageSongsStore()
+      await store.downloadPack('Malayalam')
+
+      const q = 'കുഞ്ഞ'
+      const match = store.allLanguageSongs.filter(
+        (s) => s.title.toLowerCase().includes(q) || (s.nativeTitle?.toLowerCase().includes(q) ?? false)
+      )
+      expect(match).toHaveLength(1)
+    })
+
+    it('returns no results for a query matching neither title nor native title', async () => {
+      const meta: LanguageSongMeta = {
+        id: 'lang-malayalam-1',
+        title: 'Worthy Is the Lamb',
+        nativeTitle: 'കുഞ്ഞാടു യോഗ്യൻ',
+        language: 'Malayalam',
+        filePath: 'txt/1 Song VV Malayalam 2021 1.txt',
+      }
+      mockFetchIndex.mockResolvedValueOnce([meta])
+
+      const store = useLanguageSongsStore()
+      await store.downloadPack('Malayalam')
+
+      const q = 'zzznomatch'
+      const match = store.allLanguageSongs.filter(
+        (s) => s.title.toLowerCase().includes(q) || (s.nativeTitle?.toLowerCase().includes(q) ?? false)
+      )
+      expect(match).toHaveLength(0)
+    })
   })
 })

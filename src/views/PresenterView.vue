@@ -22,6 +22,7 @@
     type PresenterBackground,
   } from '@/stores/biblePreferences.store'
   import { useSongsStore } from '@/stores/songs.store'
+  import { useLanguageSongsStore } from '@/stores/languageSongs.store'
   import { bibleService, CANONICAL_BOOKS } from '@/services/bible.service'
   import { catalogMeta } from '@/constants/bibleTranslations'
   import { usePresenterScale } from '@/composables/usePresenterScale'
@@ -45,7 +46,9 @@
   const presenter = usePresenterStore()
   const biblePrefs = useBiblePreferencesStore()
   const songs = useSongsStore()
+  const languageSongsStore = useLanguageSongsStore()
   const pendingDeleteSongId = ref<string | null>(null)
+  const loadingSongId = ref<string | null>(null)
   const toast = useSToast()
 
   // ── Scale-transform preview ───────────────────────────────────────────────────
@@ -256,7 +259,11 @@
   const filteredSongs = computed(() => {
     const q = songSearch.value.toLowerCase().trim()
     if (!q) return songs.allSongs
-    return songs.allSongs.filter((s) => s.title.toLowerCase().includes(q))
+    return songs.allSongs.filter(
+      (s) =>
+        s.title.toLowerCase().includes(q) ||
+        (s.nativeTitle?.toLowerCase().includes(q) ?? false)
+    )
   })
 
   function songSlides(song: Song): SongSlide[] {
@@ -269,8 +276,33 @@
     }))
   }
 
-  function loadSong(song: Song) {
-    const slides = songSlides(song)
+  async function loadSong(song: Song): Promise<void> {
+    let sections = song.sections
+
+    if (song.id.startsWith('lang-') && sections.length === 0) {
+      loadingSongId.value = song.id
+      try {
+        sections = await languageSongsStore.loadSongById(song.id)
+      } catch {
+        toast.error('Could not load song', 'Check your connection and try again.')
+        return
+      } finally {
+        loadingSongId.value = null
+      }
+    }
+
+    if (sections.length === 0) {
+      toast.error('No content', 'This song has no slides.')
+      return
+    }
+
+    const slides = sections.map((sec, i) => ({
+      source: 'song' as const,
+      verseRef: `song.${song.id}.${i}`,
+      text: sec.text,
+      songTitle: song.title,
+      sectionLabel: sec.label,
+    }))
     presenter.loadSlides(slides)
     toast.success('Song loaded', `${song.title} ready to present`)
   }
@@ -851,6 +883,7 @@
               <button
                 type="button"
                 class="min-w-0 flex-1 flex items-start justify-between text-left px-3 py-2.5 transition-colors"
+                :disabled="loadingSongId === song.id"
                 @click="loadSong(song)"
               >
                 <div class="min-w-0">
@@ -858,15 +891,30 @@
                     {{ song.title }}
                   </p>
                   <p
-                    v-if="song.author || song.year"
+                    v-if="song.nativeTitle"
+                    class="text-[11px] text-ink-muted font-sans mt-0.5 truncate"
+                  >
+                    {{ song.nativeTitle }}
+                  </p>
+                  <p
+                    v-else-if="song.author || song.year"
                     class="text-[11px] text-ink-muted font-sans mt-0.5"
                   >
                     {{ [song.author, song.year].filter(Boolean).join(' · ') }}
                   </p>
                 </div>
-                <span class="text-[10px] text-ink-subtle shrink-0 mt-0.5 ml-2"
-                  >{{ song.sections.length }} slides</span
-                >
+                <span class="shrink-0 mt-0.5 ml-2 flex items-center">
+                  <SSpinner v-if="loadingSongId === song.id" size="xs" />
+                  <span v-else-if="song.sections.length > 0" class="text-[10px] text-ink-subtle"
+                    >{{ song.sections.length }} slides</span
+                  >
+                  <span v-else-if="song.id.startsWith('lang-')" class="text-[10px] text-ink-subtle"
+                    >tap to load</span
+                  >
+                  <span v-else class="text-[10px] text-ink-subtle"
+                    >{{ song.sections.length }} slides</span
+                  >
+                </span>
               </button>
               <SIconButton
                 size="sm"

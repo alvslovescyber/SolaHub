@@ -26,24 +26,34 @@
 .s-vibrancy-sidebar {
   position: relative;
   background-color: var(--s-surface-sidebar);
-  backdrop-filter: blur(28px) saturate(1.6);
-  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  backdrop-filter: blur(40px) saturate(2.2);
+  -webkit-backdrop-filter: blur(40px) saturate(2.2);
 }
 
-/* Almost-imperceptible warm tint at the very top of the sidebar (Kinabase-style). */
+/* Warm aurora tint layered over the frosted glass. */
 .s-vibrancy-sidebar::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background: radial-gradient(60% 22% at 80% 0%, var(--s-aurora-peach), transparent 80%);
-  opacity: 0.65;
+  opacity: 0.9;
   z-index: 0;
 }
 
 .s-vibrancy-sidebar > * {
   position: relative;
   z-index: 1;
+}
+
+/* When the app is in light mode but the OS is dark (e.g. user chose light in-app,
+   system appearance is dark), the native window material behind the transparent Tauri
+   shell is dark. Without a strong white floor the blurred dark backdrop makes the
+   sidebar look gray. Boost opacity so it always reads as light. */
+@media (prefers-color-scheme: dark) {
+  html:not(.dark) .s-vibrancy-sidebar {
+    background-color: rgba(252, 252, 254, 0.88);
+  }
 }
 
 .s-vibrancy-window {

@@ -139,6 +139,7 @@ export const useLanguageSongsStore = defineStore('languageSongs', () => {
         (meta): Song => ({
           id: meta.id,
           title: meta.title || meta.nativeTitle,
+          nativeTitle: meta.nativeTitle || undefined,
           author: `${meta.language} Worship`,
           isCustom: false,
           sections: contentCache.value[meta.language][meta.id] ?? [],
@@ -147,12 +148,21 @@ export const useLanguageSongsStore = defineStore('languageSongs', () => {
     )
   )
 
+  async function loadSongById(id: string): Promise<SongSection[]> {
+    for (const lang of LANGUAGES) {
+      const meta = packs.value[lang].songs.find((m) => m.id === id)
+      if (meta) return getSongSections(meta)
+    }
+    return []
+  }
+
   return {
     packs,
     enabled,
     downloadPack,
     removePack,
     getSongSections,
+    loadSongById,
     allLanguageSongs,
   }
 })

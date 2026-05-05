@@ -12,6 +12,7 @@ export interface SongSection {
 export interface Song {
   id: string
   title: string
+  nativeTitle?: string
   author?: string
   year?: number
   isCustom?: boolean
