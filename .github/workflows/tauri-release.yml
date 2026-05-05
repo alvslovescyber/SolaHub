@@ -57,14 +57,19 @@ jobs:
         run: |
           python3 << 'EOF'
           import json, os
-          with open('src-tauri/tauri.conf.json') as f:
-              config = json.load(f)
-          config.setdefault('plugins', {})['updater'] = {
-              'pubkey': os.environ['SOLAHUB_UPDATER_PUBLIC_KEY'],
-              'endpoints': [os.environ['R2_PUBLIC_BASE'] + '/latest.json']
-          }
-          with open('src-tauri/tauri.conf.json', 'w') as f:
-              json.dump(config, f, indent=2)
+          pubkey = os.environ.get('SOLAHUB_UPDATER_PUBLIC_KEY', '').strip()
+          if not pubkey:
+              print("SOLAHUB_UPDATER_PUBLIC_KEY not set — skipping updater config injection")
+          else:
+              with open('src-tauri/tauri.conf.json') as f:
+                  config = json.load(f)
+              config.setdefault('plugins', {})['updater'] = {
+                  'pubkey': pubkey,
+                  'endpoints': [os.environ['R2_PUBLIC_BASE'] + '/latest.json']
+              }
+              with open('src-tauri/tauri.conf.json', 'w') as f:
+                  json.dump(config, f, indent=2)
+              print(f"Injected updater config with pubkey ending ...{pubkey[-8:]}")
           EOF
         env:
           SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
@@ -76,6 +81,7 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+          SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
         with:
           tagName: ${{ github.ref_name || inputs.tag }}
           releaseName: SolaHub ${{ github.ref_name || inputs.tag }}
@@ -119,14 +125,19 @@ jobs:
         shell: python {0}
         run: |
           import json, os
-          with open('src-tauri/tauri.conf.json') as f:
-              config = json.load(f)
-          config.setdefault('plugins', {})['updater'] = {
-              'pubkey': os.environ['SOLAHUB_UPDATER_PUBLIC_KEY'],
-              'endpoints': [os.environ['R2_PUBLIC_BASE'] + '/latest.json']
-          }
-          with open('src-tauri/tauri.conf.json', 'w') as f:
-              json.dump(config, f, indent=2)
+          pubkey = os.environ.get('SOLAHUB_UPDATER_PUBLIC_KEY', '').strip()
+          if not pubkey:
+              print("SOLAHUB_UPDATER_PUBLIC_KEY not set — skipping updater config injection")
+          else:
+              with open('src-tauri/tauri.conf.json') as f:
+                  config = json.load(f)
+              config.setdefault('plugins', {})['updater'] = {
+                  'pubkey': pubkey,
+                  'endpoints': [os.environ['R2_PUBLIC_BASE'] + '/latest.json']
+              }
+              with open('src-tauri/tauri.conf.json', 'w') as f:
+                  json.dump(config, f, indent=2)
+              print(f"Injected updater config with pubkey ending ...{pubkey[-8:]}")
         env:
           SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
 
@@ -137,6 +148,7 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+          SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
         with:
           tagName: ${{ github.ref_name || inputs.tag }}
           releaseName: SolaHub ${{ github.ref_name || inputs.tag }}
