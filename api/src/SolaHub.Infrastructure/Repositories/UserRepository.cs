@@ -43,8 +43,8 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
     }
 
     public Task<IReadOnlyList<User>> GetAllAsync(int skip, int take, CancellationToken ct) =>
-        db.Users
-            .AsNoTracking()
+        db
+            .Users.AsNoTracking()
             .OrderByDescending(u => u.CreatedAt)
             .Skip(skip)
             .Take(take)

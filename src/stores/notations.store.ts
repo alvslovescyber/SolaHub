@@ -19,8 +19,8 @@ import type {
 } from '@/types/presenter.types'
 
 const STORAGE_KEY = 'solahub:notations:v1'
-const MAX_SLIDES = 80
-const MAX_ELEMENTS_PER_SLIDE = 24
+export const MAX_SLIDES = 80
+export const MAX_ELEMENTS_PER_SLIDE = 24
 
 let fallbackId = 0
 
@@ -285,6 +285,7 @@ export const useNotationsStore = defineStore('notations', () => {
 
   function addSlide(): NotationSlide {
     const deck = ensureDeck()
+    if (deck.slides.length >= MAX_SLIDES) return deck.slides[deck.slides.length - 1]
     const index = currentSlideIndex.value === -1 ? deck.slides.length : currentSlideIndex.value + 1
     const slide = sanitizeSlide(
       {
@@ -303,6 +304,7 @@ export const useNotationsStore = defineStore('notations', () => {
 
   function duplicateSlide(slideId: string): NotationSlide | null {
     const deck = ensureDeck()
+    if (deck.slides.length >= MAX_SLIDES) return null
     const index = deck.slides.findIndex((slide) => slide.verseRef === slideId)
     if (index === -1) return null
 
@@ -382,9 +384,10 @@ export const useNotationsStore = defineStore('notations', () => {
     if (deck) touch(deck)
   }
 
-  function addTextElement(text = 'New text block'): NotationTextElement {
+  function addTextElement(text = 'New text block'): NotationTextElement | null {
     const deck = ensureDeck()
     const slide = currentSlide.value ?? addSlide()
+    if (slide.elements.length >= MAX_ELEMENTS_PER_SLIDE) return null
     const element: NotationTextElement = {
       id: createId('el'),
       kind: 'text',
@@ -408,9 +411,10 @@ export const useNotationsStore = defineStore('notations', () => {
     reference: string
     text: string
     translation: string
-  }): NotationVerseElement {
+  }): NotationVerseElement | null {
     const deck = ensureDeck()
     const slide = currentSlide.value ?? addSlide()
+    if (slide.elements.length >= MAX_ELEMENTS_PER_SLIDE) return null
     const element: NotationVerseElement = {
       id: createId('el'),
       kind: 'verse',
@@ -438,6 +442,7 @@ export const useNotationsStore = defineStore('notations', () => {
     const slide = deck.slides.find((row) => row.verseRef === slideId)
     const element = slide?.elements.find((row) => row.id === elementId)
     if (!slide || !element) return null
+    if (slide.elements.length >= MAX_ELEMENTS_PER_SLIDE) return null
 
     const clone: NotationElement = {
       ...element,

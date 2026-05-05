@@ -45,6 +45,7 @@
   const presenter = usePresenterStore()
   const biblePrefs = useBiblePreferencesStore()
   const songs = useSongsStore()
+  const pendingDeleteSongId = ref<string | null>(null)
   const toast = useSToast()
 
   // ── Scale-transform preview ───────────────────────────────────────────────────
@@ -217,6 +218,7 @@
   }
 
   function backToBooks() {
+    loadAbortController?.abort()
     browsingBook.value = null
     browsingChapter.value = null
     loadedChapterSlides.value = []
@@ -224,6 +226,7 @@
   }
 
   function backToChapters() {
+    loadAbortController?.abort()
     browsingChapter.value = null
     loadedChapterSlides.value = []
     browserView.value = 'chapters'
@@ -270,6 +273,17 @@
     const slides = songSlides(song)
     presenter.loadSlides(slides)
     toast.success('Song loaded', `${song.title} ready to present`)
+  }
+
+  function confirmDeleteSong(song: Song) {
+    pendingDeleteSongId.value = song.id
+  }
+
+  function executeDeleteSong() {
+    if (!pendingDeleteSongId.value) return
+    songs.removeSong(pendingDeleteSongId.value)
+    pendingDeleteSongId.value = null
+    toast.success('Song deleted')
   }
 
   // ── Song editor modal ────────────────────────────────────────────────────────
@@ -465,6 +479,9 @@
     window.removeEventListener('resize', clampCurrentPreviewHeight)
     stopPreviewResize()
     loadAbortController?.abort()
+    if (presenter.session.overlayOpen || presenter.session.displayWindowOpen) {
+      void handleCloseDisplay()
+    }
   })
 
   async function handleOpenDisplay() {
@@ -854,11 +871,21 @@
               <SIconButton
                 size="sm"
                 variant="ghost"
-                class="mr-2 mt-2"
+                class="mt-2"
                 :label="`Edit ${song.title}`"
                 @click.stop="openEditSongModal(song)"
               >
                 <Pencil class="h-3.5 w-3.5" />
+              </SIconButton>
+              <SIconButton
+                v-if="song.isCustom"
+                size="sm"
+                variant="ghost"
+                class="mr-2 mt-2"
+                :label="`Delete ${song.title}`"
+                @click.stop="confirmDeleteSong(song)"
+              >
+                <Trash2 class="h-3.5 w-3.5 text-red-500" />
               </SIconButton>
             </div>
             <p
@@ -1260,6 +1287,22 @@
         </button>
       </div>
     </Teleport>
+
+    <!-- Delete song confirmation modal -->
+    <SModal
+      :open="!!pendingDeleteSongId"
+      title="Delete song?"
+      size="sm"
+      @close="pendingDeleteSongId = null"
+    >
+      <p class="text-sm text-ink-muted">
+        This song will be permanently removed from your library. This cannot be undone.
+      </p>
+      <template #footer>
+        <SButton variant="secondary" size="sm" @click="pendingDeleteSongId = null">Cancel</SButton>
+        <SButton variant="danger" size="sm" @click="executeDeleteSong">Delete</SButton>
+      </template>
+    </SModal>
 
     <!-- Song editor modal -->
     <SModal

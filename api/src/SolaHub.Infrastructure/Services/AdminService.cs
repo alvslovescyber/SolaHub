@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using SolaHub.Application.DTOs;
 using SolaHub.Application.Common;
+using SolaHub.Application.DTOs;
 using SolaHub.Core.Enums;
 using SolaHub.Infrastructure.Persistence;
 
@@ -12,7 +12,9 @@ public sealed class AdminService(AppDbContext db) : IAdminService
     {
         var totalUsers = await db.Users.AsNoTracking().CountAsync(ct);
         var activeUsers = await db.Users.AsNoTracking().CountAsync(u => u.IsActive, ct);
-        var adminUsers = await db.Users.AsNoTracking().CountAsync(u => u.Role == UserRole.Admin, ct);
+        var adminUsers = await db
+            .Users.AsNoTracking()
+            .CountAsync(u => u.Role == UserRole.Admin, ct);
         var totalNotes = await db.VerseNotes.AsNoTracking().CountAsync(ct);
         var totalPlans = await db.ReadingPlans.AsNoTracking().CountAsync(ct);
         var totalChurches = await db.Churches.AsNoTracking().CountAsync(ct);

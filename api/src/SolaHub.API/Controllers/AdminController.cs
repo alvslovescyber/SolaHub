@@ -1,18 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
 using SolaHub.Core.Interfaces.Repositories;
-using SolaHub.Application.Common;
 
 namespace SolaHub.API.Controllers;
 
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = "Admin")]
-public sealed class AdminController(
-    IUserRepository userRepository,
-    IAdminService adminService
-) : ControllerBase
+public sealed class AdminController(IUserRepository userRepository, IAdminService adminService)
+    : ControllerBase
 {
     private const int MaxPageSize = 100;
 
@@ -32,17 +30,19 @@ public sealed class AdminController(
         var skip = (page - 1) * pageSize;
         var users = await userRepository.GetAllAsync(skip, pageSize, ct);
 
-        var dtos = users.Select(u => new AdminUserDto(
-            u.Id.Value,
-            u.DisplayName,
-            u.Email.Value,
-            u.Role.ToString(),
-            u.IsActive,
-            u.IsEmailVerified,
-            u.ChurchId?.Value,
-            u.CreatedAt,
-            u.LastLoginAt
-        )).ToList();
+        var dtos = users
+            .Select(u => new AdminUserDto(
+                u.Id.Value,
+                u.DisplayName,
+                u.Email.Value,
+                u.Role.ToString(),
+                u.IsActive,
+                u.IsEmailVerified,
+                u.ChurchId?.Value,
+                u.CreatedAt,
+                u.LastLoginAt
+            ))
+            .ToList();
 
         return Ok(new AdminUsersResponse(dtos, total, page, pageSize));
     }

@@ -22,7 +22,7 @@
     X,
   } from 'lucide-vue-next'
   import { useNotesStore } from '@/stores/notes.store'
-  import { useNotationsStore } from '@/stores/notations.store'
+  import { useNotationsStore, MAX_SLIDES, MAX_ELEMENTS_PER_SLIDE } from '@/stores/notations.store'
   import { usePresenterStore } from '@/stores/presenter.store'
   import { useBiblePreferencesStore } from '@/stores/biblePreferences.store'
   import { backgroundStyle, NOTATION_BACKGROUND_PRESETS } from '@/lib/presenterBackgrounds'
@@ -63,7 +63,7 @@
   const toast = useSToast()
   const { monitors, selectedMonitorIndex, loading: monitorsLoading } = useDisplayMonitors()
 
-  const VERSE_REF_PATTERN = /^[A-Za-z]{2,4}\.\d+(\.\d+)?$/
+  const VERSE_REF_PATTERN = /^[1-3]?[A-Za-z]{2,4}\.\d+(\.\d+)?$/
   const ALIGN_OPTIONS = [
     { value: 'left', label: 'Align left', icon: AlignLeft },
     { value: 'center', label: 'Align center', icon: AlignCenter },
@@ -123,7 +123,7 @@
     const index = contextSlideIndex.value
     const slideCount = deck?.slides.length ?? 0
     return [
-      { id: 'duplicate', label: 'Duplicate' },
+      { id: 'duplicate', label: 'Duplicate', disabled: slideCount >= MAX_SLIDES },
       { id: 'move-top', label: 'Move to top', disabled: index <= 0 },
       {
         id: 'move-bottom',
@@ -150,6 +150,7 @@
     window.removeEventListener('keydown', handleNotationOverlayKeydown)
     stopElementDrag()
     verseAbortController?.abort()
+    if (notationOverlayOpen.value) void handleCloseDisplay()
   })
 
   watch(
@@ -209,6 +210,10 @@
   }
 
   function addSlide() {
+    if ((currentDeck.value?.slides.length ?? 0) >= MAX_SLIDES) {
+      toast.error('Slide limit reached', `A deck can hold at most ${MAX_SLIDES} slides.`)
+      return
+    }
     const slide = notations.addSlide()
     selectedElementId.value = null
     toast.success('Slide added', slide.title)
@@ -216,11 +221,19 @@
 
   function duplicateCurrentSlide() {
     if (!currentSlide.value) return
+    if ((currentDeck.value?.slides.length ?? 0) >= MAX_SLIDES) {
+      toast.error('Slide limit reached', `A deck can hold at most ${MAX_SLIDES} slides.`)
+      return
+    }
     const slide = notations.duplicateSlide(currentSlide.value.verseRef)
     if (slide) toast.success('Slide duplicated', slide.title)
   }
 
   function duplicateSlide(slideId: string) {
+    if ((currentDeck.value?.slides.length ?? 0) >= MAX_SLIDES) {
+      toast.error('Slide limit reached', `A deck can hold at most ${MAX_SLIDES} slides.`)
+      return
+    }
     const slide = notations.duplicateSlide(slideId)
     if (slide) toast.success('Slide duplicated', slide.title)
   }
@@ -269,7 +282,15 @@
   }
 
   function addTextBlock(text = 'New text block') {
+    if ((currentSlide.value?.elements.length ?? 0) >= MAX_ELEMENTS_PER_SLIDE) {
+      toast.error(
+        'Element limit reached',
+        `A slide can hold at most ${MAX_ELEMENTS_PER_SLIDE} elements.`
+      )
+      return
+    }
     const element = notations.addTextElement(text)
+    if (!element) return
     selectedElementId.value = element.id
     rightPanel.value = 'editor'
   }
@@ -280,6 +301,13 @@
 
   function duplicateSelectedElement() {
     if (!currentSlide.value || !selectedElement.value) return
+    if (currentSlide.value.elements.length >= MAX_ELEMENTS_PER_SLIDE) {
+      toast.error(
+        'Element limit reached',
+        `A slide can hold at most ${MAX_ELEMENTS_PER_SLIDE} elements.`
+      )
+      return
+    }
     const clone = notations.duplicateElement(currentSlide.value.verseRef, selectedElement.value.id)
     if (clone) selectedElementId.value = clone.id
   }
@@ -625,9 +653,14 @@
       verseError.value = 'Use John 3:16 or JHN.3.16'
       return
     }
+    if ((currentSlide.value?.elements.length ?? 0) >= MAX_ELEMENTS_PER_SLIDE) {
+      verseError.value = `This slide is full (max ${MAX_ELEMENTS_PER_SLIDE} elements). Add a new slide first.`
+      return
+    }
 
     verseAbortController?.abort()
-    verseAbortController = new AbortController()
+    const ctrl = new AbortController()
+    verseAbortController = ctrl
     verseLoading.value = true
     try {
       const translation = biblePrefs.translationApiCode(
@@ -638,13 +671,18 @@
         parsed.chapter,
         parsed.verse,
         translation,
-        verseAbortController.signal
+        ctrl.signal
       )
+      if (ctrl.signal.aborted) return
       const element = notations.addVerseElement({
         reference: `${parsed.bookName} ${parsed.chapter}:${parsed.verse}`,
         text: verse.text,
         translation,
       })
+      if (!element) {
+        verseError.value = `Slide is full (max ${MAX_ELEMENTS_PER_SLIDE} elements).`
+        return
+      }
       selectedElementId.value = element.id
       rightPanel.value = 'editor'
       verseRefInput.value = ''
@@ -653,7 +691,7 @@
       if (error instanceof Error && error.name === 'AbortError') return
       verseError.value = error instanceof Error ? error.message : 'Could not load that verse'
     } finally {
-      verseLoading.value = false
+      if (verseAbortController === ctrl) verseLoading.value = false
     }
   }
 
