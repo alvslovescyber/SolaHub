@@ -8,6 +8,13 @@ beforeEach(() => {
 
 // Mock Tauri APIs — not available in the test environment
 vi.mock('@tauri-apps/api/core', () => ({
+  Channel: class<T = unknown> {
+    onmessage: (message: T) => void
+
+    constructor(onmessage: (message: T) => void = vi.fn()) {
+      this.onmessage = onmessage
+    }
+  },
   invoke: vi.fn(),
 }))
 

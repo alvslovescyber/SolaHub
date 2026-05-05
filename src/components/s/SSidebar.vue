@@ -27,6 +27,7 @@
   import SIconButton from './SIconButton.vue'
   import SNotificationPanel from './SNotificationPanel.vue'
   import STooltip from './STooltip.vue'
+  import SUpdateButton from './SUpdateButton.vue'
 
   const ui = useUiStore()
   const auth = useAuthStore()
@@ -259,6 +260,12 @@
       ]"
       data-no-drag
     >
+      <div v-if="!collapsed" class="px-3 pb-2">
+        <SUpdateButton full-width />
+      </div>
+      <div v-else class="pb-2">
+        <SUpdateButton collapsed />
+      </div>
       <SSidebarUserChip
         v-if="auth.user"
         :name="auth.user.displayName"

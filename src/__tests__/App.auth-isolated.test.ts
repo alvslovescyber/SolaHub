@@ -9,6 +9,7 @@ const appMocks = vi.hoisted(() => ({
   initTheme: vi.fn(),
   rehydrate: vi.fn(),
   handleSessionExpired: vi.fn(),
+  replace: vi.fn(),
 }))
 
 vi.mock('@/stores/ui.store', () => ({
@@ -27,6 +28,9 @@ vi.mock('@/stores/auth.store', () => ({
 vi.mock('vue-router', () => ({
   RouterView: { name: 'RouterView', template: '<div />' },
   useRoute: () => appMocks.route,
+  useRouter: () => ({
+    replace: appMocks.replace,
+  }),
 }))
 
 describe('App auth-isolated routes', () => {
@@ -35,6 +39,7 @@ describe('App auth-isolated routes', () => {
     appMocks.initTheme.mockClear()
     appMocks.rehydrate.mockClear()
     appMocks.handleSessionExpired.mockClear()
+    appMocks.replace.mockClear()
   })
 
   it('does not rehydrate or handle expired-session events on presenter display', async () => {

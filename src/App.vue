@@ -1,12 +1,14 @@
 <script setup lang="ts">
   import { computed, onBeforeUnmount, onMounted } from 'vue'
-  import { RouterView, useRoute } from 'vue-router'
+  import { RouterView, useRoute, useRouter } from 'vue-router'
   import { useUiStore } from '@/stores/ui.store'
   import { useAuthStore } from '@/stores/auth.store'
+  import { consumeUpdateReturnRoute } from '@/lib/appUpdate'
 
   const ui = useUiStore()
   const auth = useAuthStore()
   const route = useRoute()
+  const router = useRouter()
 
   const isAuthIsolatedRoute = computed(
     () =>
@@ -32,6 +34,10 @@
     if (isAuthIsolatedRoute.value) return
 
     void auth.rehydrate()
+    const returnRoute = consumeUpdateReturnRoute()
+    if (returnRoute && returnRoute !== route.fullPath) {
+      void router.replace(returnRoute)
+    }
     window.addEventListener('auth:session-expired', onSessionExpired)
   })
 

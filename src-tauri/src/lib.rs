@@ -11,6 +11,10 @@ pub fn run() {
     if let Err(error) = tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
+
             let app_data_dir = app.path().app_data_dir().map_err(|error| {
                 std::io::Error::other(format!("Failed to get app data directory: {error}"))
             })?;
@@ -65,6 +69,8 @@ pub fn run() {
             commands::window::open_presenter_window,
             commands::window::close_presenter_window,
             commands::window::set_fullscreen,
+            #[cfg(desktop)]
+            commands::update::install_app_update,
         ])
         .run(tauri::generate_context!())
     {
