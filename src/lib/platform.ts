@@ -10,5 +10,9 @@ export const isMac: boolean =
   typeof window !== 'undefined' &&
   /Mac|iPhone|iPad|iPod/i.test(window.navigator.platform || window.navigator.userAgent || '')
 
+export const isWindows: boolean =
+  typeof window !== 'undefined' &&
+  /Win/i.test(window.navigator.platform || window.navigator.userAgent || '')
+
 /** Cmd on Mac, Ctrl elsewhere — for shortcut hints. */
 export const modKeyLabel: string = isMac ? '⌘' : 'Ctrl'

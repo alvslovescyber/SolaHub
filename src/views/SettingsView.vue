@@ -9,6 +9,11 @@
     Languages,
     MonitorPlay,
     Music,
+    Download,
+    Music2,
+    Search,
+    AlertCircle,
+    X,
   } from 'lucide-vue-next'
   import { useAuth } from '@/composables/useAuth'
   import { useAuthStore } from '@/stores/auth.store'
@@ -23,6 +28,7 @@
   } from '@/stores/biblePreferences.store'
   import {
     SAvatar,
+    SBadge,
     SButton,
     SCard,
     SDivider,
@@ -30,11 +36,14 @@
     SLabel,
     SSelect,
     SSettingsList,
+    SSpinner,
     SSwitch,
     STextarea,
     STopBar,
     useSToast,
   } from '@/components/s'
+  import { useLanguageSongsStore } from '@/stores/languageSongs.store'
+  import type { SupportedLanguage } from '@/stores/languageSongs.store'
   import type { Theme } from '@/stores/ui.store'
 
   const { user, logout } = useAuth()
@@ -43,6 +52,7 @@
   const biblePrefs = useBiblePreferencesStore()
   const authStore = useAuthStore()
 
+  const languageSongsStore = useLanguageSongsStore()
   const fileInput = ref<HTMLInputElement | null>(null)
 
   function pickAvatar() {
@@ -252,6 +262,108 @@
     }
     biblePrefs.setSongsIntegration(value as SongsIntegrationPlaceholder)
   }
+
+  interface LanguagePackConfig {
+    language: SupportedLanguage
+    nativeName: string
+    scriptSample: string
+    approxCount: number
+    region: string
+    accent: string
+    iconBg: string
+    iconText: string
+    nativeTextClass: string
+    headerBg: string
+  }
+
+  const mainPacks: LanguagePackConfig[] = [
+    {
+      language: 'Malayalam',
+      nativeName: 'മലയാളം',
+      scriptSample: 'മ',
+      approxCount: 4472,
+      region: 'Kerala · South India',
+      accent: 'border-l-emerald-500',
+      iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+      iconText: 'text-emerald-700 dark:text-emerald-300',
+      nativeTextClass: 'text-emerald-700 dark:text-emerald-400',
+      headerBg:
+        'bg-gradient-to-r from-emerald-50 to-transparent dark:from-emerald-950/40 dark:to-transparent',
+    },
+    {
+      language: 'Tamil',
+      nativeName: 'தமிழ்',
+      scriptSample: 'த',
+      approxCount: 1925,
+      region: 'Tamil Nadu · Sri Lanka',
+      accent: 'border-l-sky-500',
+      iconBg: 'bg-sky-100 dark:bg-sky-900/40',
+      iconText: 'text-sky-700 dark:text-sky-300',
+      nativeTextClass: 'text-sky-700 dark:text-sky-400',
+      headerBg:
+        'bg-gradient-to-r from-sky-50 to-transparent dark:from-sky-950/40 dark:to-transparent',
+    },
+    {
+      language: 'Hindi',
+      nativeName: 'हिंदी',
+      scriptSample: 'ह',
+      approxCount: 1613,
+      region: 'North India',
+      accent: 'border-l-orange-500',
+      iconBg: 'bg-orange-100 dark:bg-orange-900/40',
+      iconText: 'text-orange-700 dark:text-orange-300',
+      nativeTextClass: 'text-orange-700 dark:text-orange-400',
+      headerBg:
+        'bg-gradient-to-r from-orange-50 to-transparent dark:from-orange-950/40 dark:to-transparent',
+    },
+  ]
+
+  const comingSoonLangs = [
+    { name: 'Telugu', nativeName: 'తెలుగు', source: 'VerseView', approxCount: 850 },
+    { name: 'Kannada', nativeName: 'ಕನ್ನಡ', source: 'OpenSong', approxCount: 620 },
+    { name: 'Marathi', nativeName: 'मराठी', source: 'OpenSong', approxCount: 540 },
+    { name: 'Bengali', nativeName: 'বাংলা', source: 'OpenSong', approxCount: 480 },
+    { name: 'Sinhala', nativeName: 'සිංහල', source: 'VerseView', approxCount: 390 },
+    { name: 'Korean', nativeName: '한국어', source: 'SDA Hymnal', approxCount: 349 },
+    { name: 'Spanish', nativeName: 'Español', source: 'Himnario Bautista', approxCount: 1200 },
+    { name: 'Portuguese', nativeName: 'Português', source: 'Hinário CCB', approxCount: 1080 },
+    { name: 'French', nativeName: 'Français', source: 'SDA Hymnal', approxCount: 695 },
+    { name: 'Swahili', nativeName: 'Kiswahili', source: 'OpenSong', approxCount: 420 },
+    { name: 'Tagalog', nativeName: 'Filipino', source: 'OpenSong', approxCount: 560 },
+    { name: 'German', nativeName: 'Deutsch', source: 'Gesangbuch', approxCount: 900 },
+  ]
+
+  const songSearchQueries = ref<Record<string, string>>({})
+
+  function getFilteredSongs(language: SupportedLanguage) {
+    const pack = languageSongsStore.packs[language]
+    if (!pack || pack.status !== 'ready') return []
+    const q = (songSearchQueries.value[language] ?? '').toLowerCase().trim()
+    if (!q) return pack.songs.slice(0, 60)
+    return pack.songs
+      .filter(
+        (s) => s.title.toLowerCase().includes(q) || s.nativeTitle.toLowerCase().includes(q)
+      )
+      .slice(0, 100)
+  }
+
+  async function handleDownloadPack(language: SupportedLanguage) {
+    await languageSongsStore.downloadPack(language)
+    const pack = languageSongsStore.packs[language]
+    if (pack.status === 'ready') {
+      toast.success(
+        `${language} songs added`,
+        `${pack.songs.length.toLocaleString()} songs are now in your library.`
+      )
+    } else if (pack.status === 'error') {
+      toast.error('Download failed', pack.error ?? 'Please check your connection and try again.')
+    }
+  }
+
+  function handleRemovePack(language: SupportedLanguage) {
+    languageSongsStore.removePack(language)
+    toast.info(`${language} pack removed`, 'Songs have been cleared from your library.')
+  }
 </script>
 
 <template>
@@ -288,8 +400,8 @@
                 worship.
               </template>
               <template v-else-if="activeId === 'songs-media'">
-                Lyrics, copyright lines, and integrations for presenting worship alongside
-                Scripture.
+                Manage worship song libraries, language packs, and projection settings for
+                Sunday service.
               </template>
               <template v-else-if="activeId === 'appearance'">
                 Theme and visual preferences.
@@ -596,30 +708,299 @@
 
           <!-- Songs & media -->
           <template v-else-if="activeId === 'songs-media'">
-            <SCard padding="lg" class="space-y-6">
-              <SSelect
-                :model-value="biblePrefs.songsIntegration"
-                label="Lyrics source"
-                helper="Pick where slide-ready lyrics should sync from once integrations launch."
-                :options="songsIntegrationOptions"
-                @update:model-value="onSongsIntegration"
-              />
+            <div class="space-y-5">
+              <!-- Integrations & copyright -->
+              <SCard padding="lg" class="space-y-6">
+                <SSelect
+                  :model-value="biblePrefs.songsIntegration"
+                  label="Lyrics source"
+                  helper="Pick where slide-ready lyrics should sync from once integrations launch."
+                  :options="songsIntegrationOptions"
+                  @update:model-value="onSongsIntegration"
+                />
+                <SSwitch
+                  :model-value="biblePrefs.songsShowCopyright"
+                  label="Include copyright / CCLI line on slides"
+                  description="Shows attribution lines when projecting lyrics — recommended for public services."
+                  @update:model-value="biblePrefs.setSongsShowCopyright"
+                />
+              </SCard>
 
-              <SSwitch
-                :model-value="biblePrefs.songsShowCopyright"
-                label="Include copyright / CCLI line on slides"
-                description="Shows attribution lines when projecting lyrics — recommended for public services."
-                @update:model-value="biblePrefs.setSongsShowCopyright"
-              />
+              <!-- Language Song Packs -->
+              <div class="space-y-3">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h3 class="text-sm font-semibold text-ink-strong">Language Song Packs</h3>
+                      <SBadge tone="brand" variant="soft">New</SBadge>
+                    </div>
+                    <p class="text-xs text-ink-muted mt-0.5 leading-relaxed">
+                      Download regional worship song libraries sourced from the VerseView
+                      collection. Enabled packs appear directly in your songs library and Presenter.
+                    </p>
+                  </div>
+                </div>
 
-              <SDivider />
+                <!-- Per-language cards -->
+                <div
+                  v-for="pack in mainPacks"
+                  :key="pack.language"
+                  :class="[
+                    'rounded-xl border border-line overflow-hidden bg-surface-overlay shadow-sm',
+                    'border-l-4',
+                    pack.accent,
+                  ]"
+                >
+                  <!-- Card header -->
+                  <div :class="['px-4 pt-4 pb-3', pack.headerBg]">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="flex items-center gap-3">
+                        <div
+                          :class="[
+                            'w-10 h-10 rounded-xl flex items-center justify-center text-xl font-bold select-none shrink-0',
+                            pack.iconBg,
+                            pack.iconText,
+                          ]"
+                        >
+                          {{ pack.scriptSample }}
+                        </div>
+                        <div>
+                          <p class="text-sm font-semibold text-ink-strong leading-tight">
+                            {{ pack.language }}
+                          </p>
+                          <p :class="['text-xs font-medium leading-tight mt-0.5', pack.nativeTextClass]">
+                            {{ pack.nativeName }}
+                          </p>
+                        </div>
+                      </div>
+                      <div class="shrink-0 pt-0.5">
+                        <SBadge
+                          v-if="languageSongsStore.packs[pack.language].status === 'ready'"
+                          tone="success"
+                          dot
+                        >
+                          Enabled
+                        </SBadge>
+                        <SBadge
+                          v-else-if="
+                            languageSongsStore.packs[pack.language].status === 'downloading'
+                          "
+                          tone="brand"
+                          dot
+                        >
+                          Downloading
+                        </SBadge>
+                        <SBadge
+                          v-else-if="languageSongsStore.packs[pack.language].status === 'error'"
+                          tone="danger"
+                          dot
+                        >
+                          Failed
+                        </SBadge>
+                        <SBadge v-else tone="neutral">Not installed</SBadge>
+                      </div>
+                    </div>
 
-              <p class="text-sm text-ink-muted leading-relaxed">
-                Song sequences, chord charts, and scripture-and-song layouts will plug into
-                Presenter so worship leaders can run everything from one hub. Connect your
-                organisation above when those OAuth flows are enabled.
-              </p>
-            </SCard>
+                    <!-- Meta row -->
+                    <div class="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-muted">
+                      <span>
+                        ~{{
+                          languageSongsStore.packs[pack.language].status === 'ready'
+                            ? languageSongsStore.packs[pack.language].songs.length.toLocaleString()
+                            : pack.approxCount.toLocaleString()
+                        }}
+                        songs
+                      </span>
+                      <span class="text-ink-subtle">·</span>
+                      <span>{{ pack.region }}</span>
+                      <span class="text-ink-subtle">·</span>
+                      <span>VerseView 2021</span>
+                    </div>
+                  </div>
+
+                  <!-- Downloading state -->
+                  <div
+                    v-if="languageSongsStore.packs[pack.language].status === 'downloading'"
+                    class="px-4 py-4 border-t border-line"
+                  >
+                    <div class="flex items-center gap-3">
+                      <SSpinner size="sm" class="text-brand-500 shrink-0" />
+                      <div class="min-w-0">
+                        <p class="text-xs font-medium text-ink-strong">
+                          Fetching song index from VerseView…
+                        </p>
+                        <p class="text-xs text-ink-muted mt-0.5">
+                          This may take a few seconds. Please stay connected.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Ready state: search + song list -->
+                  <div
+                    v-else-if="languageSongsStore.packs[pack.language].status === 'ready'"
+                    class="border-t border-line"
+                  >
+                    <!-- Search bar -->
+                    <div
+                      class="flex items-center gap-2 px-3 py-2 border-b border-line bg-surface-canvas/50"
+                    >
+                      <Search class="h-3.5 w-3.5 text-ink-subtle shrink-0" />
+                      <input
+                        :value="songSearchQueries[pack.language]"
+                        type="search"
+                        :placeholder="`Search ${pack.language} songs…`"
+                        class="flex-1 text-xs bg-transparent text-ink-strong placeholder:text-ink-subtle outline-none min-w-0"
+                        @input="
+                          songSearchQueries[pack.language] = (
+                            $event.target as HTMLInputElement
+                          ).value
+                        "
+                      />
+                      <button
+                        v-if="songSearchQueries[pack.language]"
+                        type="button"
+                        class="text-ink-subtle hover:text-ink transition-colors"
+                        @click="songSearchQueries[pack.language] = ''"
+                      >
+                        <X class="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    <!-- Song list -->
+                    <div class="max-h-52 overflow-y-auto divide-y divide-line">
+                      <div
+                        v-for="song in getFilteredSongs(pack.language)"
+                        :key="song.id"
+                        class="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-canvas transition-colors"
+                      >
+                        <Music2 class="h-3.5 w-3.5 text-ink-subtle shrink-0" />
+                        <div class="min-w-0 flex-1">
+                          <p class="text-xs font-medium text-ink-strong truncate">
+                            {{ song.title }}
+                          </p>
+                          <p
+                            v-if="song.nativeTitle"
+                            class="text-xs text-ink-muted truncate mt-0.5"
+                          >
+                            {{ song.nativeTitle }}
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        v-if="getFilteredSongs(pack.language).length === 0"
+                        class="flex flex-col items-center justify-center py-6 text-center"
+                      >
+                        <Music2 class="h-5 w-5 text-ink-subtle mb-1.5" />
+                        <p class="text-xs text-ink-muted">No songs match your search.</p>
+                      </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div
+                      class="px-4 py-2.5 border-t border-line flex items-center justify-between bg-surface-canvas/30"
+                    >
+                      <p class="text-xs text-ink-muted">
+                        {{
+                          languageSongsStore.packs[pack.language].songs.length.toLocaleString()
+                        }}
+                        songs in library
+                        <span
+                          v-if="songSearchQueries[pack.language]"
+                          class="text-ink-subtle ml-1"
+                        >
+                          · showing {{ getFilteredSongs(pack.language).length }} results
+                        </span>
+                      </p>
+                      <SButton
+                        size="xs"
+                        variant="danger"
+                        @click="handleRemovePack(pack.language)"
+                      >
+                        Remove pack
+                      </SButton>
+                    </div>
+                  </div>
+
+                  <!-- Error state -->
+                  <div
+                    v-else-if="languageSongsStore.packs[pack.language].status === 'error'"
+                    class="px-4 py-3 border-t border-line"
+                  >
+                    <div class="flex items-start gap-2.5 mb-3">
+                      <AlertCircle class="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                      <div class="min-w-0">
+                        <p class="text-xs font-medium text-red-700 dark:text-red-400">
+                          Download failed
+                        </p>
+                        <p class="text-xs text-ink-muted mt-0.5">
+                          {{ languageSongsStore.packs[pack.language].error }}
+                        </p>
+                      </div>
+                    </div>
+                    <SButton size="sm" @click="handleDownloadPack(pack.language)">
+                      <Download class="h-3.5 w-3.5 mr-1.5" />
+                      Try again
+                    </SButton>
+                  </div>
+
+                  <!-- Idle state: not downloaded -->
+                  <div v-else class="px-4 py-3.5 border-t border-line flex items-center justify-between gap-3">
+                    <div>
+                      <p class="text-xs font-medium text-ink-strong">Not installed</p>
+                      <p class="text-xs text-ink-muted mt-0.5">
+                        Adds ~{{ pack.approxCount.toLocaleString() }} songs to your library
+                      </p>
+                    </div>
+                    <SButton size="sm" @click="handleDownloadPack(pack.language)">
+                      <Download class="h-3.5 w-3.5 mr-1.5" />
+                      Download
+                    </SButton>
+                  </div>
+                </div>
+
+                <!-- Coming soon catalog -->
+                <div class="pt-1">
+                  <div class="flex items-center justify-between mb-2">
+                    <p class="text-2xs font-semibold uppercase tracking-wider text-ink-subtle">
+                      In catalog · coming soon
+                    </p>
+                    <SBadge tone="neutral" variant="outline">
+                      {{ comingSoonLangs.length }} languages
+                    </SBadge>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div
+                      v-for="lang in comingSoonLangs"
+                      :key="lang.name"
+                      class="rounded-lg border border-line bg-surface-overlay px-3 py-2.5 flex items-center justify-between gap-2"
+                    >
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-1.5">
+                          <p class="text-xs font-medium text-ink-strong leading-tight truncate">
+                            {{ lang.name }}
+                          </p>
+                          <span class="text-ink-subtle text-xs leading-tight">·</span>
+                          <p class="text-xs text-ink-muted leading-tight truncate">
+                            {{ lang.nativeName }}
+                          </p>
+                        </div>
+                        <p class="text-2xs text-ink-subtle mt-0.5 truncate">
+                          {{ lang.source }} · ~{{ lang.approxCount.toLocaleString() }} songs
+                        </p>
+                      </div>
+                      <SBadge tone="neutral" variant="soft" class="shrink-0 text-2xs">
+                        Soon
+                      </SBadge>
+                    </div>
+                  </div>
+                  <p class="text-xs text-ink-muted mt-2 text-center">
+                    More languages are added regularly. Sources include VerseView, OpenSong, SDA
+                    Hymnal, and regional collections.
+                  </p>
+                </div>
+              </div>
+            </div>
           </template>
 
           <!-- Appearance -->

@@ -26,13 +26,13 @@
         "hiddenTitle": true,
         "trafficLightPosition": { "x": 14, "y": 18 },
         "windowEffects": {
-          "effects": ["sidebar"],
+          "effects": ["sidebar", "mica", "acrylic"],
           "state": "active"
         }
       }
     ],
     "security": {
-      "csp": "default-src 'self' customprotocol: asset:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data: https:; font-src 'self' data:; connect-src 'self' http://localhost:* https://localhost:* ws://localhost:* wss://localhost:* https://*.up.railway.app wss://*.up.railway.app https://api.solahub.app wss://api.solahub.app https://bible-api.com"
+      "csp": "default-src 'self' customprotocol: asset:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data: https:; font-src 'self' data:; connect-src 'self' http://localhost:* https://localhost:* ws://localhost:* wss://localhost:* https://*.up.railway.app wss://*.up.railway.app https://api.solahub.app wss://api.solahub.app https://bible-api.com https://api.github.com https://raw.githubusercontent.com"
     },
     "macOSPrivateApi": true
   },

@@ -26,6 +26,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 vi.mock('@/lib/platform', () => ({
   isTauri: false,
   isMac: false,
+  isWindows: false,
   modKeyLabel: 'Ctrl',
 }))
 

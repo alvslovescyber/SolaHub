@@ -2,7 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import router from '@/router'
 import App from '@/App.vue'
-import { isMac, isTauri } from '@/lib/platform'
+import { isMac, isTauri, isWindows } from '@/lib/platform'
 import '@/assets/styles/main.css'
 
 if (isTauri) {
@@ -10,6 +10,9 @@ if (isTauri) {
 }
 if (isMac) {
   document.documentElement.classList.add('is-mac')
+}
+if (isWindows) {
+  document.documentElement.classList.add('is-windows')
 }
 
 const app = createApp(App)

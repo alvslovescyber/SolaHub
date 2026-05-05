@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { getStorageItem, writeJsonStorage } from '@/lib/safeStorage'
+import { useLanguageSongsStore } from '@/stores/languageSongs.store'
 
 export interface SongSection {
   type: 'verse' | 'chorus' | 'bridge' | 'intro' | 'outro'
@@ -205,6 +206,7 @@ export const useSongsStore = defineStore('songs', () => {
 
   const customSongs = ref<Song[]>(loadCustom())
   const songEdits = ref<Record<string, EditableSong>>(loadEdits())
+  const languageSongsStore = useLanguageSongsStore()
   const allSongs = computed<Song[]>(() => [
     ...BUILT_IN_SONGS.map((song) => {
       const edit = songEdits.value[song.id]
@@ -213,6 +215,7 @@ export const useSongsStore = defineStore('songs', () => {
         : song
     }),
     ...customSongs.value,
+    ...languageSongsStore.allLanguageSongs,
   ])
 
   function addSong(song: EditableSong): void {
