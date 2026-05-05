@@ -220,10 +220,11 @@ try
         });
     }
 
-    if (!app.Environment.IsDevelopment())
+    // HTTPS termination happens at the Railway edge; container traffic is HTTP-only.
+    // UseHttpsRedirection would cause 301s that fail Railway's HTTP health checks.
+    if (app.Environment.IsDevelopment())
     {
-        app.UseHsts();
-        app.UseHttpsRedirection();
+        // nothing — Kestrel handles HTTPS in dev via dev certs
     }
 
     app.UseCors("TauriApp");
