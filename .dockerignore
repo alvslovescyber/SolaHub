@@ -1,0 +1,16 @@
+node_modules
+dist
+src-tauri/target
+api/src/*/bin
+api/src/*/obj
+api/tests/*/bin
+api/tests/*/obj
+.git
+.github
+playwright-report
+test-results
+e2e
+docs
+assets
+*.log
+.env*
