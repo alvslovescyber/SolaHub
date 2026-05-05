@@ -29,8 +29,10 @@ jobs:
         include:
           - arch: aarch64-apple-darwin
             label: Apple Silicon
+            artifact_label: aarch64
           - arch: x86_64-apple-darwin
             label: Intel
+            artifact_label: x64
 
     steps:
       - uses: actions/checkout@v4
@@ -96,7 +98,26 @@ jobs:
           releaseDraft: false
           prerelease: true
           args: --target ${{ matrix.arch }}
-          includeUpdaterJson: true
+          includeUpdaterJson: false
+
+      # tauri-action doesn't upload .sig files to the release.
+      # Upload them explicitly so publish-r2 can build latest.json.
+      - name: Upload updater .sig to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${{ github.ref_name || inputs.tag }}
+          LABEL=${{ matrix.artifact_label }}
+          SIG=$(find src-tauri/target/${{ matrix.arch }}/release/bundle/macos \
+            -name "*.app.tar.gz.sig" 2>/dev/null | head -1)
+          if [ -n "$SIG" ] && [ -f "$SIG" ]; then
+            gh release upload "$TAG" \
+              "${SIG}#SolaHub_${LABEL}.app.tar.gz.sig" \
+              --repo ${{ github.repository }} --clobber
+            echo "Uploaded SolaHub_${LABEL}.app.tar.gz.sig"
+          else
+            echo "No .sig file found — build was not signed"
+          fi
 
   build-windows:
     name: Windows (x64)
@@ -157,7 +178,27 @@ jobs:
             See the [changelog](https://github.com/alvslovescyber/SolaHub/blob/main/CHANGELOG.md) for details.
           releaseDraft: false
           prerelease: true
-          includeUpdaterJson: true
+          includeUpdaterJson: false
+
+      # Upload the NSIS zip (Windows updater binary) and its .sig —
+      # tauri-action only uploads the plain .exe, not the updater zip.
+      - name: Upload updater NSIS zip and .sig to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          TAG=${{ github.ref_name || inputs.tag }}
+          NSIS_ZIP=$(find src-tauri/target/release/bundle/nsis \
+            -name "*.nsis.zip" 2>/dev/null | head -1)
+          NSIS_SIG=$(find src-tauri/target/release/bundle/nsis \
+            -name "*.nsis.zip.sig" 2>/dev/null | head -1)
+          if [ -n "$NSIS_ZIP" ] && [ -f "$NSIS_ZIP" ] && [ -n "$NSIS_SIG" ]; then
+            gh release upload "$TAG" "$NSIS_ZIP" "$NSIS_SIG" \
+              --repo ${{ github.repository }} --clobber
+            echo "Uploaded $(basename $NSIS_ZIP) and .sig"
+          else
+            echo "No NSIS zip/sig found — build was not signed"
+          fi
 
   publish-r2:
     name: Publish update artifacts to R2
@@ -171,7 +212,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      # Download everything the release produced
       - name: Download release artifacts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -179,17 +219,18 @@ jobs:
           TAG=${{ github.ref_name || inputs.tag }}
           gh release download "$TAG" \
             --repo ${{ github.repository }} \
-            --pattern "latest.json" \
+            --pattern "*.sig" \
             --pattern "*.nsis.zip" \
             --pattern "*.app.tar.gz" \
             --pattern "*.dmg" \
             --pattern "*-setup.exe" \
+            --pattern "*.msi" \
             --dir ./dist
           echo "--- Downloaded ---"
           ls -lh ./dist/
 
-      # Upload installers first — downloads page and updater both reference them
-      - name: Upload installers to R2
+      # Upload all installer binaries first so they exist before latest.json goes live
+      - name: Upload binaries to R2
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -204,44 +245,69 @@ jobs:
               --remote
           done
 
-      # Rewrite and publish latest.json only when it was generated (signed builds)
-      - name: Rewrite latest.json URLs to R2 and publish
+      # Build latest.json ourselves from the .sig files.
+      # This bypasses tauri-action's broken updater JSON generation.
+      - name: Build latest.json from signatures
+        run: |
+          python3 << 'EOF'
+          import json, os, glob, datetime
+
+          R2 = os.environ['R2_PUBLIC_BASE']
+          TAG = os.environ['TAG']
+          version = TAG.lstrip('v')
+
+          platforms = {}
+
+          for sig_file in glob.glob('dist/SolaHub_aarch64.app.tar.gz.sig'):
+              platforms['darwin-aarch64'] = {
+                  'signature': open(sig_file).read().strip(),
+                  'url': f'{R2}/SolaHub_aarch64.app.tar.gz'
+              }
+
+          for sig_file in glob.glob('dist/SolaHub_x64.app.tar.gz.sig'):
+              platforms['darwin-x86_64'] = {
+                  'signature': open(sig_file).read().strip(),
+                  'url': f'{R2}/SolaHub_x64.app.tar.gz'
+              }
+
+          for sig_file in glob.glob('dist/*.nsis.zip.sig'):
+              nsis_name = os.path.basename(sig_file).replace('.sig', '')
+              platforms['windows-x86_64'] = {
+                  'signature': open(sig_file).read().strip(),
+                  'url': f'{R2}/{nsis_name}'
+              }
+
+          if not platforms:
+              print("No .sig files found — skipping latest.json (unsigned build)")
+          else:
+              data = {
+                  'version': version,
+                  'notes': 'See the changelog for details.',
+                  'pub_date': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                  'platforms': platforms
+              }
+              with open('dist/latest.json', 'w') as f:
+                  json.dump(data, f, indent=2)
+              print('Generated latest.json:')
+              print(json.dumps(data, indent=2))
+          EOF
+        env:
+          R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
+          TAG: ${{ github.ref_name || inputs.tag }}
+
+      # latest.json goes live last — once published, users will be offered the update
+      - name: Publish latest.json to R2
         if: hashFiles('dist/latest.json') != ''
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          python3 << 'EOF'
-          import json, os, subprocess
-
-          R2 = os.environ["R2_PUBLIC_BASE"]
-          BUCKET = os.environ["R2_BUCKET"]
-
-          with open("dist/latest.json") as f:
-              data = json.load(f)
-
-          for platform, info in data.get("platforms", {}).items():
-              original_url = info.get("url", "")
-              filename = original_url.split("/")[-1]
-              info["url"] = f"{R2}/{filename}"
-              print(f"  {platform}: {filename}")
-
-          with open("dist/latest.json", "w") as f:
-              json.dump(data, f, indent=2)
-
-          print("\nFinal latest.json:")
-          print(json.dumps(data, indent=2))
-          EOF
           npx wrangler r2 object put "${{ env.R2_BUCKET }}/latest.json" \
             --file dist/latest.json \
             --content-type "application/json" \
             --remote
           echo "✅ latest.json live at ${{ env.R2_PUBLIC_BASE }}/latest.json"
-        env:
-          R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
-          R2_BUCKET: ${{ env.R2_BUCKET }}
 
-      # Regenerate the download page with the current version and upload it
       - name: Publish downloads page to R2
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
