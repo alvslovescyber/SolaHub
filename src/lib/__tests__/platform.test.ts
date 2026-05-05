@@ -82,10 +82,7 @@ describe('platform', () => {
       for (const platform of ['Win32', 'MacIntel', 'Linux x86_64', 'iPhone', '']) {
         setPlatform(platform)
         const mod = await loadPlatform()
-        expect(
-          mod.isWindows && mod.isMac,
-          `Both true for platform="${platform}"`
-        ).toBe(false)
+        expect(mod.isWindows && mod.isMac, `Both true for platform="${platform}"`).toBe(false)
       }
     })
   })

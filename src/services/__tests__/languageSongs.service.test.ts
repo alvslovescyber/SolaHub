@@ -217,9 +217,9 @@ Chorus B
 
   it('throws when content fetch fails', async () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 404 })
-    await expect(
-      fetchSongSections('txt/1 Song VV Malayalam 2021 1.txt')
-    ).rejects.toThrow('Failed to fetch song content: 404')
+    await expect(fetchSongSections('txt/1 Song VV Malayalam 2021 1.txt')).rejects.toThrow(
+      'Failed to fetch song content: 404'
+    )
   })
 
   it('URL-encodes the filename when fetching raw content', async () => {

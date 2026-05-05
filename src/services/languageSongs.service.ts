@@ -29,9 +29,7 @@ export async function fetchLanguageIndex(language: SupportedLanguage): Promise<L
   return data.tree
     .filter(
       (item) =>
-        item.type === 'blob' &&
-        item.path.startsWith('txt/') &&
-        item.path.includes(`VV ${language}`)
+        item.type === 'blob' && item.path.startsWith('txt/') && item.path.includes(`VV ${language}`)
     )
     .map((item) => parseSongFilename(item.path))
     .filter((m): m is LanguageSongMeta => m !== null)
@@ -40,9 +38,7 @@ export async function fetchLanguageIndex(language: SupportedLanguage): Promise<L
 function parseSongFilename(filePath: string): LanguageSongMeta | null {
   const filename = filePath.slice(4).replace(/\.txt$/, '') // strip "txt/"
 
-  const match = filename.match(
-    /^(\d+)\s+(.+?)\s+VV\s+(Malayalam|Tamil|Hindi)\s+\d{4}\s+(\d+)$/
-  )
+  const match = filename.match(/^(\d+)\s+(.+?)\s+VV\s+(Malayalam|Tamil|Hindi)\s+\d{4}\s+(\d+)$/)
   if (!match) return null
 
   const fullTitle = match[2].trim()
@@ -120,7 +116,5 @@ function parseTxtContent(text: string): SongSection[] {
     }
   }
 
-  return sections.length > 0
-    ? sections
-    : [{ type: 'verse', label: 'Verse 1', text: text.trim() }]
+  return sections.length > 0 ? sections : [{ type: 'verse', label: 'Verse 1', text: text.trim() }]
 }

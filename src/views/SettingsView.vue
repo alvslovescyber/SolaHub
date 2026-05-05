@@ -341,9 +341,7 @@
     const q = (songSearchQueries.value[language] ?? '').toLowerCase().trim()
     if (!q) return pack.songs.slice(0, 60)
     return pack.songs
-      .filter(
-        (s) => s.title.toLowerCase().includes(q) || s.nativeTitle.toLowerCase().includes(q)
-      )
+      .filter((s) => s.title.toLowerCase().includes(q) || s.nativeTitle.toLowerCase().includes(q))
       .slice(0, 100)
   }
 
@@ -400,8 +398,8 @@
                 worship.
               </template>
               <template v-else-if="activeId === 'songs-media'">
-                Manage worship song libraries, language packs, and projection settings for
-                Sunday service.
+                Manage worship song libraries, language packs, and projection settings for Sunday
+                service.
               </template>
               <template v-else-if="activeId === 'appearance'">
                 Theme and visual preferences.
@@ -768,7 +766,12 @@
                           <p class="text-sm font-semibold text-ink-strong leading-tight">
                             {{ pack.language }}
                           </p>
-                          <p :class="['text-xs font-medium leading-tight mt-0.5', pack.nativeTextClass]">
+                          <p
+                            :class="[
+                              'text-xs font-medium leading-tight mt-0.5',
+                              pack.nativeTextClass,
+                            ]"
+                          >
                             {{ pack.nativeName }}
                           </p>
                         </div>
@@ -802,7 +805,9 @@
                     </div>
 
                     <!-- Meta row -->
-                    <div class="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-muted">
+                    <div
+                      class="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-muted"
+                    >
                       <span>
                         ~{{
                           languageSongsStore.packs[pack.language].status === 'ready'
@@ -879,10 +884,7 @@
                           <p class="text-xs font-medium text-ink-strong truncate">
                             {{ song.title }}
                           </p>
-                          <p
-                            v-if="song.nativeTitle"
-                            class="text-xs text-ink-muted truncate mt-0.5"
-                          >
+                          <p v-if="song.nativeTitle" class="text-xs text-ink-muted truncate mt-0.5">
                             {{ song.nativeTitle }}
                           </p>
                         </div>
@@ -901,22 +903,13 @@
                       class="px-4 py-2.5 border-t border-line flex items-center justify-between bg-surface-canvas/30"
                     >
                       <p class="text-xs text-ink-muted">
-                        {{
-                          languageSongsStore.packs[pack.language].songs.length.toLocaleString()
-                        }}
+                        {{ languageSongsStore.packs[pack.language].songs.length.toLocaleString() }}
                         songs in library
-                        <span
-                          v-if="songSearchQueries[pack.language]"
-                          class="text-ink-subtle ml-1"
-                        >
+                        <span v-if="songSearchQueries[pack.language]" class="text-ink-subtle ml-1">
                           · showing {{ getFilteredSongs(pack.language).length }} results
                         </span>
                       </p>
-                      <SButton
-                        size="xs"
-                        variant="danger"
-                        @click="handleRemovePack(pack.language)"
-                      >
+                      <SButton size="xs" variant="danger" @click="handleRemovePack(pack.language)">
                         Remove pack
                       </SButton>
                     </div>
@@ -945,7 +938,10 @@
                   </div>
 
                   <!-- Idle state: not downloaded -->
-                  <div v-else class="px-4 py-3.5 border-t border-line flex items-center justify-between gap-3">
+                  <div
+                    v-else
+                    class="px-4 py-3.5 border-t border-line flex items-center justify-between gap-3"
+                  >
                     <div>
                       <p class="text-xs font-medium text-ink-strong">Not installed</p>
                       <p class="text-xs text-ink-muted mt-0.5">

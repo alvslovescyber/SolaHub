@@ -56,10 +56,9 @@
       }
     },
     "windows": {
+      "webviewInstallMode": { "type": "embedBootstrapper" },
       "nsis": {
-        "installMode": "currentUser",
-        "shortcutName": "SolaHub",
-        "webviewInstallMode": { "type": "embedBootstrapper" }
+        "installMode": "currentUser"
       }
     }
   }

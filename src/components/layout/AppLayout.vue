@@ -10,9 +10,10 @@
   // On Windows in Tauri, use semi-transparent backgrounds so Mica/Acrylic
   // bleeds through. On macOS the solid background is kept — sidebar vibrancy
   // is handled at the OS window level and each surface has its own treatment.
-  const rootBg = isTauri && isWindows
-    ? 'bg-white/[0.82] dark:bg-slate-950/[0.78]'
-    : 'bg-slate-50 dark:bg-slate-950'
+  const rootBg =
+    isTauri && isWindows
+      ? 'bg-white/[0.82] dark:bg-slate-950/[0.78]'
+      : 'bg-slate-50 dark:bg-slate-950'
 </script>
 
 <template>
