@@ -32,6 +32,10 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    // Explicit Kestrel port from $PORT env var so Railway healthchecks reach the right port.
+    var port = int.TryParse(Environment.GetEnvironmentVariable("PORT"), out var p) ? p : 3000;
+    builder.WebHost.ConfigureKestrel(opts => opts.ListenAnyIP(port));
+
     // ─── Serilog ───────────────────────────────────────────────────────────────
     builder.Host.UseSerilog(
         (ctx, services, config) =>
