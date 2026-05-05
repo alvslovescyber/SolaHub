@@ -21,6 +21,7 @@ if (process.env.E2E_SKIP_API_SERVER !== 'true') {
     reuseExistingServer: !process.env.CI && process.env.E2E_REUSE_API_SERVER === 'true',
     timeout: 120_000,
     env: {
+      PORT: String(apiPort),
       ASPNETCORE_ENVIRONMENT: 'Test',
       ConnectionStrings__DefaultConnection:
         process.env.ConnectionStrings__DefaultConnection ??

@@ -53,6 +53,22 @@ jobs:
       - name: Install frontend deps
         run: npm ci
 
+      - name: Inject updater config
+        run: |
+          python3 << 'EOF'
+          import json, os
+          with open('src-tauri/tauri.conf.json') as f:
+              config = json.load(f)
+          config.setdefault('plugins', {})['updater'] = {
+              'pubkey': os.environ['SOLAHUB_UPDATER_PUBLIC_KEY'],
+              'endpoints': [os.environ['R2_PUBLIC_BASE'] + '/latest.json']
+          }
+          with open('src-tauri/tauri.conf.json', 'w') as f:
+              json.dump(config, f, indent=2)
+          EOF
+        env:
+          SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
+
       - name: Build & sign Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
@@ -60,7 +76,6 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
-          SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
         with:
           tagName: ${{ github.ref_name || inputs.tag }}
           releaseName: SolaHub ${{ github.ref_name || inputs.tag }}
@@ -100,6 +115,21 @@ jobs:
       - name: Install frontend deps
         run: npm ci
 
+      - name: Inject updater config
+        shell: python {0}
+        run: |
+          import json, os
+          with open('src-tauri/tauri.conf.json') as f:
+              config = json.load(f)
+          config.setdefault('plugins', {})['updater'] = {
+              'pubkey': os.environ['SOLAHUB_UPDATER_PUBLIC_KEY'],
+              'endpoints': [os.environ['R2_PUBLIC_BASE'] + '/latest.json']
+          }
+          with open('src-tauri/tauri.conf.json', 'w') as f:
+              json.dump(config, f, indent=2)
+        env:
+          SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
+
       - name: Build & sign Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
@@ -107,7 +137,6 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
-          SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
         with:
           tagName: ${{ github.ref_name || inputs.tag }}
           releaseName: SolaHub ${{ github.ref_name || inputs.tag }}
