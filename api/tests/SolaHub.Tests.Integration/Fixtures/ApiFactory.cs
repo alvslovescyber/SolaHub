@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SolaHub.Infrastructure.Persistence;
+using SolaHub.Infrastructure.Persistence.Interceptors;
 using Testcontainers.PostgreSql;
 
 namespace SolaHub.Tests.Integration.Fixtures;
@@ -49,8 +50,11 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             if (descriptor is not null)
                 services.Remove(descriptor);
 
-            services.AddDbContext<AppDbContext>(opts =>
-                opts.UseNpgsql(_postgres.GetConnectionString()).UseSnakeCaseNamingConvention()
+            services.AddDbContext<AppDbContext>(
+                (sp, opts) =>
+                    opts.UseNpgsql(_postgres.GetConnectionString())
+                        .UseSnakeCaseNamingConvention()
+                        .AddInterceptors(sp.GetRequiredService<AppDbRlsInterceptor>())
             );
         });
     }

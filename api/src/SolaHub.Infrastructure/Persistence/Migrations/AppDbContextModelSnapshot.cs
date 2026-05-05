@@ -239,6 +239,10 @@ namespace SolaHub.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedBy")
                         .HasDatabaseName("ix_reading_plans_created_by");
 
+                    b.HasIndex("IsPublic")
+                        .HasDatabaseName("ix_reading_plans_is_public")
+                        .HasFilter("is_public = true");
+
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_reading_plans_status");
 

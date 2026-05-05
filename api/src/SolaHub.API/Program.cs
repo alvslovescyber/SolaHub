@@ -237,6 +237,14 @@ try
     app.UseAuthorization();
     app.UseResponseCompression();
 
+    // ─── --migrate mode: run migrations then exit (Railway releaseCommand) ──────
+    if (args.Contains("--migrate"))
+    {
+        await MigrateWithRetryAsync(app);
+        Log.Information("Migrations complete.");
+        return 0;
+    }
+
     // ─── Database migrations (dev/test by default; prod opt-in via config) ─────
     var applyMigrations =
         app.Environment.IsDevelopment()
@@ -245,6 +253,10 @@ try
 
     if (applyMigrations)
         await MigrateWithRetryAsync(app);
+
+    // ─── Production RLS safety check ──────────────────────────────────────────
+    if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Test"))
+        await WarnIfSuperuserAsync(app);
 
     app.MapControllers();
     app.MapHub<CollaborationHub>("/hubs/collaboration");
@@ -305,6 +317,41 @@ static async Task MigrateWithRetryAsync(WebApplication app)
 
     // Final attempt — let it throw if still not ready
     await db.Database.MigrateAsync();
+}
+
+/// <summary>
+/// Queries PostgreSQL to detect whether the application is connecting as a superuser.
+/// Superusers bypass RLS even when FORCE ROW LEVEL SECURITY is set on the table,
+/// so running as postgres in production silently disables the security layer.
+/// Logs CRITICAL if detected — does not abort startup.
+/// </summary>
+static async Task WarnIfSuperuserAsync(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        await db.Database.OpenConnectionAsync();
+        var conn = db.Database.GetDbConnection();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT current_setting('is_superuser')";
+        var result = (await cmd.ExecuteScalarAsync())?.ToString();
+        await db.Database.CloseConnectionAsync();
+
+        if (result == "on")
+            logger.LogCritical(
+                "DATABASE SECURITY WARNING: The application is connecting as a PostgreSQL "
+                    + "superuser. Superusers bypass Row Level Security even when FORCE ROW LEVEL "
+                    + "SECURITY is set. Switch ConnectionStrings__DefaultConnection to use "
+                    + "solahub_app (non-superuser role) to enforce RLS in production."
+            );
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "Could not determine database privilege level.");
+    }
 }
 
 static string[] ResolveCorsOrigins(IConfiguration configuration, IHostEnvironment environment)

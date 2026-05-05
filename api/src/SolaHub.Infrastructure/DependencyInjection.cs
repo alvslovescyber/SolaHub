@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,6 +9,7 @@ using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.Interfaces.Services;
 using SolaHub.Infrastructure.Auth;
 using SolaHub.Infrastructure.Persistence;
+using SolaHub.Infrastructure.Persistence.Interceptors;
 using SolaHub.Infrastructure.Repositories;
 using SolaHub.Infrastructure.Services;
 using StackExchange.Redis;
@@ -40,7 +42,10 @@ public static class DependencyInjection
             config.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("DefaultConnection is required.");
 
-        void ConfigureNpgsql(DbContextOptionsBuilder opts)
+        services.AddHttpContextAccessor();
+        services.AddSingleton<AppDbRlsInterceptor>();
+
+        void ConfigureNpgsql(IServiceProvider sp, DbContextOptionsBuilder opts)
         {
             opts.UseNpgsql(
                     connectionString,
@@ -55,7 +60,8 @@ public static class DependencyInjection
                         pg.CommandTimeout(30);
                     }
                 )
-                .UseSnakeCaseNamingConvention();
+                .UseSnakeCaseNamingConvention()
+                .AddInterceptors(sp.GetRequiredService<AppDbRlsInterceptor>());
         }
 
         // Pool contexts in real deployments — cuts allocation churn under concurrent requests.

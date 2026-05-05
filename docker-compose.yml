@@ -1,3 +1,8 @@
+# ─── DEV ONLY ─────────────────────────────────────────────────────────────────
+# This file is for local development. NEVER use it for production.
+# For production, use docker-compose.prod.yml and supply all credentials via
+# real secrets (no fallback defaults, no Adminer).
+# ──────────────────────────────────────────────────────────────────────────────
 name: solahub
 
 services:

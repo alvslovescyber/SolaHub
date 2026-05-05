@@ -1,0 +1,36 @@
+# ─── PRODUCTION ───────────────────────────────────────────────────────────────
+# Deploy with:
+#   POSTGRES_USER=... POSTGRES_PASSWORD=... docker compose -f docker-compose.prod.yml up -d
+#
+# All credentials MUST come from the environment or a secrets manager.
+# There are no fallback defaults — the compose will fail fast if anything is unset.
+# ──────────────────────────────────────────────────────────────────────────────
+name: solahub-prod
+
+services:
+  # ─── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    container_name: solahub_postgres_prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:-solahub_prod}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-solahub_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    # No default network exposure — bind to loopback only (127.0.0.1 above)
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres_prod_data:
+    name: solahub_postgres_prod_data

@@ -88,6 +88,7 @@ internal sealed class ReadingPlanConfiguration : IEntityTypeConfiguration<Readin
         builder.HasIndex(p => p.CreatedBy);
         builder.HasIndex(p => p.ChurchId).HasFilter("church_id IS NOT NULL");
         builder.HasIndex(p => p.Status);
+        builder.HasIndex(p => p.IsPublic).HasFilter("is_public = true");
 
         builder
             .HasOne<User>()
