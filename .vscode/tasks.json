@@ -165,7 +165,7 @@
       "problemMatcher": {
         "owner": "tauri",
         "pattern": {
-          "regexp": "^$"
+          "regexp": "^SOLAHUB_NEVER_MATCHES$"
         },
         "background": {
           "activeOnStart": true,

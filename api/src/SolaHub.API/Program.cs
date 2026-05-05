@@ -200,6 +200,10 @@ try
 
     // ─── Middleware Pipeline ───────────────────────────────────────────────────
     app.UseForwardedHeaders();
+    // CORS must run before any short-circuiting middleware (rate limiters, etc.)
+    // so that 429 / 4xx responses still carry Access-Control-Allow-Origin headers.
+    // Without this, WebView2 / browsers treat early-exit responses as CORS failures.
+    app.UseCors("TauriApp");
     app.UseMiddleware<GlobalExceptionMiddleware>();
     app.UseMiddleware<SecurityHeadersMiddleware>();
     app.UseMiddleware<AuthRateLimitMiddleware>();
@@ -231,7 +235,6 @@ try
         // nothing — Kestrel handles HTTPS in dev via dev certs
     }
 
-    app.UseCors("TauriApp");
     app.UseAuthentication();
     app.UseMiddleware<CommunityWriteRateLimitMiddleware>();
     app.UseAuthorization();
