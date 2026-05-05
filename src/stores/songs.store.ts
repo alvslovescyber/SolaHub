@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { getStorageItem, writeJsonStorage } from '@/lib/safeStorage'
 
 export interface SongSection {
   type: 'verse' | 'chorus' | 'bridge' | 'intro' | 'outro'
@@ -176,7 +177,7 @@ type EditableSong = Omit<Song, 'id' | 'isCustom'>
 export const useSongsStore = defineStore('songs', () => {
   function loadCustom(): Song[] {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
+      const raw = getStorageItem(STORAGE_KEY)
       const parsed: unknown = raw ? JSON.parse(raw) : []
       return Array.isArray(parsed) ? parsed.map(normalizeCustomSong).filter(isSong) : []
     } catch {
@@ -186,7 +187,7 @@ export const useSongsStore = defineStore('songs', () => {
 
   function loadEdits(): Record<string, EditableSong> {
     try {
-      const raw = localStorage.getItem(EDITS_STORAGE_KEY)
+      const raw = getStorageItem(EDITS_STORAGE_KEY)
       const parsed: unknown = raw ? JSON.parse(raw) : {}
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
 
@@ -238,8 +239,8 @@ export const useSongsStore = defineStore('songs', () => {
   }
 
   function persist(): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(customSongs.value))
-    localStorage.setItem(EDITS_STORAGE_KEY, JSON.stringify(songEdits.value))
+    writeJsonStorage(STORAGE_KEY, customSongs.value)
+    writeJsonStorage(EDITS_STORAGE_KEY, songEdits.value)
   }
 
   return { customSongs, songEdits, allSongs, addSong, updateSong, removeSong }

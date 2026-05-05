@@ -1,19 +1,10 @@
 <script setup lang="ts">
-  import { onMounted } from 'vue'
   import { RouterView } from 'vue-router'
-  import { useAuthStore } from '@/stores/auth.store'
   import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
   import AppSidebar from './AppSidebar.vue'
   import AppContextPanel from './AppContextPanel.vue'
 
-  const auth = useAuthStore()
-
   useKeyboardShortcuts()
-
-  onMounted(() => {
-    // Listen for session expiry events emitted by the HTTP client
-    window.addEventListener('auth:session-expired', () => auth.handleSessionExpired())
-  })
 </script>
 
 <template>

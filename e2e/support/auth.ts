@@ -1,10 +1,43 @@
 import { expect, type Page, type Route } from '@playwright/test'
+import type { User } from '../../src/types/user.types'
+import type { ReadingPlan } from '../../src/types/plans.types'
+import type { VerseNote } from '../../src/types/notes.types'
 
 export const TEST_USER_EMAIL = process.env.E2E_USER ?? 'alvistest@gmail.com'
 export const TEST_USER_PASSWORD = process.env.E2E_PASS ?? 'Password1'
 
 export function uniqueEmail(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@example.com`
+}
+
+export function validAccessToken(): string {
+  const payload = Buffer.from(
+    JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3_600 })
+  ).toString('base64url')
+  return `e2e.${payload}.signature`
+}
+
+export function expiredAccessToken(): string {
+  const payload = Buffer.from(JSON.stringify({ exp: 1 })).toString('base64url')
+  return `e2e.${payload}.signature`
+}
+
+export async function seedExpiredOfflineSession(page: Page, user: User): Promise<void> {
+  await page.evaluate(
+    ({ accessToken, cachedUser }) => {
+      localStorage.setItem('solahub:access_token', accessToken)
+      localStorage.setItem('solahub:refresh_token', 'offline-refresh-token')
+      localStorage.setItem(
+        'solahub:offline-user',
+        JSON.stringify({
+          schemaVersion: 1,
+          cachedAt: new Date().toISOString(),
+          user: cachedUser,
+        })
+      )
+    },
+    { accessToken: expiredAccessToken(), cachedUser: user }
+  )
 }
 
 export async function clearBrowserState(page: Page): Promise<void> {
@@ -84,6 +117,98 @@ export function collectPageIssues(page: Page): CollectedPageIssue[] {
 
 export function expectNoPageIssues(issues: CollectedPageIssue[]): void {
   expect(issues.map((issue) => `${issue.type}: ${issue.message}`)).toEqual([])
+}
+
+export async function mockAuthenticatedSession(
+  page: Page,
+  overrides: Partial<User> = {}
+): Promise<User> {
+  const user: User = {
+    id: '00000000-0000-0000-0000-000000000001',
+    email: 'reliability@example.com',
+    displayName: 'Reliability User',
+    role: 'Pastor',
+    churchId: 'church-1',
+    isEmailVerified: true,
+    isActive: true,
+    createdAt: '2026-05-05T12:00:00.000Z',
+    ...overrides,
+  }
+  const accessToken = validAccessToken()
+  const refreshToken = 'reliability-refresh-token'
+
+  await page.route('**/api/auth/refresh', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        accessToken,
+        refreshToken,
+        expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
+        user,
+      }),
+    })
+  })
+
+  await page.addInitScript(
+    ({ token, refresh }) => {
+      localStorage.setItem('solahub:access_token', token)
+      localStorage.setItem('solahub:refresh_token', refresh)
+    },
+    { token: accessToken, refresh: refreshToken }
+  )
+
+  return user
+}
+
+export async function mockStableAppApi(page: Page): Promise<void> {
+  const now = '2026-05-05T12:00:00.000Z'
+  const note: VerseNote = {
+    id: 'note-reliability-1',
+    userId: '00000000-0000-0000-0000-000000000001',
+    verseRef: 'JHN.3.16',
+    content: 'Reliability note for route health checks.',
+    tags: ['reliability'],
+    isShared: false,
+    createdAt: now,
+    updatedAt: now,
+  }
+  const plan: ReadingPlan = {
+    id: 'plan-reliability-1',
+    title: 'Reliability Plan',
+    description: 'Stable mocked reading plan for route health checks.',
+    status: 'Active',
+    isPublic: true,
+    createdBy: '00000000-0000-0000-0000-000000000001',
+    createdAt: now,
+    days: [{ dayNumber: 1, title: 'John 3', verseRefs: ['JHN.3.16'] }],
+    participants: [
+      {
+        userId: '00000000-0000-0000-0000-000000000001',
+        displayName: 'Reliability User',
+        currentDay: 0,
+        joinedAt: now,
+      },
+    ],
+  }
+
+  await page.route('**/api/notes**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([note]),
+    })
+  })
+
+  await page.route('**/api/plans**', async (route) => {
+    const url = new URL(route.request().url())
+    const body = /\/api\/plans\/[^/]+$/.test(url.pathname) ? plan : [plan]
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body),
+    })
+  })
 }
 
 export async function stubBibleApi(page: Page): Promise<void> {

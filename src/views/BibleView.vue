@@ -31,7 +31,11 @@
     currentBook,
     isLoadingChapter,
     isLoadingSearch,
+    isLoadingBooks,
+    chapterError,
     searchError,
+    booksError,
+    loadBooks,
     loadChapter,
     search,
     selectVerse,
@@ -358,34 +362,51 @@
           </div>
           <!-- Scrollable book list — section headers are inline (no sticky) -->
           <div class="flex-1 overflow-y-auto py-1">
-            <template v-for="(group, label) in filteredGroupedBooks" :key="label">
-              <p
-                class="px-3 pt-2.5 pb-0.5 text-2xs font-medium uppercase tracking-wider text-ink-subtle"
-              >
-                {{ label === 'OT' ? 'Old Testament' : 'New Testament' }}
-              </p>
-              <button
-                v-for="book in group"
-                :key="book.shortName"
-                :class="[
-                  'group flex items-center justify-between w-full text-left px-3 py-1.5 text-[13px] font-normal font-sans transition-colors rounded-md mx-1',
-                  selectedBook === book.shortName
-                    ? 'text-brand-600 bg-brand-500/[0.06]'
-                    : 'text-ink hover:bg-surface-canvas',
-                ]"
-                @click="pickChapter(book.shortName, 1)"
-              >
-                <span class="truncate">{{ book.longName }}</span>
-                <span
-                  :class="[
-                    'text-2xs',
-                    selectedBook === book.shortName
-                      ? 'text-brand-600'
-                      : 'text-ink-subtle group-hover:text-ink-muted',
-                  ]"
-                  >{{ book.chapters }}</span
+            <div v-if="isLoadingBooks" class="flex justify-center py-5">
+              <SSpinner size="sm" />
+            </div>
+            <div v-else-if="booksError" class="px-3 py-4 text-xs text-ink-muted">
+              <p class="leading-snug">{{ booksError }}</p>
+              <SButton size="sm" variant="secondary" class="mt-3" @click="loadBooks">
+                Retry
+              </SButton>
+            </div>
+            <div v-else-if="books.length === 0" class="px-3 py-4 text-xs text-ink-muted">
+              <p>No Bible books available.</p>
+              <SButton size="sm" variant="secondary" class="mt-3" @click="loadBooks">
+                Retry
+              </SButton>
+            </div>
+            <template v-else>
+              <template v-for="(group, label) in filteredGroupedBooks" :key="label">
+                <p
+                  class="px-3 pt-2.5 pb-0.5 text-2xs font-medium uppercase tracking-wider text-ink-subtle"
                 >
-              </button>
+                  {{ label === 'OT' ? 'Old Testament' : 'New Testament' }}
+                </p>
+                <button
+                  v-for="book in group"
+                  :key="book.shortName"
+                  :class="[
+                    'group flex items-center justify-between w-full text-left px-3 py-1.5 text-[13px] font-normal font-sans transition-colors rounded-md mx-1',
+                    selectedBook === book.shortName
+                      ? 'text-brand-600 bg-brand-500/[0.06]'
+                      : 'text-ink hover:bg-surface-canvas',
+                  ]"
+                  @click="pickChapter(book.shortName, 1)"
+                >
+                  <span class="truncate">{{ book.longName }}</span>
+                  <span
+                    :class="[
+                      'text-2xs',
+                      selectedBook === book.shortName
+                        ? 'text-brand-600'
+                        : 'text-ink-subtle group-hover:text-ink-muted',
+                    ]"
+                    >{{ book.chapters }}</span
+                  >
+                </button>
+              </template>
             </template>
           </div>
         </aside>
@@ -488,6 +509,21 @@
         <div class="flex-1 overflow-y-auto bg-surface-base">
           <div v-if="isLoadingChapter" class="flex justify-center pt-16">
             <SSpinner />
+          </div>
+
+          <div
+            v-else-if="chapterError"
+            class="mx-auto flex max-w-md flex-col items-center px-8 pt-16 text-center"
+          >
+            <p class="text-sm text-ink-muted leading-relaxed">{{ chapterError }}</p>
+            <SButton
+              size="sm"
+              variant="secondary"
+              class="mt-4"
+              @click="loadChapter(selectedBook, selectedChapter)"
+            >
+              Retry
+            </SButton>
           </div>
 
           <article

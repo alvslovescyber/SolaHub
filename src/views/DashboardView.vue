@@ -19,6 +19,7 @@
   import { usePlansStore } from '@/stores/plans.store'
   import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
   import { useActivityFeed } from '@/composables/useActivityFeed'
+  import { getStorageItem, writeJsonStorage } from '@/lib/safeStorage'
   import { formatActivityTime } from '@/utils/formatTime'
   import {
     SBadge,
@@ -102,7 +103,7 @@
 
   function loadGuide(): GuideState {
     try {
-      const raw = localStorage.getItem(GUIDE_KEY)
+      const raw = getStorageItem(GUIDE_KEY)
       if (!raw) return { dismissed: false, skipped: [] }
       return JSON.parse(raw) as GuideState
     } catch {
@@ -111,7 +112,7 @@
   }
 
   function saveGuide(state: GuideState): void {
-    localStorage.setItem(GUIDE_KEY, JSON.stringify(state))
+    writeJsonStorage(GUIDE_KEY, state)
   }
 
   const setupSteps = [

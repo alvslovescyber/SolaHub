@@ -22,22 +22,41 @@ export function useDisplayMonitors() {
   const selectedMonitorIndex = ref(0)
   const loading = ref(false)
 
+  function applyDetectedMonitors(detected: DisplayMonitor[]) {
+    monitors.value = detected
+    if (selectedMonitorIndex.value >= detected.length) selectedMonitorIndex.value = 0
+    // Default to the secondary monitor if more than one (projector scenario)
+    if (detected.length > 1 && selectedMonitorIndex.value === 0) selectedMonitorIndex.value = 1
+  }
+
   async function detectMonitors() {
     loading.value = true
     try {
       if (isTauri) {
+        try {
+          const { invoke } = await import('@tauri-apps/api/core')
+          const detected = await invoke<DisplayMonitor[]>('get_display_monitors')
+          if (detected.length > 0) {
+            applyDetectedMonitors(detected)
+            return
+          }
+        } catch {
+          // Fall back to Tauri's window API if the native display metadata command
+          // is unavailable on the current platform or app version.
+        }
+
         const { availableMonitors } = await import('@tauri-apps/api/window')
         const raw = await availableMonitors()
         if (raw.length > 0) {
-          monitors.value = raw.map((m, i) => ({
-            name: m.name ?? `Monitor ${i + 1}`,
-            width: m.size.width,
-            height: m.size.height,
-            scaleFactor: m.scaleFactor,
-            isPrimary: i === 0,
-          }))
-          // Default to the secondary monitor if more than one (projector scenario)
-          if (raw.length > 1) selectedMonitorIndex.value = 1
+          applyDetectedMonitors(
+            raw.map((m, i) => ({
+              name: m.name ?? `Monitor ${i + 1}`,
+              width: m.size.width,
+              height: m.size.height,
+              scaleFactor: m.scaleFactor,
+              isPrimary: i === 0,
+            }))
+          )
         }
       }
     } catch {

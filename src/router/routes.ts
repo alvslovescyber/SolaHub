@@ -43,6 +43,7 @@ export const routes: RouteRecordRaw[] = [
         path: 'bible',
         name: 'bible',
         component: () => import('@/views/BibleView.vue'),
+        meta: { offlineReady: true },
       },
       {
         path: 'plans',
@@ -59,6 +60,7 @@ export const routes: RouteRecordRaw[] = [
         path: 'notes',
         name: 'notes',
         component: () => import('@/views/NotesView.vue'),
+        meta: { offlineReady: true },
       },
 
       // SUNDAY
@@ -66,7 +68,7 @@ export const routes: RouteRecordRaw[] = [
         path: 'presenter',
         name: 'presenter',
         component: () => import('@/views/PresenterView.vue'),
-        meta: { requiresPresenter: true },
+        meta: { requiresPresenter: true, offlineReady: true },
       },
       {
         path: 'community',
@@ -88,7 +90,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/presenter-display',
     name: 'presenter-display',
     component: () => import('@/views/PresenterDisplayView.vue'),
-    meta: { requiresAuth: true, requiresPresenter: true },
+    meta: { requiresAuth: true, requiresPresenter: true, offlineReady: true },
   },
 
   // ─── 404 ────────────────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { notesService } from '@/services/notes.service'
+import { isBrowserOffline } from '@/lib/networkStatus'
 import type { CreateNotePayload, UpdateNotePayload, VerseNote } from '@/types/notes.types'
 
 const CACHE_TTL = 5 * 60_000 // 5 minutes
@@ -26,6 +27,10 @@ export const useNotesStore = defineStore('notes', () => {
   })
 
   async function fetchMyNotes(force = false): Promise<void> {
+    if (isBrowserOffline()) {
+      error.value = null
+      return
+    }
     if (!force && notes.value.length > 0 && Date.now() - lastFetchedAt < CACHE_TTL) return
     isLoading.value = true
     error.value = null

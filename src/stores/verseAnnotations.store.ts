@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
+import { getStorageItem, writeJsonStorage } from '@/lib/safeStorage'
 import type { VerseResult } from '@/types/bible.types'
 
 const STORAGE_PREFIX = 'solahub:verse-annotations'
@@ -16,7 +17,7 @@ function emptyState(): Persisted {
 
 function load(key: string): Persisted {
   try {
-    const raw = localStorage.getItem(key)
+    const raw = getStorageItem(key)
     if (!raw) return emptyState()
     return JSON.parse(raw) as Persisted
   } catch {
@@ -87,14 +88,11 @@ export const useVerseAnnotationsStore = defineStore('verseAnnotations', () => {
   }
 
   function persist(): void {
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        highlights: highlights.value,
-        savedVerses: savedVerses.value,
-        notes: notes.value,
-      })
-    )
+    writeJsonStorage(storageKey, {
+      highlights: highlights.value,
+      savedVerses: savedVerses.value,
+      notes: notes.value,
+    })
   }
 
   return {

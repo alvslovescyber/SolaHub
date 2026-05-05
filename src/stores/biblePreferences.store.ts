@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 import { defineStore } from 'pinia'
 import { BIBLE_TRANSLATION_CATALOG } from '@/constants/bibleTranslations'
+import { getStorageItem, writeJsonStorage } from '@/lib/safeStorage'
 
 const STORAGE_KEY = 'solahub:bible-preferences'
 
@@ -58,7 +59,7 @@ function normalizeInstalled(ids: unknown): string[] {
 
 function load(): Persisted {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = getStorageItem(STORAGE_KEY)
     if (!raw) return { ...DEFAULTS }
     const p = JSON.parse(raw) as Partial<Persisted>
     const installed = normalizeInstalled(p.installedTranslationIds)
@@ -151,7 +152,7 @@ function load(): Persisted {
 }
 
 function save(state: Persisted): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  writeJsonStorage(STORAGE_KEY, state)
 }
 
 export const useBiblePreferencesStore = defineStore('biblePreferences', () => {

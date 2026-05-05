@@ -28,6 +28,7 @@ const makeNote = (overrides: Partial<VerseNote> = {}): VerseNote => ({
 describe('notes store', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    setOnlineStatus(true)
   })
 
   describe('fetchMyNotes', () => {
@@ -84,6 +85,18 @@ describe('notes store', () => {
 
       expect(store.error).toBe('Failed to load notes.')
       expect(store.isLoading).toBe(false)
+    })
+  })
+
+  describe('offline mode', () => {
+    it('does not try to fetch remote notes while offline', async () => {
+      setOnlineStatus(false)
+
+      const store = useNotesStore()
+      await store.fetchMyNotes()
+
+      expect(notesService.getMyNotes).not.toHaveBeenCalled()
+      expect(store.error).toBeNull()
     })
   })
 
@@ -186,3 +199,10 @@ describe('notes store', () => {
     })
   })
 })
+
+function setOnlineStatus(online: boolean): void {
+  Object.defineProperty(window.navigator, 'onLine', {
+    configurable: true,
+    value: online,
+  })
+}

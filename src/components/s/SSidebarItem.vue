@@ -29,7 +29,7 @@
 
   function go() {
     if (props.routeName) void router.push({ name: props.routeName })
-    else if (props.href) window.open(props.href, '_blank')
+    else if (props.href) window.open(props.href, '_blank', 'noopener,noreferrer')
   }
 
   const itemClass = computed(() => {

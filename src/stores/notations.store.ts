@@ -6,6 +6,7 @@ import {
   normalizeBackground,
   readableSlideColor,
 } from '@/lib/presenterBackgrounds'
+import { getStorageItem, writeJsonStorage } from '@/lib/safeStorage'
 import type {
   NotationDeck,
   NotationElement,
@@ -195,10 +196,8 @@ function sanitizeDeck(raw: unknown): NotationDeck | null {
 }
 
 function loadDecks(): NotationDeck[] {
-  if (typeof localStorage === 'undefined') return [makeStarterDeck()]
-
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = getStorageItem(STORAGE_KEY)
     if (!raw) return [makeStarterDeck()]
     const parsed = JSON.parse(raw) as unknown
     const decks = Array.isArray(parsed)
@@ -260,8 +259,7 @@ export const useNotationsStore = defineStore('notations', () => {
   })
 
   function persist(): void {
-    if (typeof localStorage === 'undefined') return
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(decks.value))
+    writeJsonStorage(STORAGE_KEY, decks.value)
   }
 
   function touch(deck: NotationDeck): void {

@@ -1,7 +1,5 @@
 <script setup lang="ts">
-  import { onMounted } from 'vue'
   import { RouterView } from 'vue-router'
-  import { useAuthStore } from '@/stores/auth.store'
   import { useUiStore } from '@/stores/ui.store'
   import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
   import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
@@ -9,15 +7,10 @@
   import SCommandPalette from './SCommandPalette.vue'
   import SToast from './SToast.vue'
 
-  const auth = useAuthStore()
   const ui = useUiStore()
 
   useKeyboardShortcuts()
   useResponsiveLayout()
-
-  onMounted(() => {
-    window.addEventListener('auth:session-expired', () => auth.handleSessionExpired())
-  })
 </script>
 
 <template>

@@ -650,34 +650,38 @@
           </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-2 space-y-2">
+        <div
+          data-testid="notation-slide-list"
+          class="flex flex-1 flex-col gap-2 overflow-y-auto p-2"
+        >
           <button
             v-for="(slide, index) in currentDeck?.slides ?? []"
             :key="slide.verseRef"
             type="button"
+            data-testid="notation-slide-card"
             :aria-label="`Slide ${index + 1}: ${slide.title} ${slide.text}`"
             :class="[
-              'h-[158px] w-full rounded-lg border p-2 text-left transition-colors',
+              'block w-full rounded-lg border p-2 text-left transition-colors',
               currentSlide?.verseRef === slide.verseRef
                 ? 'border-brand-400 bg-brand-50 dark:bg-brand-500/15'
                 : 'border-line-subtle hover:border-line-strong hover:bg-surface-canvas',
             ]"
             @click="selectSlide(slide)"
           >
-            <div class="flex gap-2">
-              <span class="mt-0.5 w-5 shrink-0 text-[11px] text-ink-subtle tabular-nums">
+            <div class="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-2">
+              <span class="w-5 shrink-0 pt-0.5 text-[11px] text-ink-subtle tabular-nums">
                 {{ index + 1 }}
               </span>
-              <div class="min-w-0 flex-1">
+              <div class="min-w-0">
                 <div
-                  class="aspect-video overflow-hidden rounded-md border border-white/15 bg-black"
+                  class="w-full aspect-video overflow-hidden rounded-md border border-white/15 bg-black"
                 >
                   <SNotationSlideCanvas :slide="slide" mode="fill" />
                 </div>
-                <p class="mt-1.5 truncate text-xs font-medium text-ink-strong">
+                <p class="mt-1.5 truncate text-xs font-medium leading-tight text-ink-strong">
                   {{ slide.title }}
                 </p>
-                <p class="line-clamp-1 text-[11px] text-ink-muted">
+                <p class="mt-0.5 line-clamp-1 text-[11px] leading-tight text-ink-muted">
                   {{ slide.text || 'Blank slide' }}
                 </p>
               </div>

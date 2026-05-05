@@ -20,7 +20,7 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
             "style-src 'self' 'unsafe-inline' https://rsms.me; " +
             "font-src 'self' https://rsms.me; " +
             "img-src 'self' data:; " +
-            "connect-src 'self' wss:; " +
+            "connect-src 'self' wss: https://bible-api.com; " +
             "frame-ancestors 'none';"
         );
         return next(context);

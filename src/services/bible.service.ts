@@ -212,7 +212,12 @@ function mapVerse(v: BibleApiVerse): VerseResult {
 export const bibleService = {
   async getBooks(): Promise<BookInfo[]> {
     if (isTauri) {
-      return invoke<BookInfo[]>('get_book_list')
+      try {
+        const books = await invoke<BookInfo[]>('get_book_list')
+        if (books.length > 0) return books
+      } catch {
+        // Fall back to the static catalog when the local Bible cache is unavailable.
+      }
     }
     return CANONICAL_BOOKS
   },

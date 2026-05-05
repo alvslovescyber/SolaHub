@@ -4,8 +4,11 @@ import { invoke } from '@tauri-apps/api/core'
 import type { PresenterSlide, PresenterSession } from '@/types/presenter.types'
 import { collaborationService } from '@/services/collaboration.service'
 import { isTauri } from '@/lib/platform'
+import { isBrowserOffline } from '@/lib/networkStatus'
 
 const DISPLAY_CHANNEL = 'solahub:presenter-display'
+const DISPLAY_STATE_EVENT = 'solahub:presenter-display-state'
+const DISPLAY_SYNC_RETRY_MS = [250, 750, 1500, 3000]
 
 export interface PresenterDisplayState {
   type: 'state'
@@ -104,7 +107,7 @@ export const usePresenterStore = defineStore('presenter', () => {
       })
       session.value.displayWindowOpen = true
       syncDisplayState()
-      window.setTimeout(syncDisplayState, 250)
+      DISPLAY_SYNC_RETRY_MS.forEach((delay) => window.setTimeout(syncDisplayState, delay))
       return
     }
     session.value.overlayOpen = true
@@ -152,8 +155,6 @@ export const usePresenterStore = defineStore('presenter', () => {
   }
 
   function syncDisplayState(): void {
-    if (!displayChannel) return
-
     const state = {
       type: 'state',
       slides: session.value.slides.map((slide) => ({ ...slide })),
@@ -162,19 +163,26 @@ export const usePresenterStore = defineStore('presenter', () => {
       planId: session.value.planId,
     } satisfies PresenterDisplayState
 
-    try {
-      displayChannel.postMessage(state)
-    } catch {
-      // Local presentation must keep working even if a large/custom slide
-      // background cannot be cloned into the secondary display channel.
+    if (displayChannel) {
+      try {
+        displayChannel.postMessage(state)
+      } catch {
+        // Local presentation must keep working even if a large/custom slide
+        // background cannot be cloned into the secondary display channel.
+      }
     }
+
+    void emitDisplayState(state)
   }
 
   function broadcastCurrentVerse(): void {
     const slide = currentSlide.value
     const planId = session.value.planId
     if (!slide || !planId) return
-    void collaborationService.pushPresenterVerse(planId, slide.verseRef)
+    if (isBrowserOffline()) return
+    void collaborationService.pushPresenterVerse(planId, slide.verseRef).catch(() => {
+      // Local presentation controls must keep working when collaboration sync is unavailable.
+    })
   }
 
   return {
@@ -199,4 +207,16 @@ export const usePresenterStore = defineStore('presenter', () => {
   }
 })
 
-export { DISPLAY_CHANNEL }
+async function emitDisplayState(state: PresenterDisplayState): Promise<void> {
+  if (!isTauri) return
+
+  try {
+    const { emitTo } = await import('@tauri-apps/api/event')
+    await emitTo('presenter', DISPLAY_STATE_EVENT, state)
+  } catch {
+    // The presenter window may still be booting; openDisplayWindow retries the
+    // same state shortly after creation so the display can catch up.
+  }
+}
+
+export { DISPLAY_CHANNEL, DISPLAY_STATE_EVENT }

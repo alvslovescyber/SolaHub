@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { getStorageItem, setStorageItem } from '@/lib/safeStorage'
 
 export type Theme = 'light' | 'dark' | 'system'
 export type SidebarSection =
@@ -13,8 +14,15 @@ export type SidebarSection =
   | 'community'
   | 'settings'
 
+const THEME_KEY = 'solahub:theme'
+
+function loadTheme(): Theme {
+  const value = getStorageItem(THEME_KEY)
+  return value === 'light' || value === 'dark' || value === 'system' ? value : 'system'
+}
+
 export const useUiStore = defineStore('ui', () => {
-  const theme = ref<Theme>((localStorage.getItem('solahub:theme') as Theme) ?? 'system')
+  const theme = ref<Theme>(loadTheme())
   const sidebarCollapsed = ref(false)
   const activeSection = ref<SidebarSection>('dashboard')
   const contextPanelOpen = ref(false)
@@ -27,7 +35,7 @@ export const useUiStore = defineStore('ui', () => {
 
   function setTheme(newTheme: Theme): void {
     theme.value = newTheme
-    localStorage.setItem('solahub:theme', newTheme)
+    setStorageItem(THEME_KEY, newTheme)
     applyTheme(resolvedTheme.value)
   }
 

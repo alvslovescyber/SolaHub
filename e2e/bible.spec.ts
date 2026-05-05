@@ -26,11 +26,13 @@ test.describe('Bible reader', () => {
 
     await page.getByRole('button', { name: 'Search Bible' }).click()
     await page.getByPlaceholder(/Try John 3:16/).fill('John 3:16')
-    await expect(page.getByText('For God so loved the world')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByRole('button', { name: /John 3:16 For God so loved/ })).toBeVisible({
+      timeout: 10_000,
+    })
     await page.getByRole('button', { name: /John 3:16/ }).click()
-    await expect(page.getByText('For God so loved the world')).toBeVisible()
-
     const verse = page.locator('article span').filter({ hasText: 'For God so loved' }).first()
+    await expect(verse).toBeVisible()
+
     await verse.click()
     await verse.click({ button: 'right' })
     await expect(page.getByText('Make a note')).toBeVisible()

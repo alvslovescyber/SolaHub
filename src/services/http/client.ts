@@ -3,6 +3,8 @@ import axios, {
   type InternalAxiosRequestConfig,
   type AxiosResponse,
 } from 'axios'
+import { getStorageItem, removeStorageItem, setStorageItem } from '@/lib/safeStorage'
+import { isNetworkError } from '@/lib/networkStatus'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
 
@@ -12,15 +14,15 @@ const REFRESH_TOKEN_KEY = 'solahub:refresh_token'
 
 // ─── Token helpers ─────────────────────────────────────────────────────────────
 export const tokenStorage = {
-  getAccess: () => localStorage.getItem(ACCESS_TOKEN_KEY),
-  getRefresh: () => localStorage.getItem(REFRESH_TOKEN_KEY),
+  getAccess: () => getStorageItem(ACCESS_TOKEN_KEY),
+  getRefresh: () => getStorageItem(REFRESH_TOKEN_KEY),
   set: (access: string, refresh: string) => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, access)
-    localStorage.setItem(REFRESH_TOKEN_KEY, refresh)
+    setStorageItem(ACCESS_TOKEN_KEY, access)
+    setStorageItem(REFRESH_TOKEN_KEY, refresh)
   },
   clear: () => {
-    localStorage.removeItem(ACCESS_TOKEN_KEY)
-    localStorage.removeItem(REFRESH_TOKEN_KEY)
+    removeStorageItem(ACCESS_TOKEN_KEY)
+    removeStorageItem(REFRESH_TOKEN_KEY)
   },
 }
 
@@ -102,6 +104,9 @@ http.interceptors.response.use(
       return http(original)
     } catch (err) {
       flushQueue(err)
+      if (isNetworkError(err)) {
+        return Promise.reject(error as Error)
+      }
       tokenStorage.clear()
       window.dispatchEvent(new CustomEvent('auth:session-expired'))
       return Promise.reject(error as Error)

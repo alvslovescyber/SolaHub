@@ -1,3 +1,5 @@
+import { readJsonStorage, writeJsonStorage } from '@/lib/safeStorage'
+
 const STORAGE_KEY = 'solahub:plan-presentation'
 
 export const PLAN_EMOJIS = [
@@ -43,11 +45,7 @@ export interface PlanPresentation {
 const DEFAULT: PlanPresentation = { emoji: '📖', colorId: 'brand' }
 
 function load(): Record<string, PlanPresentation> {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Record<string, PlanPresentation>
-  } catch {
-    return {}
-  }
+  return readJsonStorage<Record<string, PlanPresentation>>(STORAGE_KEY, {}, normalizeAll)
 }
 
 export function getPlanPresentation(planId: string): PlanPresentation {
@@ -55,11 +53,40 @@ export function getPlanPresentation(planId: string): PlanPresentation {
 }
 
 export function setPlanPresentation(planId: string, pref: PlanPresentation): void {
+  const safePlanId = planId.trim()
+  if (!safePlanId) return
+
   const all = load()
-  all[planId] = pref
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(all))
+  all[safePlanId] = normalizePresentation(pref) ?? { ...DEFAULT }
+  writeJsonStorage(STORAGE_KEY, all)
 }
 
 export function getPlanAccentColor(colorId: string): PlanAccentColor {
   return PLAN_ACCENT_COLORS.find((c) => c.id === colorId) ?? PLAN_ACCENT_COLORS[0]
+}
+
+function normalizeAll(value: unknown): Record<string, PlanPresentation> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([planId]) => planId.trim().length > 0)
+      .map(([planId, pref]) => [planId.trim(), normalizePresentation(pref)])
+      .filter((entry): entry is [string, PlanPresentation] => entry[1] !== null)
+  )
+}
+
+function normalizePresentation(value: unknown): PlanPresentation | null {
+  if (!value || typeof value !== 'object') return null
+
+  const row = value as Partial<PlanPresentation>
+  return {
+    emoji:
+      typeof row.emoji === 'string' && PLAN_EMOJIS.includes(row.emoji) ? row.emoji : DEFAULT.emoji,
+    colorId:
+      typeof row.colorId === 'string' &&
+      PLAN_ACCENT_COLORS.some((color) => color.id === row.colorId)
+        ? row.colorId
+        : DEFAULT.colorId,
+  }
 }

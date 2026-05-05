@@ -97,8 +97,11 @@ export const useBibleStore = defineStore('bible', () => {
       const translation = prefs.translationApiCode(prefs.defaultTranslationId)
 
       if (isTauri) {
-        searchResults.value = await bibleService.search(q, translation)
-        return
+        const localResults = await bibleService.search(q, translation)
+        if (localResults.length > 0) {
+          searchResults.value = localResults
+          return
+        }
       }
 
       const catalog: BookInfo[] = books.value.length > 0 ? books.value : CANONICAL_BOOKS

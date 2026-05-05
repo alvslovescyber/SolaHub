@@ -1,5 +1,5 @@
-using System.Globalization;
 using System.Collections.Concurrent;
+using System.Globalization;
 using Microsoft.Extensions.Caching.Distributed;
 using StackExchange.Redis;
 
@@ -27,6 +27,7 @@ public sealed class AuthRateLimitMiddleware(
             var minuteBucket = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute;
             var path = context.Request.Path.Value ?? "";
             var key = $"solahub:ratelimit:auth:{ip}:{path}:{minuteBucket}";
+            CleanupExpiredLocks(minuteBucket);
 
             var limited = redis is not null
                 ? await IsRedisLimitedAsync(key)
@@ -141,5 +142,34 @@ public sealed class AuthRateLimitMiddleware(
         return path.StartsWithSegments("/api/auth/login")
             || path.StartsWithSegments("/api/auth/register")
             || path.StartsWithSegments("/api/auth/refresh");
+    }
+
+    private static void CleanupExpiredLocks(long currentMinuteBucket)
+    {
+        var oldestLiveBucket = currentMinuteBucket - 2;
+
+        foreach (var entry in KeyLocks)
+        {
+            if (
+                TryReadMinuteBucket(entry.Key, out var entryBucket)
+                && entryBucket < oldestLiveBucket
+            )
+            {
+                KeyLocks.TryRemove(entry.Key, out _);
+            }
+        }
+    }
+
+    private static bool TryReadMinuteBucket(string key, out long bucket)
+    {
+        bucket = 0;
+        var separator = key.LastIndexOf(':');
+        return separator >= 0
+            && long.TryParse(
+                key.AsSpan(separator + 1),
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out bucket
+            );
     }
 }

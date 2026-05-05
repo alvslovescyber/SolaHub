@@ -35,6 +35,7 @@ pub fn run() {
             commands::storage::load_local_note,
             commands::storage::list_local_notes,
             commands::storage::delete_local_note,
+            commands::window::get_display_monitors,
             commands::window::open_presenter_window,
             commands::window::close_presenter_window,
             commands::window::set_fullscreen,

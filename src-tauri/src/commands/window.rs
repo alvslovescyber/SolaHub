@@ -1,32 +1,49 @@
-use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewUrl, WebviewWindowBuilder};
+use serde::Serialize;
+use tauri::{AppHandle, Manager, Monitor, PhysicalPosition, WebviewUrl, WebviewWindowBuilder};
 
 const PRESENTER_DEFAULT_WIDTH: u32 = 1280;
 const PRESENTER_DEFAULT_HEIGHT: u32 = 720;
 const PRESENTER_MIN_WIDTH: u32 = 640;
 const PRESENTER_MIN_HEIGHT: u32 = 360;
-const PRESENTER_MONITOR_MARGIN: u32 = 120;
 
-fn presenter_window_size(monitor_size: PhysicalSize<u32>) -> PhysicalSize<u32> {
-    let available_width = monitor_size
-        .width
-        .saturating_sub(PRESENTER_MONITOR_MARGIN)
-        .max(PRESENTER_MIN_WIDTH);
-    let available_height = monitor_size
-        .height
-        .saturating_sub(PRESENTER_MONITOR_MARGIN)
-        .max(PRESENTER_MIN_HEIGHT);
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DisplayMonitorInfo {
+    name: String,
+    width: u32,
+    height: u32,
+    scale_factor: f64,
+    is_primary: bool,
+}
 
-    let mut width = PRESENTER_DEFAULT_WIDTH.min(available_width);
-    let mut height = (width * 9) / 16;
+/// Return monitor metadata with professional names where the OS exposes them.
+#[tauri::command]
+pub fn get_display_monitors(app: AppHandle) -> Result<Vec<DisplayMonitorInfo>, String> {
+    let monitors = app.available_monitors().map_err(|e| e.to_string())?;
+    let primary = app.primary_monitor().map_err(|e| e.to_string())?;
+    let system_names = system_display_names();
 
-    if height > available_height {
-        height = PRESENTER_DEFAULT_HEIGHT
-            .min(available_height)
-            .max(PRESENTER_MIN_HEIGHT);
-        width = (height * 16) / 9;
-    }
-
-    PhysicalSize::new(width, height)
+    Ok(monitors
+        .iter()
+        .enumerate()
+        .map(|(index, monitor)| {
+            let size = monitor.size();
+            DisplayMonitorInfo {
+                name: friendly_monitor_name(
+                    monitor.name().map(String::as_str),
+                    index,
+                    &system_names,
+                ),
+                width: size.width,
+                height: size.height,
+                scale_factor: monitor.scale_factor(),
+                is_primary: primary
+                    .as_ref()
+                    .is_some_and(|primary_monitor| same_monitor(monitor, primary_monitor))
+                    || (primary.is_none() && index == 0),
+            }
+        })
+        .collect())
 }
 
 /// Open the presenter window on a secondary display.
@@ -53,8 +70,10 @@ pub fn open_presenter_window(
     let window = WebviewWindowBuilder::new(&app, "presenter", WebviewUrl::App(url.into()))
         .title("SolaHub Presenter")
         .fullscreen(false)
-        .decorations(true)
-        .resizable(true)
+        .decorations(false)
+        .resizable(false)
+        .visible(false)
+        .always_on_top(true)
         .inner_size(
             PRESENTER_DEFAULT_WIDTH as f64,
             PRESENTER_DEFAULT_HEIGHT as f64,
@@ -66,15 +85,16 @@ pub fn open_presenter_window(
     if let Some(monitor) = target_monitor {
         let monitor_size = *monitor.size();
         let position = monitor.position();
-        let size = presenter_window_size(monitor_size);
-        let x = position.x + ((monitor_size.width.saturating_sub(size.width)) / 2) as i32;
-        let y = position.y + ((monitor_size.height.saturating_sub(size.height)) / 2) as i32;
-
-        window.set_size(size).map_err(|e| e.to_string())?;
+        window.set_size(monitor_size).map_err(|e| e.to_string())?;
         window
-            .set_position(PhysicalPosition::new(x, y))
+            .set_position(PhysicalPosition::new(position.x, position.y))
             .map_err(|e| e.to_string())?;
     }
+
+    window.set_fullscreen(true).map_err(|e| e.to_string())?;
+    let _ = window.set_always_on_top(true);
+    window.show().map_err(|e| e.to_string())?;
+    let _ = window.set_focus();
 
     Ok(())
 }
@@ -97,4 +117,91 @@ pub fn set_fullscreen(fullscreen: bool, app: AppHandle) -> Result<(), String> {
     } else {
         Err("Main window not found".into())
     }
+}
+
+fn friendly_monitor_name(raw_name: Option<&str>, index: usize, system_names: &[String]) -> String {
+    if let Some(name) = raw_name
+        .map(str::trim)
+        .filter(|name| !is_generic_monitor_name(name))
+    {
+        return name.to_owned();
+    }
+
+    system_names
+        .get(index)
+        .map(|name| name.trim())
+        .filter(|name| !name.is_empty())
+        .map(ToOwned::to_owned)
+        .unwrap_or_else(|| format!("Display {}", index + 1))
+}
+
+fn is_generic_monitor_name(name: &str) -> bool {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return true;
+    }
+
+    let lower = trimmed.to_ascii_lowercase();
+    if matches!(lower.as_str(), "monitor" | "display" | "unknown") {
+        return true;
+    }
+    if lower.starts_with("monitor #") {
+        return true;
+    }
+    if let Some(rest) = lower.strip_prefix("monitor ") {
+        return rest
+            .chars()
+            .all(|char| char.is_ascii_digit() || char == '#');
+    }
+
+    false
+}
+
+fn same_monitor(left: &Monitor, right: &Monitor) -> bool {
+    left.position().x == right.position().x
+        && left.position().y == right.position().y
+        && left.size().width == right.size().width
+        && left.size().height == right.size().height
+        && (left.scale_factor() - right.scale_factor()).abs() < f64::EPSILON
+}
+
+#[cfg(target_os = "macos")]
+fn system_display_names() -> Vec<String> {
+    let output = std::process::Command::new("system_profiler")
+        .args(["SPDisplaysDataType", "-json"])
+        .output();
+    let Ok(output) = output else {
+        return Vec::new();
+    };
+    if !output.status.success() {
+        return Vec::new();
+    }
+
+    let Ok(json) = serde_json::from_slice::<serde_json::Value>(&output.stdout) else {
+        return Vec::new();
+    };
+    let Some(gpus) = json
+        .get("SPDisplaysDataType")
+        .and_then(|value| value.as_array())
+    else {
+        return Vec::new();
+    };
+
+    gpus.iter()
+        .flat_map(|gpu| {
+            gpu.get("spdisplays_ndrvs")
+                .and_then(|value| value.as_array())
+                .into_iter()
+                .flatten()
+        })
+        .filter_map(|display| display.get("_name").and_then(|value| value.as_str()))
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+        .map(ToOwned::to_owned)
+        .collect()
+}
+
+#[cfg(not(target_os = "macos"))]
+fn system_display_names() -> Vec<String> {
+    Vec::new()
 }
