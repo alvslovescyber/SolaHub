@@ -6,7 +6,7 @@ namespace SolaHub.Infrastructure.Auth;
 /// <summary>
 /// Strongly-typed JWT configuration bound from <c>Jwt:*</c> in app settings.
 /// All token lifetimes are sourced from here so handlers and the token service
-/// stay in sync (no more hard-coded 15m / 30d constants drifting from config).
+/// stay in sync (no hard-coded lifetime constants drifting from config).
 /// </summary>
 public sealed class JwtOptions
 {
@@ -22,7 +22,7 @@ public sealed class JwtOptions
     public string Audience { get; init; } = "SolaHub.Desktop";
 
     [Range(1, 60 * 24)]
-    public int AccessTokenExpiryMinutes { get; init; } = 15;
+    public int AccessTokenExpiryMinutes { get; init; } = 60;
 
     [Range(1, 365)]
     public int RefreshTokenExpiryDays { get; init; } = 30;

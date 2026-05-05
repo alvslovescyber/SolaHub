@@ -7,7 +7,15 @@ import { getStorageItem, writeJsonStorage } from '@/lib/safeStorage'
 const STORAGE_KEY = 'solahub:bible-preferences'
 
 export type PresenterFontScale = 'comfortable' | 'large' | 'auditorium'
-export type PresenterBackground = 'black' | 'navy' | 'gradient' | 'warm' | 'forest' | 'custom'
+export type PresenterBackground =
+  | 'black'
+  | 'navy'
+  | 'gradient'
+  | 'warm'
+  | 'forest'
+  | 'aurora'
+  | 'radiance'
+  | 'custom'
 export type SongsIntegrationPlaceholder = 'none' | 'planning_center' | 'song_select' | 'openlp'
 export type ReaderFontScale = 's' | 'm' | 'l'
 export type ReaderLineHeight = 'compact' | 'normal' | 'relaxed'
@@ -46,6 +54,8 @@ const DEFAULTS: Persisted = {
   readerLineHeight: 'normal',
   readerPaper: 'white',
 }
+
+const MAX_CUSTOM_BACKGROUND_CHARS = 4_000_000
 
 function validCatalogId(id: string): boolean {
   return BIBLE_TRANSLATION_CATALOG.some((t) => t.id === id.toLowerCase())
@@ -94,7 +104,7 @@ function load(): Persisted {
     ) as PresenterFontScale
 
     const presenterBackground = (
-      ['black', 'navy', 'gradient', 'warm', 'forest', 'custom'].includes(
+      ['black', 'navy', 'gradient', 'warm', 'forest', 'aurora', 'radiance', 'custom'].includes(
         String(p.presenterBackground)
       )
         ? p.presenterBackground
@@ -285,7 +295,7 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
   function setPresenterCustomBackground(v: string): void {
     const next = v.trim()
     if (!next) return
-    presenterCustomBackground.value = next.slice(0, 500)
+    presenterCustomBackground.value = next.slice(0, MAX_CUSTOM_BACKGROUND_CHARS)
     persist()
   }
 
@@ -367,6 +377,8 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
         gradient: 'bg-gradient-to-b from-slate-950 via-black to-black',
         warm: '',
         forest: '',
+        aurora: 'solahub-motion-background',
+        radiance: 'solahub-motion-background',
         custom: '',
       })[presenterBackground.value]
   )
@@ -379,6 +391,10 @@ export const useBiblePreferencesStore = defineStore('biblePreferences', () => {
         gradient: 'linear-gradient(180deg, #020617 0%, #0f172a 48%, #000000 100%)',
         warm: 'linear-gradient(135deg, #5b2333 0%, #b45309 58%, #f59e0b 100%)',
         forest: 'linear-gradient(135deg, #052e2b 0%, #14532d 55%, #111827 100%)',
+        aurora:
+          'radial-gradient(circle at 18% 28%, rgba(20, 184, 166, 0.5), transparent 30%), radial-gradient(circle at 80% 24%, rgba(245, 158, 11, 0.34), transparent 28%), linear-gradient(135deg, #020617 0%, #111827 45%, #042f2e 100%)',
+        radiance:
+          'radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.2), transparent 18%), radial-gradient(circle at 20% 82%, rgba(59, 130, 246, 0.42), transparent 35%), linear-gradient(135deg, #140f2d 0%, #1f2937 52%, #3f1d38 100%)',
         custom: presenterCustomBackground.value,
       })[presenterBackground.value]
   )

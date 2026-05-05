@@ -53,7 +53,9 @@ internal sealed class UpdateNoteCommandHandler(IVerseNoteRepository noteReposito
         if (contentResult.IsFailure)
             return contentResult.Error;
 
-        note.SetShared(request.IsShared);
+        var sharedResult = note.SetShared(request.IsShared);
+        if (sharedResult.IsFailure)
+            return sharedResult.Error;
 
         var tagResult = note.SetTags(request.Tags);
         if (tagResult.IsFailure)

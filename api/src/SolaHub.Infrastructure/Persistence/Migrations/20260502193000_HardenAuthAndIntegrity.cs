@@ -19,17 +19,19 @@ namespace SolaHub.Infrastructure.Persistence.Migrations
                 defaultValue: 0
             );
 
-            migrationBuilder.AlterColumn<int>(
-                name: "day_number",
-                table: "reading_plan_days",
-                type: "integer",
-                nullable: false,
-                oldClrType: typeof(int),
-                oldType: "integer"
-            ).OldAnnotation(
-                "Npgsql:ValueGenerationStrategy",
-                NpgsqlValueGenerationStrategy.IdentityByDefaultColumn
-            );
+            migrationBuilder
+                .AlterColumn<int>(
+                    name: "day_number",
+                    table: "reading_plan_days",
+                    type: "integer",
+                    nullable: false,
+                    oldClrType: typeof(int),
+                    oldType: "integer"
+                )
+                .OldAnnotation(
+                    "Npgsql:ValueGenerationStrategy",
+                    NpgsqlValueGenerationStrategy.IdentityByDefaultColumn
+                );
 
             migrationBuilder.CreateIndex(
                 name: "ix_plan_participants_user_id",
@@ -121,17 +123,19 @@ namespace SolaHub.Infrastructure.Persistence.Migrations
 
             migrationBuilder.DropColumn(name: "session_version", table: "users");
 
-            migrationBuilder.AlterColumn<int>(
-                name: "day_number",
-                table: "reading_plan_days",
-                type: "integer",
-                nullable: false,
-                oldClrType: typeof(int),
-                oldType: "integer"
-            ).Annotation(
-                "Npgsql:ValueGenerationStrategy",
-                NpgsqlValueGenerationStrategy.IdentityByDefaultColumn
-            );
+            migrationBuilder
+                .AlterColumn<int>(
+                    name: "day_number",
+                    table: "reading_plan_days",
+                    type: "integer",
+                    nullable: false,
+                    oldClrType: typeof(int),
+                    oldType: "integer"
+                )
+                .Annotation(
+                    "Npgsql:ValueGenerationStrategy",
+                    NpgsqlValueGenerationStrategy.IdentityByDefaultColumn
+                );
         }
     }
 }

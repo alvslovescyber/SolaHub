@@ -205,3 +205,40 @@ fn system_display_names() -> Vec<String> {
 fn system_display_names() -> Vec<String> {
     Vec::new()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{friendly_monitor_name, is_generic_monitor_name};
+
+    #[test]
+    fn keeps_professional_monitor_names_from_tauri() {
+        let name = friendly_monitor_name(Some("LG UltraFine"), 0, &[]);
+
+        assert_eq!(name, "LG UltraFine");
+    }
+
+    #[test]
+    fn falls_back_to_system_display_names_for_generic_monitor_labels() {
+        let system_names = vec!["Sanctuary Projector".to_string()];
+        let name = friendly_monitor_name(Some("Monitor #1"), 0, &system_names);
+
+        assert_eq!(name, "Sanctuary Projector");
+    }
+
+    #[test]
+    fn uses_stable_display_name_when_no_system_name_is_available() {
+        let name = friendly_monitor_name(Some("Unknown"), 1, &[]);
+
+        assert_eq!(name, "Display 2");
+    }
+
+    #[test]
+    fn detects_generic_monitor_names() {
+        assert!(is_generic_monitor_name(""));
+        assert!(is_generic_monitor_name("Monitor"));
+        assert!(is_generic_monitor_name("Monitor 2"));
+        assert!(is_generic_monitor_name("Monitor #3"));
+        assert!(is_generic_monitor_name("Unknown"));
+        assert!(!is_generic_monitor_name("BenQ Projector"));
+    }
+}

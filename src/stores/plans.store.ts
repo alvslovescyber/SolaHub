@@ -26,6 +26,16 @@ export const usePlansStore = defineStore('plans', () => {
   const activePlans = computed(() => plans.value.filter((p) => p.status === 'Active'))
   const draftPlans = computed(() => plans.value.filter((p) => p.status === 'Draft'))
 
+  function upsertPlan(plan: ReadingPlan): void {
+    const existingIndex = plans.value.findIndex((p) => p.id === plan.id)
+    if (existingIndex === -1) {
+      plans.value = [plan, ...plans.value]
+      return
+    }
+
+    plans.value = plans.value.map((p) => (p.id === plan.id ? plan : p))
+  }
+
   async function fetchMyPlans(force = false): Promise<void> {
     if (!force && plans.value.length > 0 && Date.now() - lastFetchedAt < CACHE_TTL) return
     isLoading.value = true
@@ -47,11 +57,16 @@ export const usePlansStore = defineStore('plans', () => {
   async function fetchPlan(id: string): Promise<void> {
     isLoading.value = true
     error.value = null
-    activePlan.value = null
+    const cached = plans.value.find((p) => p.id === id) ?? null
+    activePlan.value = cached
     try {
-      activePlan.value = await plansService.getPlan(id)
+      const plan = await plansService.getPlan(id)
+      activePlan.value = plan
+      upsertPlan(plan)
     } catch {
-      error.value = 'Failed to load plan.'
+      error.value = cached
+        ? 'Could not refresh this plan. Showing the last loaded version.'
+        : 'Failed to load plan.'
     } finally {
       isLoading.value = false
     }
@@ -62,7 +77,8 @@ export const usePlansStore = defineStore('plans', () => {
     error.value = null
     try {
       const plan = await plansService.create(payload)
-      plans.value = [plan, ...plans.value]
+      upsertPlan(plan)
+      activePlan.value = plan
       lastFetchedAt = Date.now()
       return plan
     } catch (e) {
@@ -93,7 +109,7 @@ export const usePlansStore = defineStore('plans', () => {
     try {
       const updated = await plansService.addDay(planId, payload)
       activePlan.value = updated
-      plans.value = plans.value.map((p) => (p.id === planId ? updated : p))
+      upsertPlan(updated)
     } catch (e) {
       error.value = extractApiError(e) ?? 'Failed to add day.'
       throw e
@@ -108,7 +124,7 @@ export const usePlansStore = defineStore('plans', () => {
     try {
       const updated = await plansService.publish(planId)
       activePlan.value = updated
-      plans.value = plans.value.map((p) => (p.id === planId ? updated : p))
+      upsertPlan(updated)
     } catch (e) {
       error.value = extractApiError(e) ?? 'Failed to publish plan.'
       throw e
@@ -123,7 +139,7 @@ export const usePlansStore = defineStore('plans', () => {
     try {
       const updated = await plansService.archive(planId)
       activePlan.value = updated
-      plans.value = plans.value.map((p) => (p.id === planId ? updated : p))
+      upsertPlan(updated)
     } catch (e) {
       error.value = extractApiError(e) ?? 'Failed to archive plan.'
       throw e

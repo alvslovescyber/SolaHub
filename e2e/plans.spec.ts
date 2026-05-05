@@ -12,7 +12,9 @@ test.describe('Reading Plans', () => {
 
   test('navigate to plans page', async ({ page }) => {
     await page.goto('/#/plans')
-    await expect(page.getByText('Walk through Scripture, on your own or with your church')).toBeVisible()
+    await expect(
+      page.getByText('Walk through Scripture, on your own or with your church')
+    ).toBeVisible()
   })
 
   test('create a plan and navigate to detail', async ({ page }) => {

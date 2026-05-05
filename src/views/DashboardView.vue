@@ -65,12 +65,6 @@
     { id: 'activity', label: 'Activity' },
   ] as const
 
-  const stats = computed(() => [
-    { label: 'Notes', value: notes.notes.length },
-    { label: 'Active plans', value: plans.activePlans.length },
-    { label: 'Drafts', value: plans.draftPlans.length },
-  ])
-
   // ── Today card ────────────────────────────────────────────────────────────────
   const _now = new Date()
   const todayDateNum = _now.getDate()
@@ -336,29 +330,6 @@
               </Transition>
             </div>
           </SCard>
-        </section>
-
-        <!-- ── Overview stats ── -->
-        <section v-if="tab === 'home'" class="mb-7">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-subtle mb-3">
-            Overview
-          </p>
-          <div class="grid grid-cols-3 gap-3">
-            <article
-              v-for="stat in stats"
-              :key="stat.label"
-              class="rounded-xl border border-line bg-surface-raised p-4"
-            >
-              <p class="text-[11px] font-medium uppercase tracking-[0.06em] text-ink-subtle">
-                {{ stat.label }}
-              </p>
-              <p
-                class="text-[28px] font-bold text-ink-strong mt-1 leading-none tracking-tight tabular-nums"
-              >
-                {{ stat.value }}
-              </p>
-            </article>
-          </div>
         </section>
 
         <!-- ── Today's reading / Reading tab ── -->

@@ -17,7 +17,7 @@ export interface SongSlide {
 
 export type NotationTextAlign = 'left' | 'center' | 'right'
 export type NotationTextWeight = 'regular' | 'medium' | 'bold'
-export type SlideBackgroundType = 'preset' | 'solid' | 'gradient' | 'image'
+export type SlideBackgroundType = 'preset' | 'solid' | 'gradient' | 'image' | 'motion'
 export type SlideTextTone = 'light' | 'dark'
 
 export interface SlideBackground {

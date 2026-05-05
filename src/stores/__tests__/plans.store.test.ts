@@ -128,6 +128,49 @@ describe('plans store', () => {
       await store.fetchMyPlans()
       expect(plansService.getMyPlans).toHaveBeenCalledOnce() // not called again
     })
+
+    it('makes the created plan immediately available as the active detail plan', async () => {
+      const created = makePlan({ id: 'new', title: 'Psalms' })
+      vi.mocked(plansService.create).mockResolvedValue(created)
+
+      const store = usePlansStore()
+      await store.create({ title: 'Psalms', description: null, isPublic: false })
+
+      expect(store.activePlan).toEqual(created)
+      expect(store.plans[0]).toEqual(created)
+    })
+  })
+
+  describe('fetchPlan', () => {
+    it('keeps a cached list plan visible when the detail refresh fails', async () => {
+      const cached = makePlan({ id: 'plan-1', title: 'Cached plan' })
+
+      vi.mocked(plansService.getMyPlans).mockResolvedValue([cached])
+      vi.mocked(plansService.getPlan).mockRejectedValue(new Error('network unavailable'))
+
+      const store = usePlansStore()
+      await store.fetchMyPlans()
+      await store.fetchPlan('plan-1')
+
+      expect(store.activePlan).toEqual(cached)
+      expect(store.error).toBe('Could not refresh this plan. Showing the last loaded version.')
+    })
+
+    it('upserts a refreshed detail plan back into the list', async () => {
+      const cached = makePlan({ id: 'plan-1', title: 'Cached plan' })
+      const refreshed = makePlan({ id: 'plan-1', title: 'Refreshed plan' })
+
+      vi.mocked(plansService.getMyPlans).mockResolvedValue([cached])
+      vi.mocked(plansService.getPlan).mockResolvedValue(refreshed)
+
+      const store = usePlansStore()
+      await store.fetchMyPlans()
+      await store.fetchPlan('plan-1')
+
+      expect(store.activePlan).toEqual(refreshed)
+      expect(store.plans[0].title).toBe('Refreshed plan')
+      expect(store.error).toBeNull()
+    })
   })
 
   describe('publish', () => {

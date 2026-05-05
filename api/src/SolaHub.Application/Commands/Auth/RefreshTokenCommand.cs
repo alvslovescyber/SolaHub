@@ -62,10 +62,7 @@ internal sealed class RefreshTokenCommandHandler(
             ct
         );
         if (!rotated)
-            return Error.Unauthorized(
-                "Auth.InvalidToken",
-                "Invalid or expired refresh token."
-            );
+            return Error.Unauthorized("Auth.InvalidToken", "Invalid or expired refresh token.");
 
         return new AuthResponse(
             newAccessToken,

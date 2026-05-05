@@ -16,13 +16,15 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
     public Task<User?> GetByIdAsync(UserId id, CancellationToken ct) =>
         db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
 
-    public async Task<IReadOnlyList<User>> GetByIdsAsync(IEnumerable<UserId> ids, CancellationToken ct)
+    public async Task<IReadOnlyList<User>> GetByIdsAsync(
+        IEnumerable<UserId> ids,
+        CancellationToken ct
+    )
     {
         var userIds = ids.Distinct().ToList();
-        if (userIds.Count == 0) return [];
-        return await db.Users.AsNoTracking()
-            .Where(u => userIds.Contains(u.Id))
-            .ToListAsync(ct);
+        if (userIds.Count == 0)
+            return [];
+        return await db.Users.AsNoTracking().Where(u => userIds.Contains(u.Id)).ToListAsync(ct);
     }
 
     public Task<User?> GetByEmailAsync(string email, CancellationToken ct)
@@ -78,10 +80,11 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
                 && u.RefreshTokenExpiry.Value > now
             )
             .ExecuteUpdateAsync(
-                setters => setters
-                    .SetProperty(u => u.RefreshToken, newRefreshTokenHash)
-                    .SetProperty(u => u.RefreshTokenExpiry, newExpiry)
-                    .SetProperty(u => u.UpdatedAt, now),
+                setters =>
+                    setters
+                        .SetProperty(u => u.RefreshToken, newRefreshTokenHash)
+                        .SetProperty(u => u.RefreshTokenExpiry, newExpiry)
+                        .SetProperty(u => u.UpdatedAt, now),
                 ct
             );
 
@@ -103,9 +106,6 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
     }
 
     private static bool IsUniqueEmailViolation(DbUpdateException ex) =>
-        ex.InnerException is PostgresException
-        {
-            SqlState: UniqueViolation,
-            ConstraintName: "ix_users_email"
-        };
+        ex.InnerException
+            is PostgresException { SqlState: UniqueViolation, ConstraintName: "ix_users_email" };
 }

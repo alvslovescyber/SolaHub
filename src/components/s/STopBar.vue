@@ -15,10 +15,38 @@
   const { showBell = true } = defineProps<Props>()
   const ui = useUiStore()
   const notifOpen = ref(false)
+  const notifAnchor = ref<NotificationAnchorRect | null>(null)
 
   const sidebarPad = computed(() =>
     isMac && ui.sidebarCollapsed ? 'pl-[var(--s-traffic-light-pad)]' : 'pl-4'
   )
+
+  interface NotificationAnchorRect {
+    top: number
+    right: number
+    bottom: number
+    left: number
+    width: number
+    height: number
+  }
+
+  function readAnchorRect(target: EventTarget | null): NotificationAnchorRect | null {
+    if (!(target instanceof HTMLElement)) return null
+    const rect = target.getBoundingClientRect()
+    return {
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    }
+  }
+
+  function toggleNotifications(event: MouseEvent): void {
+    notifAnchor.value = readAnchorRect(event.currentTarget)
+    notifOpen.value = !notifOpen.value
+  }
 </script>
 
 <template>
@@ -44,11 +72,11 @@
 
     <div class="flex items-center gap-1.5" data-no-drag>
       <slot name="actions" />
-      <SIconButton v-if="showBell" label="Notifications" size="sm" @click="notifOpen = !notifOpen">
+      <SIconButton v-if="showBell" label="Notifications" size="sm" @click="toggleNotifications">
         <Bell class="h-4 w-4" />
       </SIconButton>
     </div>
   </header>
 
-  <SNotificationPanel :open="notifOpen" @close="notifOpen = false" />
+  <SNotificationPanel :open="notifOpen" :anchor-rect="notifAnchor" @close="notifOpen = false" />
 </template>

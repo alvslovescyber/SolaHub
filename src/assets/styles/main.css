@@ -210,6 +210,29 @@
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
 }
 
+.solahub-motion-background {
+  background-size: 190% 190% !important;
+  animation: solahub-motion-background 22s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .solahub-motion-background {
+    animation: none;
+  }
+}
+
+@keyframes solahub-motion-background {
+  0% {
+    background-position: 0% 35%;
+  }
+  50% {
+    background-position: 100% 58%;
+  }
+  100% {
+    background-position: 32% 100%;
+  }
+}
+
 /* ─── Transitions ────────────────────────────────────────────────────────── */
 .fade-enter-active,
 .fade-leave-active {

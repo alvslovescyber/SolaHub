@@ -1,13 +1,71 @@
 <script setup lang="ts">
-  import { onBeforeUnmount, onMounted } from 'vue'
+  import { computed, onBeforeUnmount, onMounted } from 'vue'
   import { BellOff, X } from 'lucide-vue-next'
+
+  interface NotificationAnchorRect {
+    top: number
+    right: number
+    bottom: number
+    left: number
+    width: number
+    height: number
+  }
 
   interface Props {
     open: boolean
+    anchorRect?: NotificationAnchorRect | null
   }
 
-  defineProps<Props>()
+  const props = defineProps<Props>()
   const emit = defineEmits<{ close: [] }>()
+
+  const PANEL_WIDTH = 320
+  const PANEL_MIN_HEIGHT = 220
+  const VIEWPORT_MARGIN = 12
+  const ANCHOR_GAP = 8
+
+  function clamp(value: number, min: number, max: number): number {
+    return Math.min(Math.max(value, min), Math.max(min, max))
+  }
+
+  const panelStyle = computed(() => {
+    const anchor = props.anchorRect
+    if (!anchor || typeof window === 'undefined') {
+      return {
+        top: '52px',
+        right: `${VIEWPORT_MARGIN}px`,
+        width: `${PANEL_WIDTH}px`,
+      }
+    }
+
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    const canOpenBeside =
+      anchor.left < viewportWidth / 2 &&
+      anchor.right + ANCHOR_GAP + PANEL_WIDTH <= viewportWidth - VIEWPORT_MARGIN
+
+    if (canOpenBeside) {
+      return {
+        top: `${clamp(anchor.top, VIEWPORT_MARGIN, viewportHeight - PANEL_MIN_HEIGHT)}px`,
+        left: `${anchor.right + ANCHOR_GAP}px`,
+        width: `${PANEL_WIDTH}px`,
+        transformOrigin: 'left top',
+      }
+    }
+
+    const left = clamp(
+      anchor.right - PANEL_WIDTH,
+      VIEWPORT_MARGIN,
+      viewportWidth - PANEL_WIDTH - VIEWPORT_MARGIN
+    )
+
+    return {
+      top: `${clamp(anchor.bottom + ANCHOR_GAP, VIEWPORT_MARGIN, viewportHeight - PANEL_MIN_HEIGHT)}px`,
+      left: `${left}px`,
+      width: `${PANEL_WIDTH}px`,
+      transformOrigin: `${anchor.left + anchor.width / 2 - left}px top`,
+    }
+  })
 
   function onKey(e: KeyboardEvent) {
     if (e.key === 'Escape') emit('close')
@@ -27,9 +85,11 @@
         <!-- Click-away backdrop -->
         <div class="absolute inset-0 pointer-events-auto" @mousedown="emit('close')" />
 
-        <!-- Panel — anchored top-right, below traffic light area -->
+        <!-- Panel anchored to the bell that opened it. -->
         <div
-          class="absolute top-[52px] right-3 w-[320px] pointer-events-auto rounded-xl border border-line bg-surface-overlay shadow-pop backdrop-blur-2xl overflow-hidden"
+          data-testid="notification-panel"
+          class="absolute pointer-events-auto rounded-xl border border-line bg-surface-overlay shadow-pop backdrop-blur-2xl overflow-hidden"
+          :style="panelStyle"
           @mousedown.stop
         >
           <!-- Header -->

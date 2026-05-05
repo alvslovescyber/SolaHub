@@ -237,6 +237,8 @@
     { label: 'Black', value: 'black' },
     { label: 'Navy', value: 'navy' },
     { label: 'Gradient', value: 'gradient' },
+    { label: 'Aurora live', value: 'aurora' },
+    { label: 'Radiance live', value: 'radiance' },
   ]
 
   const songsIntegrationOptions = [

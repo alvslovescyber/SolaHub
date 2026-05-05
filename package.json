@@ -12,10 +12,11 @@
     "tauri": "tauri",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"src/**/*.{vue,ts,css}\"",
-    "format:check": "prettier --check \"src/**/*.{vue,ts,css}\"",
+    "format": "prettier --write \"src/**/*.{vue,ts,css}\" \"e2e/**/*.ts\" \"*.config.{js,ts}\" \"playwright.config.ts\"",
+    "format:check": "prettier --check \"src/**/*.{vue,ts,css}\" \"e2e/**/*.ts\" \"*.config.{js,ts}\" \"playwright.config.ts\"",
     "type-check": "vue-tsc --noEmit",
     "verify": "npm run format:check && npm run lint && npm run type-check && npm run test:run",
+    "verify:api": "dotnet tool restore --tool-manifest api/.config/dotnet-tools.json && cd api && dotnet tool run csharpier check . && cd .. && dotnet test api/tests/SolaHub.Tests.Unit/SolaHub.Tests.Unit.csproj --configuration Release --no-restore",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -36,7 +37,7 @@
     "vue-router": "^4.4.5"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.1",
+    "@playwright/test": "^1.59.1",
     "@tauri-apps/cli": "^2.1.0",
     "@tsconfig/node22": "^22.0.5",
     "@types/node": "^22.9.0",

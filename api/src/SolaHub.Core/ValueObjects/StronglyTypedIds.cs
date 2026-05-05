@@ -36,6 +36,15 @@ public readonly record struct ReadingPlanId(Guid Value)
     public override string ToString() => Value.ToString();
 }
 
+public readonly record struct CommunityPostId(Guid Value)
+{
+    public static CommunityPostId New() => new(Guid.NewGuid());
+
+    public static CommunityPostId From(Guid value) => new(value);
+
+    public override string ToString() => Value.ToString();
+}
+
 public readonly record struct PresentationId(Guid Value)
 {
     public static PresentationId New() => new(Guid.NewGuid());

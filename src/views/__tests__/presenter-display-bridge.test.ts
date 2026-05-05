@@ -4,18 +4,25 @@ import type { PresenterDisplayState } from '@/stores/presenter.store'
 import type { NotationSlide } from '@/types/presenter.types'
 
 const displayMocks = vi.hoisted(() => ({
+  invoke: vi.fn(),
   listen: vi.fn(),
+  emit: vi.fn(),
   unlisten: vi.fn(),
+  windowUnlisten: vi.fn(),
+  onResized: vi.fn(),
+  isMinimized: vi.fn(),
+  pushPresenterVerse: vi.fn(),
   collaborationOn: vi.fn(() => vi.fn()),
   eventHandler: null as ((event: { payload: PresenterDisplayState }) => void) | null,
+  windowResizeHandler: null as (() => void) | null,
 }))
 
-function makeSlide(): NotationSlide {
+function makeSlide(index = 1): NotationSlide {
   return {
     source: 'notation',
-    verseRef: 'notation-event-slide',
-    title: 'Event Slide',
-    text: 'The event bridge rendered this notation.',
+    verseRef: `notation-event-slide-${index}`,
+    title: `Event Slide ${index}`,
+    text: `The event bridge rendered notation ${index}.`,
     background: {
       type: 'gradient',
       value: 'linear-gradient(135deg, #111827 0%, #0f766e 100%)',
@@ -25,7 +32,7 @@ function makeSlide(): NotationSlide {
       {
         id: 'text-1',
         kind: 'text',
-        text: 'The event bridge rendered this notation.',
+        text: `The event bridge rendered notation ${index}.`,
         x: 12,
         y: 36,
         width: 76,
@@ -52,11 +59,21 @@ async function mountPresenterDisplayInTauri() {
   }))
   vi.doMock('@tauri-apps/api/event', () => ({
     listen: displayMocks.listen,
+    emit: displayMocks.emit,
+  }))
+  vi.doMock('@tauri-apps/api/core', () => ({
+    invoke: displayMocks.invoke,
+  }))
+  vi.doMock('@tauri-apps/api/window', () => ({
+    getCurrentWindow: () => ({
+      onResized: displayMocks.onResized,
+      isMinimized: displayMocks.isMinimized,
+    }),
   }))
   vi.doMock('@/services/collaboration.service', () => ({
     collaborationService: {
       on: displayMocks.collaborationOn,
-      pushPresenterVerse: vi.fn().mockResolvedValue(undefined),
+      pushPresenterVerse: displayMocks.pushPresenterVerse,
     },
   }))
 
@@ -75,11 +92,26 @@ async function mountPresenterDisplayInTauri() {
 
 describe('PresenterDisplayView Tauri bridge', () => {
   beforeEach(() => {
+    displayMocks.invoke.mockReset()
+    displayMocks.invoke.mockResolvedValue(undefined)
     displayMocks.listen.mockReset()
+    displayMocks.emit.mockReset()
+    displayMocks.emit.mockResolvedValue(undefined)
     displayMocks.unlisten.mockReset()
+    displayMocks.windowUnlisten.mockReset()
+    displayMocks.onResized.mockReset()
+    displayMocks.onResized.mockImplementation((handler) => {
+      displayMocks.windowResizeHandler = handler
+      return Promise.resolve(displayMocks.windowUnlisten)
+    })
+    displayMocks.isMinimized.mockReset()
+    displayMocks.isMinimized.mockResolvedValue(false)
+    displayMocks.pushPresenterVerse.mockReset()
+    displayMocks.pushPresenterVerse.mockResolvedValue(undefined)
     displayMocks.collaborationOn.mockReset()
     displayMocks.collaborationOn.mockReturnValue(vi.fn())
     displayMocks.eventHandler = null
+    displayMocks.windowResizeHandler = null
   })
 
   afterEach(() => {
@@ -90,7 +122,9 @@ describe('PresenterDisplayView Tauri bridge', () => {
     const { wrapper, DISPLAY_STATE_EVENT } = await mountPresenterDisplayInTauri()
 
     expect(displayMocks.listen).toHaveBeenCalledWith(DISPLAY_STATE_EVENT, expect.any(Function))
-    expect(wrapper.text()).toContain('Waiting for presenter')
+    expect(wrapper.find('[data-testid="presenter-display-root"]').exists()).toBe(true)
+    expect(wrapper.text()).not.toContain('Waiting for presenter')
+    expect(wrapper.text()).not.toContain('Welcome back to SolaHub')
 
     displayMocks.eventHandler?.({
       payload: {
@@ -103,10 +137,65 @@ describe('PresenterDisplayView Tauri bridge', () => {
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain('The event bridge rendered this notation.')
+    expect(wrapper.text()).toContain('The event bridge rendered notation 1.')
     expect(wrapper.text()).not.toContain('Waiting for presenter')
 
     wrapper.unmount()
     expect(displayMocks.unlisten).toHaveBeenCalledOnce()
+  })
+
+  it('advances and rewinds the displayed slide with arrow keys', async () => {
+    const { wrapper } = await mountPresenterDisplayInTauri()
+
+    displayMocks.eventHandler?.({
+      payload: {
+        type: 'state',
+        slides: [makeSlide(1), makeSlide(2)],
+        currentIndex: 0,
+        isBlanked: false,
+        planId: 'plan-1',
+      },
+    })
+    await flushPromises()
+    expect(wrapper.text()).toContain('The event bridge rendered notation 1.')
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    await flushPromises()
+    expect(wrapper.text()).toContain('The event bridge rendered notation 2.')
+    expect(displayMocks.pushPresenterVerse).not.toHaveBeenCalled()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
+    await flushPromises()
+    expect(wrapper.text()).toContain('The event bridge rendered notation 1.')
+
+    wrapper.unmount()
+  })
+
+  it('closes the native presenter window when the presenter output is minimized', async () => {
+    const { wrapper } = await mountPresenterDisplayInTauri()
+
+    await vi.waitFor(() => expect(displayMocks.onResized).toHaveBeenCalled())
+    displayMocks.isMinimized.mockResolvedValue(true)
+
+    displayMocks.windowResizeHandler?.()
+
+    await vi.waitFor(() => {
+      expect(displayMocks.invoke).toHaveBeenCalledWith('close_presenter_window')
+    })
+
+    wrapper.unmount()
+    expect(displayMocks.windowUnlisten).toHaveBeenCalledOnce()
+  })
+
+  it('closes the native presenter window when Escape is pressed', async () => {
+    const { wrapper } = await mountPresenterDisplayInTauri()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+
+    await vi.waitFor(() => {
+      expect(displayMocks.invoke).toHaveBeenCalledWith('close_presenter_window')
+    })
+
+    wrapper.unmount()
   })
 })

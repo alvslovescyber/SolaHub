@@ -57,6 +57,13 @@ const serviceMocks = vi.hoisted(() => ({
     archive: vi.fn(),
     delete: vi.fn(),
   },
+  community: {
+    getFeed: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    report: vi.fn(),
+  },
 }))
 
 vi.mock('@/services/auth.service', () => ({
@@ -77,6 +84,10 @@ vi.mock('@/services/notes.service', () => ({
 
 vi.mock('@/services/plans.service', () => ({
   plansService: serviceMocks.plans,
+}))
+
+vi.mock('@/services/community.service', () => ({
+  communityService: serviceMocks.community,
 }))
 
 class NoopResizeObserver {
@@ -244,6 +255,12 @@ describe('route page smoke tests', () => {
     serviceMocks.plans.publish.mockResolvedValue(plan)
     serviceMocks.plans.archive.mockResolvedValue(plan)
     serviceMocks.plans.delete.mockResolvedValue(undefined)
+
+    serviceMocks.community.getFeed.mockResolvedValue([])
+    serviceMocks.community.create.mockResolvedValue(undefined)
+    serviceMocks.community.update.mockResolvedValue(undefined)
+    serviceMocks.community.delete.mockResolvedValue(undefined)
+    serviceMocks.community.report.mockResolvedValue(undefined)
   })
 
   it.each([
@@ -271,6 +288,15 @@ describe('route page smoke tests', () => {
     })
 
     expect(wrapper.text()).toContain('Gospel in 7 Days')
+    wrapper.unmount()
+  })
+
+  it('does not render the dashboard overview section', async () => {
+    const wrapper = await mountPage(DashboardView, { path: '/' })
+
+    expect(wrapper.text()).not.toContain('Overview')
+    expect(wrapper.text()).not.toContain('Active plans')
+    expect(wrapper.text()).not.toContain('Drafts')
     wrapper.unmount()
   })
 
@@ -312,6 +338,45 @@ describe('route page smoke tests', () => {
     expect(wrapper.text()).toContain('John 3:16')
     expect(wrapper.text()).toContain('For God so loved the world')
     expect(wrapper.text()).not.toContain('Waiting for presenter')
+    wrapper.unmount()
+  })
+
+  it('loads the visible scripture chapter before jumping to a verse', async () => {
+    serviceMocks.bible.getChapter.mockResolvedValue({
+      reference: 'John 3',
+      verses: [
+        { book: 'John', chapter: 3, verse: 1, text: 'First scripture verse' },
+        { book: 'John', chapter: 3, verse: 2, text: 'Second scripture verse' },
+      ],
+    })
+
+    const wrapper = await mountPage(PresenterView, { path: '/presenter' })
+    const johnButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('John') && button.text().includes('21 ch'))
+    if (!johnButton) throw new Error('John book button not found')
+    await johnButton.trigger('click')
+
+    const chapterButton = wrapper.findAll('button').find((button) => button.text().trim() === '3')
+    if (!chapterButton) throw new Error('John 3 chapter button not found')
+    await chapterButton.trigger('click')
+    await flushPromises()
+
+    const presenter = usePresenterStore()
+    presenter.loadSlides([makeNotationSlide()])
+    expect(presenter.currentSlide?.source).toBe('notation')
+
+    const verseButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Second scripture verse'))
+    if (!verseButton) throw new Error('Second verse button not found')
+    await verseButton.trigger('click')
+
+    expect(presenter.currentSlide).toMatchObject({
+      source: 'scripture',
+      verse: 2,
+      text: 'Second scripture verse',
+    })
     wrapper.unmount()
   })
 })

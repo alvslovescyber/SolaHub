@@ -47,6 +47,10 @@ test.describe('Presenter', () => {
 
     await page.getByRole('button', { name: 'Open display' }).click()
     await expect(page.getByText(/Click .* Space to advance/)).toBeVisible({ timeout: 5_000 })
+    await page.keyboard.press('ArrowDown')
+    await expect(page.getByText('2 / 5').first()).toBeVisible()
+    await page.keyboard.press('ArrowUp')
+    await expect(page.getByText('1 / 5').first()).toBeVisible()
     await page.keyboard.press('ArrowRight')
     await expect(page.getByText('2 / 5').first()).toBeVisible()
     await page.keyboard.press('Escape')
@@ -103,7 +107,7 @@ test.describe('Presenter', () => {
     expectNoPageIssues(issues)
   })
 
-  test('does not inherit imported Notations image backgrounds', async ({ page }) => {
+  test('preserves imported Notations image backgrounds in Presenter', async ({ page }) => {
     const issues = collectPageIssues(page)
 
     await page.evaluate(() => {
@@ -158,20 +162,25 @@ test.describe('Presenter', () => {
     await expect(notationStage).toBeVisible()
     await expect
       .poll(async () => notationStage.evaluate((el) => getComputedStyle(el).backgroundImage))
-      .toBe('none')
+      .toContain('data:image/png')
 
     expectNoPageIssues(issues)
   })
 })
 
-test.describe('Presenter guard', () => {
-  test('member accounts are redirected away from presenter-only pages', async ({ page }) => {
+test.describe('Presenter access', () => {
+  test('presenter display route does not require its own login', async ({ page }) => {
+    await page.goto('/#/presenter-display')
+
+    await expect(page.getByTestId('presenter-display-root')).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Welcome back to SolaHub/ })).toHaveCount(0)
+  })
+
+  test('member accounts can use presenter pages', async ({ page }) => {
     await registerUniqueUser(page, 'member', 'Member User')
 
     await page.goto('/#/presenter')
-    await expect(page).toHaveURL(/#\/$/)
-    await expect(
-      page.getByRole('heading', { name: /Member User|Good|Morning|Afternoon|Evening/i })
-    ).toBeVisible()
+    await expect(page).toHaveURL(/#\/presenter/)
+    await expect(page.getByRole('heading', { name: 'Presenter' })).toBeVisible()
   })
 })

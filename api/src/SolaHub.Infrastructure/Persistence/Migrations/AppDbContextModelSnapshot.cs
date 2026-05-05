@@ -79,6 +79,113 @@ namespace SolaHub.Infrastructure.Persistence.Migrations
                     b.ToTable("churches", (string)null);
                 });
 
+            modelBuilder.Entity("SolaHub.Core.Entities.CommunityPost", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("author_id");
+
+                    b.Property<string>("AuthorDisplayName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("author_display_name");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("body");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("DeckJson")
+                        .HasColumnType("text")
+                        .HasColumnName("deck_json");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("VerseRef")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("verse_ref");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("visibility");
+
+                    b.PrimitiveCollection<string>("_tags")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("tags");
+
+                    b.HasKey("Id")
+                        .HasName("pk_community_posts");
+
+                    b.HasIndex("AuthorId")
+                        .HasDatabaseName("ix_community_posts_author_id");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_community_posts_created_at");
+
+                    b.HasIndex("Visibility")
+                        .HasDatabaseName("ix_community_posts_visibility")
+                        .HasFilter("visibility = 'Public'");
+
+                    b.ToTable("community_posts", (string)null);
+                });
+
+            modelBuilder.Entity("SolaHub.Core.Entities.CommunityPostReport", b =>
+                {
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("post_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.HasKey("PostId", "UserId")
+                        .HasName("pk_community_post_reports");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_community_post_reports_user_id");
+
+                    b.ToTable("community_post_reports", (string)null);
+                });
+
             modelBuilder.Entity("SolaHub.Core.Entities.ReadingPlan", b =>
                 {
                     b.Property<Guid>("Id")
@@ -341,6 +448,33 @@ namespace SolaHub.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_churches_users_admin_id");
+                });
+
+            modelBuilder.Entity("SolaHub.Core.Entities.CommunityPost", b =>
+                {
+                    b.HasOne("SolaHub.Core.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_community_posts_users_author_id");
+                });
+
+            modelBuilder.Entity("SolaHub.Core.Entities.CommunityPostReport", b =>
+                {
+                    b.HasOne("SolaHub.Core.Entities.CommunityPost", null)
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_community_post_reports_community_posts_post_id");
+
+                    b.HasOne("SolaHub.Core.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_community_post_reports_users_user_id");
                 });
 
             modelBuilder.Entity("SolaHub.Core.Entities.ReadingPlan", b =>

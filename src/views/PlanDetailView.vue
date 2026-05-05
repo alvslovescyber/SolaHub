@@ -271,6 +271,10 @@
 
   const statusTone = planStatusTone
 
+  function retryFetchPlan() {
+    void plans.fetchPlan(props.id)
+  }
+
   // ── Formatting helpers ────────────────────────────────────────────
   function formatRef(ref: string): string {
     const parts = ref.split('.')
@@ -356,6 +360,23 @@
     <!-- Scrollable content -->
     <div class="flex-1 overflow-y-auto min-h-0">
       <SSpinner v-if="plans.isLoading" size="sm" class="m-6" />
+
+      <SCard v-else-if="plans.error && !plan" padding="md" class="m-6 max-w-xl">
+        <div class="flex flex-col gap-3">
+          <div>
+            <p class="text-sm font-semibold text-ink-strong">Could not open this reading plan</p>
+            <p class="text-sm text-ink-muted mt-1">
+              {{ plans.error }}
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <SButton size="sm" variant="primary" @click="retryFetchPlan"> Try again </SButton>
+            <SButton size="sm" variant="secondary" @click="router.push({ name: 'plans' })">
+              Back to plans
+            </SButton>
+          </div>
+        </div>
+      </SCard>
 
       <template v-else-if="plan">
         <!-- ── HERO BANNER ─────────────────────────────────────────────── -->

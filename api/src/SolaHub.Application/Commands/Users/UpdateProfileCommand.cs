@@ -16,8 +16,10 @@ public sealed class UpdateProfileCommandValidator : AbstractValidator<UpdateProf
     public UpdateProfileCommandValidator()
     {
         RuleFor(x => x.DisplayName)
-            .NotEmpty().WithMessage("Display name is required.")
-            .MaximumLength(100).WithMessage("Display name must not exceed 100 characters.");
+            .NotEmpty()
+            .WithMessage("Display name is required.")
+            .MaximumLength(100)
+            .WithMessage("Display name must not exceed 100 characters.");
     }
 }
 

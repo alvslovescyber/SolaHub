@@ -47,7 +47,9 @@ public sealed class UsersController(ISender sender, IUserRepository userReposito
                 error.Type switch
                 {
                     ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
-                    ErrorType.Validation => UnprocessableEntity(new { error.Code, error.Description }),
+                    ErrorType.Validation => UnprocessableEntity(
+                        new { error.Code, error.Description }
+                    ),
                     _ => StatusCode(500, new { error.Code, error.Description }),
                 }
         );

@@ -151,6 +151,28 @@ public sealed class NotesEndpointTests(ApiFactory factory)
             notes.Should().ContainSingle(n => n.Content == "Public");
         }
     }
+
+    [Fact]
+    public async Task CreateSharedNote_WithBlockedContent_Returns422()
+    {
+        var email = $"note_block_{Guid.NewGuid():N}@example.com";
+        var user = await RegisterUser(_client, email, "Blocked Note User");
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/notes");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", user.AccessToken);
+        req.Content = JsonContent.Create(
+            new
+            {
+                verseRef = "JHN.3.16",
+                content = "This is shit content",
+                tags = Array.Empty<string>(),
+                isShared = true,
+            }
+        );
+
+        var response = await _client.SendAsync(req);
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+    }
 }
 
 internal sealed record NoteListItemDto(

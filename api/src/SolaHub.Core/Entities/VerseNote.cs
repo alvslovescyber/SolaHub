@@ -54,6 +54,13 @@ public sealed class VerseNote : BaseEntity<VerseNoteId>
                 ErrorType.Validation
             );
 
+        if (isShared)
+        {
+            var publicResult = ContentSafetyPolicy.ValidatePublicText([content, .. tags]);
+            if (publicResult.IsFailure)
+                return publicResult.Error;
+        }
+
         var note = new VerseNote(VerseNoteId.New(), userId, verseRef, content.Trim())
         {
             IsShared = isShared,
@@ -83,17 +90,33 @@ public sealed class VerseNote : BaseEntity<VerseNoteId>
                 )
             );
 
+        if (IsShared)
+        {
+            var publicResult = ContentSafetyPolicy.ValidatePublicText([content, .. _tags]);
+            if (publicResult.IsFailure)
+                return publicResult;
+        }
+
         Content = content.Trim();
         MarkUpdated();
         return Result.Ok;
     }
 
-    public void SetShared(bool shared)
+    public Result SetShared(bool shared)
     {
         if (IsShared == shared)
-            return;
+            return Result.Ok;
+
+        if (shared)
+        {
+            var publicResult = ContentSafetyPolicy.ValidatePublicText([Content, .. _tags]);
+            if (publicResult.IsFailure)
+                return publicResult;
+        }
+
         IsShared = shared;
         MarkUpdated();
+        return Result.Ok;
     }
 
     public Result SetTags(IEnumerable<string> tags)
@@ -121,6 +144,13 @@ public sealed class VerseNote : BaseEntity<VerseNoteId>
                     ErrorType.Validation
                 )
             );
+
+        if (IsShared)
+        {
+            var publicResult = ContentSafetyPolicy.ValidatePublicText([Content, .. normalized]);
+            if (publicResult.IsFailure)
+                return publicResult;
+        }
 
         _tags.Clear();
         _tags.AddRange(normalized);

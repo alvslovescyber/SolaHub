@@ -2,7 +2,9 @@ mod commands;
 mod state;
 
 use state::AppState;
-use tauri::Manager;
+use tauri::{Emitter, Manager, WindowEvent};
+
+const PRESENTER_DISPLAY_CLOSED_EVENT: &str = "solahub:presenter-display-closed";
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -26,6 +28,30 @@ pub fn run() {
 
             Ok(())
         })
+        .on_window_event(|window, event| match event {
+            WindowEvent::Resized(_) if window.label() == "main" => {
+                if window.is_minimized().unwrap_or(false) {
+                    close_presenter_window(window.app_handle());
+                }
+            }
+            WindowEvent::Resized(_) if window.label() == "presenter" => {
+                if window.is_minimized().unwrap_or(false) {
+                    let _ = window.close();
+                }
+            }
+            WindowEvent::Destroyed if window.label() == "presenter" => {
+                let _ = window.app_handle().emit(
+                    PRESENTER_DISPLAY_CLOSED_EVENT,
+                    serde_json::json!({ "type": "closed" }),
+                );
+            }
+            WindowEvent::CloseRequested { .. } | WindowEvent::Destroyed
+                if window.label() == "main" =>
+            {
+                close_presenter_window(window.app_handle());
+            }
+            _ => {}
+        })
         .invoke_handler(tauri::generate_handler![
             commands::bible::search_verses,
             commands::bible::get_chapter,
@@ -43,5 +69,11 @@ pub fn run() {
         .run(tauri::generate_context!())
     {
         eprintln!("Error running SolaHub application: {error}");
+    }
+}
+
+fn close_presenter_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("presenter") {
+        let _ = window.close();
     }
 }

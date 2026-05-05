@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+  import { useRouter } from 'vue-router'
   import {
     AlignCenter,
     AlignLeft,
@@ -14,6 +15,7 @@
     Pencil,
     Plus,
     Search,
+    Share2,
     StickyNote,
     Trash2,
     Type,
@@ -40,12 +42,14 @@
   import {
     SButton,
     SChip,
+    SContextMenu,
     SIconButton,
     SInput,
     SModal,
     SNotationSlideCanvas,
     SPresenterSlide,
     SSpinner,
+    SSwitch,
     STextarea,
     STopBar,
     useSToast,
@@ -55,6 +59,7 @@
   const notations = useNotationsStore()
   const presenter = usePresenterStore()
   const biblePrefs = useBiblePreferencesStore()
+  const router = useRouter()
   const toast = useSToast()
   const { monitors, selectedMonitorIndex, loading: monitorsLoading } = useDisplayMonitors()
 
@@ -67,6 +72,7 @@
   const TEXT_TONE_OPTIONS = ['light', 'dark'] as const satisfies readonly SlideTextTone[]
   const MAX_BACKGROUND_IMAGE_BYTES = 2_500_000
   const DRAG_START_THRESHOLD_PX = 4
+  const SNAP_THRESHOLD_PERCENT = 1.15
 
   const stageRef = ref<HTMLElement | null>(null)
   const overlayRef = ref<HTMLElement | null>(null)
@@ -75,6 +81,8 @@
   const selectedElementId = ref<string | null>(null)
   const rightPanel = ref<'editor' | 'notes'>('editor')
   const search = ref('')
+  const slideContextMenu = ref<{ x: number; y: number; slideId: string } | null>(null)
+  const snapGuides = ref<{ x: number[]; y: number[] }>({ x: [], y: [] })
 
   const currentDeck = computed(() => notations.currentDeck)
   const currentSlide = computed(() => notations.currentSlide)
@@ -100,6 +108,37 @@
     const count = currentDeck.value?.slides.length ?? 0
     return `${count} slide${count === 1 ? '' : 's'}`
   })
+  const contextSlide = computed(() => {
+    const deck = currentDeck.value
+    if (!deck || !slideContextMenu.value) return null
+    return deck.slides.find((slide) => slide.verseRef === slideContextMenu.value?.slideId) ?? null
+  })
+  const contextSlideIndex = computed(() => {
+    const deck = currentDeck.value
+    if (!deck || !contextSlide.value) return -1
+    return deck.slides.findIndex((slide) => slide.verseRef === contextSlide.value?.verseRef)
+  })
+  const slideContextMenuItems = computed(() => {
+    const deck = currentDeck.value
+    const index = contextSlideIndex.value
+    const slideCount = deck?.slides.length ?? 0
+    return [
+      { id: 'duplicate', label: 'Duplicate' },
+      { id: 'move-top', label: 'Move to top', disabled: index <= 0 },
+      {
+        id: 'move-bottom',
+        label: 'Move to bottom',
+        disabled: index === -1 || index >= slideCount - 1,
+      },
+      {
+        id: 'delete',
+        label: 'Delete',
+        disabled: slideCount <= 1,
+        destructive: true,
+        separatorBefore: true,
+      },
+    ]
+  })
 
   onMounted(() => {
     void notes.fetchMyNotes()
@@ -108,6 +147,7 @@
 
   onBeforeUnmount(() => {
     document.removeEventListener('fullscreenchange', onFullscreenChange)
+    window.removeEventListener('keydown', handleNotationOverlayKeydown)
     stopElementDrag()
     verseAbortController?.abort()
   })
@@ -125,6 +165,7 @@
     () => notationOverlayOpen.value,
     async (open) => {
       if (open) {
+        window.addEventListener('keydown', handleNotationOverlayKeydown)
         overlayEnteredFullscreen.value = false
         await nextTick()
         try {
@@ -135,8 +176,11 @@
         }
         overlayRef.value?.focus()
       } else if (document.fullscreenElement === overlayRef.value) {
+        window.removeEventListener('keydown', handleNotationOverlayKeydown)
         await document.exitFullscreen?.()
         overlayEnteredFullscreen.value = false
+      } else {
+        window.removeEventListener('keydown', handleNotationOverlayKeydown)
       }
     }
   )
@@ -145,13 +189,23 @@
     const wasFullscreen = overlayEnteredFullscreen.value
     overlayEnteredFullscreen.value = document.fullscreenElement === overlayRef.value
     if (wasFullscreen && !overlayEnteredFullscreen.value && notationOverlayOpen.value) {
-      notationOverlayOpen.value = false
-      presenter.closeOverlay()
+      void handleCloseDisplay()
     }
   }
 
   function selectSlide(slide: NotationSlide) {
     notations.selectSlide(slide.verseRef)
+  }
+
+  function openSlideContextMenu(event: MouseEvent, slide: NotationSlide) {
+    event.preventDefault()
+    selectedElementId.value = null
+    selectSlide(slide)
+    slideContextMenu.value = { x: event.clientX, y: event.clientY, slideId: slide.verseRef }
+  }
+
+  function closeSlideContextMenu() {
+    slideContextMenu.value = null
   }
 
   function addSlide() {
@@ -166,10 +220,52 @@
     if (slide) toast.success('Slide duplicated', slide.title)
   }
 
+  function duplicateSlide(slideId: string) {
+    const slide = notations.duplicateSlide(slideId)
+    if (slide) toast.success('Slide duplicated', slide.title)
+  }
+
   function removeCurrentSlide() {
     if (!currentSlide.value) return
-    notations.removeSlide(currentSlide.value.verseRef)
+    removeSlide(currentSlide.value.verseRef)
+  }
+
+  function removeSlide(slideId: string) {
+    notations.removeSlide(slideId)
     selectedElementId.value = currentSlide.value?.elements[0]?.id ?? null
+  }
+
+  function moveSlideToTop(slideId: string) {
+    const slide = notations.moveSlide(slideId, 0)
+    if (slide) toast.success('Slide moved', 'Moved to top')
+  }
+
+  function moveSlideToBottom(slideId: string) {
+    const deck = currentDeck.value
+    if (!deck) return
+    const slide = notations.moveSlide(slideId, deck.slides.length - 1)
+    if (slide) toast.success('Slide moved', 'Moved to bottom')
+  }
+
+  function handleSlideContextAction(action: string) {
+    const slideId = slideContextMenu.value?.slideId
+    closeSlideContextMenu()
+    if (!slideId) return
+
+    switch (action) {
+      case 'duplicate':
+        duplicateSlide(slideId)
+        break
+      case 'move-top':
+        moveSlideToTop(slideId)
+        break
+      case 'move-bottom':
+        moveSlideToBottom(slideId)
+        break
+      case 'delete':
+        removeSlide(slideId)
+        break
+    }
   }
 
   function addTextBlock(text = 'New text block') {
@@ -299,6 +395,11 @@
     hasMoved: boolean
   }
 
+  interface SnapCandidate {
+    position: number
+    guide: number
+  }
+
   const dragState = ref<DragState | null>(null)
 
   function startElementDrag(event: PointerEvent, element: NotationElement) {
@@ -338,15 +439,101 @@
     drag.hasMoved = true
     const dx = ((event.clientX - drag.startX) / drag.rect.width) * 100
     const dy = ((event.clientY - drag.startY) / drag.rect.height) * 100
+    const snapped = event.altKey
+      ? {
+          x: clampPercent(drag.elementX + dx, 0, 100 - drag.width),
+          y: clampPercent(drag.elementY + dy, 0, 100 - drag.height),
+          guides: { x: [], y: [] },
+        }
+      : snapElementPosition(drag.elementX + dx, drag.elementY + dy, drag, slide)
+    snapGuides.value = snapped.guides
     notations.updateElement(
       slide.verseRef,
       drag.elementId,
       {
-        x: Math.min(Math.max(drag.elementX + dx, 0), 100 - drag.width),
-        y: Math.min(Math.max(drag.elementY + dy, 0), 100 - drag.height),
+        x: snapped.x,
+        y: snapped.y,
       },
       { persist: false }
     )
+  }
+
+  function clampPercent(value: number, min: number, max: number): number {
+    return Math.min(Math.max(value, min), max)
+  }
+
+  function snapElementPosition(
+    rawX: number,
+    rawY: number,
+    drag: DragState,
+    slide: NotationSlide
+  ): { x: number; y: number; guides: { x: number[]; y: number[] } } {
+    const otherElements = slide.elements.filter((element) => element.id !== drag.elementId)
+    const xCandidates: SnapCandidate[] = [
+      { position: 0, guide: 0 },
+      { position: 50 - drag.width / 2, guide: 50 },
+      { position: 100 - drag.width, guide: 100 },
+    ]
+    const yCandidates: SnapCandidate[] = [
+      { position: 0, guide: 0 },
+      { position: 50 - drag.height / 2, guide: 50 },
+      { position: 100 - drag.height, guide: 100 },
+    ]
+
+    for (const element of otherElements) {
+      xCandidates.push(
+        { position: element.x, guide: element.x },
+        {
+          position: element.x + element.width / 2 - drag.width / 2,
+          guide: element.x + element.width / 2,
+        },
+        { position: element.x + element.width - drag.width, guide: element.x + element.width }
+      )
+      yCandidates.push(
+        { position: element.y, guide: element.y },
+        {
+          position: element.y + element.height / 2 - drag.height / 2,
+          guide: element.y + element.height / 2,
+        },
+        { position: element.y + element.height - drag.height, guide: element.y + element.height }
+      )
+    }
+
+    const snappedX = snapCoordinate(rawX, drag.width, xCandidates)
+    const snappedY = snapCoordinate(rawY, drag.height, yCandidates)
+    return {
+      x: snappedX.value,
+      y: snappedY.value,
+      guides: {
+        x: snappedX.guide === null ? [] : [snappedX.guide],
+        y: snappedY.guide === null ? [] : [snappedY.guide],
+      },
+    }
+  }
+
+  function snapCoordinate(
+    rawValue: number,
+    size: number,
+    candidates: SnapCandidate[]
+  ): { value: number; guide: number | null } {
+    const clamped = clampPercent(rawValue, 0, 100 - size)
+    let best: SnapCandidate | null = null
+    let bestDistance = Number.POSITIVE_INFINITY
+
+    for (const candidate of candidates) {
+      const position = clampPercent(candidate.position, 0, 100 - size)
+      const distance = Math.abs(clamped - position)
+      if (distance < bestDistance) {
+        best = { position, guide: clampPercent(candidate.guide, 0, 100) }
+        bestDistance = distance
+      }
+    }
+
+    if (best && bestDistance <= SNAP_THRESHOLD_PERCENT) {
+      return { value: best.position, guide: best.guide }
+    }
+
+    return { value: clamped, guide: null }
   }
 
   function addDragListeners() {
@@ -380,6 +567,7 @@
       if (drag.hasMoved) notations.persistCurrentDeck()
     }
     dragState.value = null
+    snapGuides.value = { x: [], y: [] }
     removeDragListeners()
   }
 
@@ -472,14 +660,16 @@
   function loadDeckIntoPresenter() {
     const slides = notations.slidesForPresenter()
     if (slides.length === 0) return
-    presenter.loadSlides(slides)
+    presenter.loadSlides(slides, null, Math.max(0, notations.currentSlideIndex))
     toast.success('Notations loaded', `${slides.length} slides ready to present`)
   }
 
   async function presentDeck() {
     const slides = notations.slidesForNotationPresentation()
     if (slides.length === 0) return
-    presenter.loadSlides(slides)
+    presenter.loadSlides(slides, null, Math.max(0, notations.currentSlideIndex), {
+      clearOnDisplayClose: true,
+    })
     if (isTauri) {
       try {
         await presenter.openDisplayWindow(selectedMonitorIndex.value)
@@ -492,16 +682,59 @@
     notationOverlayOpen.value = true
   }
 
+  function shareCurrentDeck() {
+    const deck = currentDeck.value
+    if (!deck) return
+    void router.push({
+      name: 'community',
+      query: { compose: 'notationDeck', deckId: deck.id },
+    })
+  }
+
   async function handleCloseDisplay() {
     notationOverlayOpen.value = false
     await presenter.closeDisplayWindow()
     if (document.fullscreenElement) await document.exitFullscreen?.()
   }
 
+  function handleNotationOverlayKeydown(event: KeyboardEvent): void {
+    if (event.defaultPrevented || !notationOverlayOpen.value) return
+
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+      case 'PageDown':
+      case ' ':
+      case 'Enter':
+        event.preventDefault()
+        presenter.next()
+        break
+      case 'ArrowLeft':
+      case 'ArrowUp':
+      case 'PageUp':
+      case 'Backspace':
+        event.preventDefault()
+        presenter.prev()
+        break
+      case 'b':
+      case 'B':
+        event.preventDefault()
+        presenter.toggleBlank()
+        break
+      case 'Escape':
+        event.preventDefault()
+        void handleCloseDisplay()
+        break
+      default:
+        break
+    }
+  }
+
   const showCreate = ref(false)
   const newContent = ref('')
   const newVerseRef = ref('')
   const newTags = ref('')
+  const newIsShared = ref(false)
   const newVerseRefError = ref('')
 
   const editNote = ref<VerseNote | null>(null)
@@ -571,13 +804,14 @@
           .split(',')
           .map((t) => t.trim())
           .filter(Boolean),
-        isShared: false,
+        isShared: newIsShared.value,
       })
       toast.success('Note saved')
       showCreate.value = false
       newContent.value = ''
       newVerseRef.value = ''
       newTags.value = ''
+      newIsShared.value = false
       rightPanel.value = 'notes'
     } catch {
       toast.error('Could not save note', notes.error ?? undefined)
@@ -600,6 +834,12 @@
             <FileText class="h-3.5 w-3.5" />
           </template>
           Load
+        </SButton>
+        <SButton variant="secondary" size="sm" @click="shareCurrentDeck">
+          <template #leading>
+            <Share2 class="h-3.5 w-3.5" />
+          </template>
+          Share
         </SButton>
         <label
           class="hidden items-center gap-1.5 rounded-md border border-line bg-surface-raised px-2 py-1.5 text-xs text-ink-muted md:flex"
@@ -667,6 +907,7 @@
                 : 'border-line-subtle hover:border-line-strong hover:bg-surface-canvas',
             ]"
             @click="selectSlide(slide)"
+            @contextmenu.prevent.stop="openSlideContextMenu($event, slide)"
           >
             <div class="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-2">
               <span class="w-5 shrink-0 pt-0.5 text-[11px] text-ink-subtle tabular-nums">
@@ -747,6 +988,24 @@
                 @canvas-pointer-down="selectedElementId = null"
                 @element-pointer-down="startElementDrag"
               />
+              <div
+                v-if="snapGuides.x.length || snapGuides.y.length"
+                class="pointer-events-none absolute inset-0 z-20"
+                aria-hidden="true"
+              >
+                <span
+                  v-for="x in snapGuides.x"
+                  :key="`snap-x-${x}`"
+                  class="absolute bottom-0 top-0 w-px bg-brand-300/90 shadow-[0_0_0_1px_rgba(59,107,255,0.35)]"
+                  :style="{ left: `${x}%` }"
+                />
+                <span
+                  v-for="y in snapGuides.y"
+                  :key="`snap-y-${y}`"
+                  class="absolute left-0 right-0 h-px bg-brand-300/90 shadow-[0_0_0_1px_rgba(59,107,255,0.35)]"
+                  :style="{ top: `${y}%` }"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -830,6 +1089,7 @@
               >
                 <option value="solid">Solid</option>
                 <option value="gradient">Gradient</option>
+                <option value="motion">Motion gradient</option>
                 <option value="image">Image URL</option>
               </select>
               <input
@@ -1051,6 +1311,16 @@
       </aside>
     </div>
 
+    <SContextMenu
+      v-if="slideContextMenu"
+      :x="slideContextMenu.x"
+      :y="slideContextMenu.y"
+      :title="contextSlide?.title ?? 'Slide actions'"
+      :items="slideContextMenuItems"
+      @select="handleSlideContextAction"
+      @close="closeSlideContextMenu"
+    />
+
     <Teleport to="body">
       <div
         v-if="notationOverlayOpen"
@@ -1063,11 +1333,6 @@
         :style="presenter.isBlanked ? undefined : biblePrefs.presenterRootStyle"
         tabindex="-1"
         @click.self="presenter.next()"
-        @keydown.right="presenter.next()"
-        @keydown.left="presenter.prev()"
-        @keydown.space.prevent="presenter.next()"
-        @keydown.b="presenter.toggleBlank()"
-        @keydown.escape="handleCloseDisplay"
       >
         <SPresenterSlide
           :slide="presenter.currentSlide"
@@ -1127,6 +1392,11 @@
           required
         />
         <SInput v-model="newTags" label="Tags" placeholder="faith, grace (comma separated)" />
+        <SSwitch
+          v-model="newIsShared"
+          label="Share with community"
+          description="Shared notes must pass community safety checks."
+        />
       </div>
       <template #footer>
         <SButton variant="secondary" size="sm" @click="showCreate = false"> Cancel </SButton>
@@ -1149,6 +1419,11 @@
           required
         />
         <SInput v-model="editTags" label="Tags" placeholder="faith, grace (comma separated)" />
+        <SSwitch
+          v-model="editIsShared"
+          label="Share with community"
+          description="Shared notes must pass community safety checks."
+        />
       </div>
       <template #footer>
         <SButton variant="secondary" size="sm" @click="closeEdit"> Cancel </SButton>

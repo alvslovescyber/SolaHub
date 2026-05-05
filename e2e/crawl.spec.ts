@@ -129,6 +129,13 @@ test('crawl all routes and record issues', async ({ page }) => {
   await page.route('**/api/plans**', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
   )
+  await page.route('**/api/community**', (route) =>
+    route.fulfill({
+      status: route.request().method() === 'GET' ? 200 : 204,
+      contentType: 'application/json',
+      body: route.request().method() === 'GET' ? '[]' : '',
+    })
+  )
 
   for (const route of ROUTES) {
     const report: PageReport = {

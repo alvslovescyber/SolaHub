@@ -7,8 +7,14 @@ function isOfflineReadyRoute(route: RouteLocationNormalized): boolean {
   return route.matched.some((record) => record.meta.offlineReady === true)
 }
 
+function isAuthIsolatedRoute(route: RouteLocationNormalized): boolean {
+  return route.matched.some((record) => record.meta.authIsolated === true)
+}
+
 export function registerGuards(router: Router): void {
   router.beforeEach(async (to, _from) => {
+    if (isAuthIsolatedRoute(to)) return true
+
     const auth = useAuthStore()
     const isOfflineReady = isOfflineReadyRoute(to)
     const token = tokenStorage.getAccess()
@@ -34,12 +40,6 @@ export function registerGuards(router: Router): void {
 
     // Route requires guest (not logged in)
     if (to.meta.requiresGuest && isAuthenticated && hasUser) {
-      return { name: 'dashboard' }
-    }
-
-    // Route requires presenter role
-    if (to.meta.requiresPresenter && !auth.isPresenter) {
-      if (auth.hasOfflineSession) return { name: 'notes' }
       return { name: 'dashboard' }
     }
 

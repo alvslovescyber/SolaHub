@@ -59,7 +59,10 @@ public sealed class AuthRateLimitMiddleware(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Redis rate-limit operation failed; falling back to memory cache.");
+            logger.LogWarning(
+                ex,
+                "Redis rate-limit operation failed; falling back to memory cache."
+            );
             return await IsDistributedCacheLimitedAsync(key, CancellationToken.None);
         }
     }
@@ -99,7 +102,10 @@ public sealed class AuthRateLimitMiddleware(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Distributed cache read failed for rate limit; denying request.");
+                logger.LogWarning(
+                    ex,
+                    "Distributed cache read failed for rate limit; denying request."
+                );
                 return true;
             }
 
@@ -121,7 +127,10 @@ public sealed class AuthRateLimitMiddleware(
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Distributed cache write failed for rate limit; denying request.");
+                logger.LogWarning(
+                    ex,
+                    "Distributed cache write failed for rate limit; denying request."
+                );
                 return true;
             }
 

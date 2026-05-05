@@ -32,8 +32,13 @@ public sealed class AuthController(ISender sender) : ControllerBase
                 error.Type switch
                 {
                     ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
-                    ErrorType.Validation => UnprocessableEntity(new { error.Code, error.Description }),
-                    _ => StatusCode(StatusCodes.Status500InternalServerError, new { error.Code, error.Description }),
+                    ErrorType.Validation => UnprocessableEntity(
+                        new { error.Code, error.Description }
+                    ),
+                    _ => StatusCode(
+                        StatusCodes.Status500InternalServerError,
+                        new { error.Code, error.Description }
+                    ),
                 }
         );
     }
@@ -53,7 +58,10 @@ public sealed class AuthController(ISender sender) : ControllerBase
                 error.Type switch
                 {
                     ErrorType.Unauthorized => Unauthorized(new { error.Code, error.Description }),
-                    _ => StatusCode(StatusCodes.Status500InternalServerError, new { error.Code, error.Description }),
+                    _ => StatusCode(
+                        StatusCodes.Status500InternalServerError,
+                        new { error.Code, error.Description }
+                    ),
                 }
         );
     }
@@ -97,8 +105,13 @@ public sealed class AuthController(ISender sender) : ControllerBase
                 {
                     ErrorType.Forbidden => Forbid(),
                     ErrorType.Unauthorized => Unauthorized(new { error.Code, error.Description }),
-                    ErrorType.Validation => UnprocessableEntity(new { error.Code, error.Description }),
-                    _ => StatusCode(StatusCodes.Status500InternalServerError, new { error.Code, error.Description }),
+                    ErrorType.Validation => UnprocessableEntity(
+                        new { error.Code, error.Description }
+                    ),
+                    _ => StatusCode(
+                        StatusCodes.Status500InternalServerError,
+                        new { error.Code, error.Description }
+                    ),
                 }
         );
     }
@@ -115,7 +128,11 @@ public sealed class AuthController(ISender sender) : ControllerBase
     )
     {
         var userId = User.GetRequiredUserId();
-        var command = new ChangePasswordCommand(userId, request.CurrentPassword, request.NewPassword);
+        var command = new ChangePasswordCommand(
+            userId,
+            request.CurrentPassword,
+            request.NewPassword
+        );
         var result = await sender.Send(command, ct);
 
         return result.Match<IActionResult>(
@@ -125,8 +142,13 @@ public sealed class AuthController(ISender sender) : ControllerBase
                 {
                     ErrorType.Unauthorized => Unauthorized(new { error.Code, error.Description }),
                     ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
-                    ErrorType.Validation => UnprocessableEntity(new { error.Code, error.Description }),
-                    _ => StatusCode(StatusCodes.Status500InternalServerError, new { error.Code, error.Description }),
+                    ErrorType.Validation => UnprocessableEntity(
+                        new { error.Code, error.Description }
+                    ),
+                    _ => StatusCode(
+                        StatusCodes.Status500InternalServerError,
+                        new { error.Code, error.Description }
+                    ),
                 }
         );
     }

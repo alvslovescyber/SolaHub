@@ -224,18 +224,6 @@ function cloneDeck(deck: NotationDeck): NotationDeck {
   }
 }
 
-function stripPresenterOnlyBackground(slide: NotationSlide): NotationSlide {
-  const clone = cloneSlide(slide)
-  if (clone.background.type === 'image') {
-    clone.background = {
-      type: 'solid',
-      value: 'transparent',
-      textTone: clone.background.textTone,
-    }
-  }
-  return clone
-}
-
 export const useNotationsStore = defineStore('notations', () => {
   const decks = ref<NotationDeck[]>(loadDecks())
   const activeDeckId = ref(decks.value[0]?.id ?? null)
@@ -327,6 +315,21 @@ export const useNotationsStore = defineStore('notations', () => {
     activeSlideId.value = clone.verseRef
     touch(deck)
     return clone
+  }
+
+  function moveSlide(slideId: string, targetIndex: number): NotationSlide | null {
+    const deck = ensureDeck()
+    const fromIndex = deck.slides.findIndex((slide) => slide.verseRef === slideId)
+    if (fromIndex === -1) return null
+
+    const nextIndex = clamp(Math.trunc(targetIndex), 0, deck.slides.length - 1)
+    if (fromIndex === nextIndex) return deck.slides[fromIndex]
+
+    const [slide] = deck.slides.splice(fromIndex, 1)
+    deck.slides.splice(nextIndex, 0, slide)
+    activeSlideId.value = slide.verseRef
+    touch(deck)
+    return slide
   }
 
   function removeSlide(slideId: string): void {
@@ -462,7 +465,7 @@ export const useNotationsStore = defineStore('notations', () => {
   }
 
   function slidesForPresenter(): NotationSlide[] {
-    return currentDeck.value?.slides.map(stripPresenterOnlyBackground) ?? []
+    return currentDeck.value?.slides.map(cloneSlide) ?? []
   }
 
   function exportDeck(): NotationDeck | null {
@@ -481,6 +484,7 @@ export const useNotationsStore = defineStore('notations', () => {
     selectSlide,
     addSlide,
     duplicateSlide,
+    moveSlide,
     removeSlide,
     updateSlide,
     updateElement,

@@ -98,12 +98,20 @@ test.describe('Notes', () => {
       })
     ).toBeVisible({ timeout: 10_000 })
 
-    await page.getByRole('button', { name: 'Present' }).click()
+    await page.getByRole('button', { name: 'Present', exact: true }).click()
     await expect(page.getByText(/Click .* Space to advance/)).toBeVisible({ timeout: 5_000 })
     await expect(page.getByText('Slide 2 visible text').last()).toBeVisible()
     await expect(
       page.getByText('For God so loved the world that he gave his only Son.').last()
     ).toBeVisible()
+    await page.keyboard.press('ArrowUp')
+    await expect(page.getByText('Meeting Summary').last()).toBeVisible()
+    await page.keyboard.press('ArrowDown')
+    await expect(page.getByText('Slide 2 visible text').last()).toBeVisible()
+    const liveStage = page.locator('.notation-stage').last()
+    await expect
+      .poll(async () => liveStage.evaluate((el) => getComputedStyle(el).backgroundImage))
+      .toContain('data:image/png')
     await page.keyboard.press('Escape')
     await expect(page.getByText(/Click .* Space to advance/)).toHaveCount(0)
   })

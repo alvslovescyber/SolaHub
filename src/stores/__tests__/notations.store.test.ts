@@ -26,7 +26,7 @@ describe('notations store', () => {
     })
   })
 
-  it('strips image backgrounds before loading Notations into Presenter', () => {
+  it('preserves imported image backgrounds when loaded into Presenter', () => {
     const store = useNotationsStore()
     const slide = store.currentSlide
     expect(slide).not.toBeNull()
@@ -40,10 +40,9 @@ describe('notations store', () => {
     })
 
     const [presenterSlide] = store.slidesForPresenter()
-    expect(presenterSlide.background).toEqual({
-      type: 'solid',
-      value: 'transparent',
-      textTone: 'light',
+    expect(presenterSlide.background).toMatchObject({
+      type: 'image',
+      value: 'data:image/png;base64,abc123',
     })
   })
 
@@ -65,5 +64,46 @@ describe('notations store', () => {
       type: 'gradient',
       value: 'linear-gradient(135deg, #111827, #0f766e)',
     })
+  })
+
+  it('preserves motion backgrounds when loaded into Presenter', () => {
+    const store = useNotationsStore()
+    const slide = store.currentSlide
+    expect(slide).not.toBeNull()
+
+    store.updateSlide(slide!.verseRef, {
+      background: {
+        type: 'motion',
+        value: 'linear-gradient(135deg, #020617, #14b8a6, #f59e0b)',
+        textTone: 'light',
+      },
+    })
+
+    const [presenterSlide] = store.slidesForPresenter()
+    expect(presenterSlide.background).toMatchObject({
+      type: 'motion',
+      value: 'linear-gradient(135deg, #020617, #14b8a6, #f59e0b)',
+    })
+  })
+
+  it('moves slides to requested deck positions', () => {
+    const store = useNotationsStore()
+    const first = store.currentSlide!
+    const second = store.addSlide()
+    const third = store.addSlide()
+
+    store.moveSlide(third.verseRef, 0)
+    expect(store.currentDeck?.slides.map((slide) => slide.verseRef)).toEqual([
+      third.verseRef,
+      first.verseRef,
+      second.verseRef,
+    ])
+
+    store.moveSlide(third.verseRef, 2)
+    expect(store.currentDeck?.slides.map((slide) => slide.verseRef)).toEqual([
+      first.verseRef,
+      second.verseRef,
+      third.verseRef,
+    ])
   })
 })

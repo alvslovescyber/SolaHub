@@ -229,6 +229,14 @@
     browserView.value = 'chapters'
   }
 
+  function displayLoadedVerse(index: number) {
+    if (!loadedChapterSlides.value.length) return
+    if (!isQueuedChapter.value) {
+      presenter.loadSlides(loadedChapterSlides.value)
+    }
+    presenter.goTo(index)
+  }
+
   // Auto-scroll verse list to the active verse when navigating from overlay keyboard
   watch(
     () => presenter.session.currentIndex,
@@ -425,6 +433,7 @@
     () => presenter.session.overlayOpen,
     async (open) => {
       if (open) {
+        window.addEventListener('keydown', handleOverlayKeydown)
         await nextTick()
         try {
           await overlayRef.value?.requestFullscreen?.()
@@ -434,6 +443,7 @@
         // Re-focus after fullscreen transition takes control
         overlayRef.value?.focus()
       } else {
+        window.removeEventListener('keydown', handleOverlayKeydown)
         if (document.fullscreenElement) await document.exitFullscreen?.()
       }
     }
@@ -451,6 +461,7 @@
   })
   onBeforeUnmount(() => {
     document.removeEventListener('fullscreenchange', onFullscreenChange)
+    window.removeEventListener('keydown', handleOverlayKeydown)
     window.removeEventListener('resize', clampCurrentPreviewHeight)
     stopPreviewResize()
     loadAbortController?.abort()
@@ -471,6 +482,39 @@
     if (document.fullscreenElement) await document.exitFullscreen?.()
   }
 
+  function handleOverlayKeydown(event: KeyboardEvent): void {
+    if (event.defaultPrevented || !presenter.session.overlayOpen) return
+
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+      case 'PageDown':
+      case ' ':
+      case 'Enter':
+        event.preventDefault()
+        presenter.next()
+        break
+      case 'ArrowLeft':
+      case 'ArrowUp':
+      case 'PageUp':
+      case 'Backspace':
+        event.preventDefault()
+        presenter.prev()
+        break
+      case 'b':
+      case 'B':
+        event.preventDefault()
+        presenter.toggleBlank()
+        break
+      case 'Escape':
+        event.preventDefault()
+        void handleCloseDisplay()
+        break
+      default:
+        break
+    }
+  }
+
   // ── Settings options ──────────────────────────────────────────────────────────
   const BG_OPTIONS = computed<{ value: PresenterBackground; label: string; dot: string }[]>(() => [
     { value: 'black', label: 'Black', dot: '#000000' },
@@ -478,6 +522,8 @@
     { value: 'gradient', label: 'Gradient', dot: 'linear-gradient(135deg, #1e293b, #000)' },
     { value: 'warm', label: 'Warm', dot: 'linear-gradient(135deg, #5b2333, #f59e0b)' },
     { value: 'forest', label: 'Forest', dot: 'linear-gradient(135deg, #052e2b, #14532d)' },
+    { value: 'aurora', label: 'Aurora live', dot: 'linear-gradient(135deg, #14b8a6, #111827)' },
+    { value: 'radiance', label: 'Radiance live', dot: 'linear-gradient(135deg, #3b82f6, #3f1d38)' },
     { value: 'custom', label: 'Custom', dot: biblePrefs.presenterCustomBackground },
   ])
 
@@ -741,7 +787,7 @@
                     ? 'bg-brand-50 dark:bg-brand-500/15'
                     : 'hover:bg-surface-canvas',
                 ]"
-                @click="presenter.goTo(i)"
+                @click="displayLoadedVerse(i)"
               >
                 <div class="flex items-start gap-2">
                   <span
@@ -1176,11 +1222,6 @@
         :style="presenter.isBlanked ? undefined : biblePrefs.presenterRootStyle"
         tabindex="-1"
         @click.self="presenter.next()"
-        @keydown.right="presenter.next()"
-        @keydown.left="presenter.prev()"
-        @keydown.space.prevent="presenter.next()"
-        @keydown.b="presenter.toggleBlank()"
-        @keydown.escape="handleCloseDisplay"
       >
         <!-- Slide content -->
         <SPresenterSlide

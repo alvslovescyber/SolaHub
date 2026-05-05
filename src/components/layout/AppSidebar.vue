@@ -26,9 +26,7 @@
     { name: 'Bible', icon: BookOpen, route: 'bible', section: 'bible' },
     { name: 'Plans', icon: CalendarDays, route: 'plans', section: 'plans' },
     { name: 'Notations', icon: StickyNote, route: 'notes', section: 'notes' },
-    ...(auth.isPresenter
-      ? [{ name: 'Presenter', icon: Monitor, route: 'presenter', section: 'presenter' }]
-      : []),
+    { name: 'Presenter', icon: Monitor, route: 'presenter', section: 'presenter' },
     { name: 'Community', icon: Users, route: 'community', section: 'community' },
   ])
 

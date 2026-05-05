@@ -10,6 +10,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Church> Churches => Set<Church>();
     public DbSet<VerseNote> VerseNotes => Set<VerseNote>();
     public DbSet<ReadingPlan> ReadingPlans => Set<ReadingPlan>();
+    public DbSet<CommunityPost> CommunityPosts => Set<CommunityPost>();
+    public DbSet<CommunityPostReport> CommunityPostReports => Set<CommunityPostReport>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

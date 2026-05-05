@@ -39,8 +39,36 @@
 
   const collapsed = computed(() => ui.sidebarCollapsed)
   const notifOpen = ref(false)
+  const notifAnchor = ref<NotificationAnchorRect | null>(null)
 
   const searchKbd = computed(() => (isMac ? `${modKeyLabel} K` : `${modKeyLabel}+K`))
+
+  interface NotificationAnchorRect {
+    top: number
+    right: number
+    bottom: number
+    left: number
+    width: number
+    height: number
+  }
+
+  function readAnchorRect(target: EventTarget | null): NotificationAnchorRect | null {
+    if (!(target instanceof HTMLElement)) return null
+    const rect = target.getBoundingClientRect()
+    return {
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+    }
+  }
+
+  function toggleNotifications(event: MouseEvent): void {
+    notifAnchor.value = readAnchorRect(event.currentTarget)
+    notifOpen.value = !notifOpen.value
+  }
 
   function openPalette() {
     ui.openCommandPalette()
@@ -95,7 +123,7 @@
             size="sm"
             class="shrink-0"
             data-no-drag
-            @click="notifOpen = !notifOpen"
+            @click="toggleNotifications"
           >
             <Bell class="h-[14px] w-[14px]" />
           </SIconButton>
@@ -139,7 +167,7 @@
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40',
                 'h-8 w-8',
               ]"
-              @click="notifOpen = !notifOpen"
+              @click="toggleNotifications"
             >
               <Bell class="h-4 w-4" stroke-width="2" />
             </button>
@@ -209,7 +237,6 @@
 
       <SSidebarGroup label="Sunday" :collapsed="collapsed">
         <SSidebarItem
-          v-if="auth.isPresenter"
           :icon="Monitor"
           label="Presenter"
           route-name="presenter"
@@ -242,5 +269,5 @@
     </div>
   </aside>
 
-  <SNotificationPanel :open="notifOpen" @close="notifOpen = false" />
+  <SNotificationPanel :open="notifOpen" :anchor-rect="notifAnchor" @close="notifOpen = false" />
 </template>

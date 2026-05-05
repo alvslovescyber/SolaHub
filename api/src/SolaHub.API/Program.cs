@@ -9,7 +9,6 @@ using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using Serilog;
 using Serilog.Events;
-using StackExchange.Redis;
 using SolaHub.API.Hubs;
 using SolaHub.API.Middleware;
 using SolaHub.Application;
@@ -18,6 +17,7 @@ using SolaHub.Core.ValueObjects;
 using SolaHub.Infrastructure;
 using SolaHub.Infrastructure.Auth;
 using SolaHub.Infrastructure.Persistence;
+using StackExchange.Redis;
 
 // ─── Bootstrap Logger ──────────────────────────────────────────────────────────
 Log.Logger = new LoggerConfiguration()
@@ -57,14 +57,13 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 
-    builder
-        .Services.AddResponseCompression(opts =>
-        {
-            // Avoid compressing secret-bearing JSON responses over HTTPS.
-            opts.EnableForHttps = false;
-            opts.Providers.Add<BrotliCompressionProvider>();
-            opts.Providers.Add<GzipCompressionProvider>();
-        });
+    builder.Services.AddResponseCompression(opts =>
+    {
+        // Avoid compressing secret-bearing JSON responses over HTTPS.
+        opts.EnableForHttps = false;
+        opts.Providers.Add<BrotliCompressionProvider>();
+        opts.Providers.Add<GzipCompressionProvider>();
+    });
 
     builder.Services.Configure<ForwardedHeadersOptions>(opts =>
     {
@@ -124,7 +123,9 @@ try
                     var principal = context.Principal;
                     var sub =
                         principal?.FindFirstValue(ClaimTypes.NameIdentifier)
-                        ?? principal?.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+                        ?? principal?.FindFirstValue(
+                            System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub
+                        );
                     if (!Guid.TryParse(sub, out var userGuid))
                     {
                         context.Fail("Missing or invalid user identifier.");
@@ -138,13 +139,18 @@ try
                         return;
                     }
 
-                    var repo = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+                    var repo =
+                        context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
                     var user = await repo.GetByIdAsync(
                         UserId.From(userGuid),
                         context.HttpContext.RequestAborted
                     );
 
-                    if (user is null || !user.IsActive || user.SessionVersion != tokenSessionVersion)
+                    if (
+                        user is null
+                        || !user.IsActive
+                        || user.SessionVersion != tokenSessionVersion
+                    )
                         context.Fail("Token has been revoked.");
                 },
             };
@@ -222,6 +228,7 @@ try
 
     app.UseCors("TauriApp");
     app.UseAuthentication();
+    app.UseMiddleware<CommunityWriteRateLimitMiddleware>();
     app.UseAuthorization();
     app.UseResponseCompression();
 
@@ -311,8 +318,11 @@ static string[] ResolveCorsOrigins(IConfiguration configuration, IHostEnvironmen
             "tauri://localhost",
             "https://tauri.localhost",
             "http://localhost:1420",
+            "http://127.0.0.1:1420",
             "http://localhost:3000",
+            "http://127.0.0.1:3000",
             "http://localhost:5173",
+            "http://127.0.0.1:5173",
         ];
     }
 

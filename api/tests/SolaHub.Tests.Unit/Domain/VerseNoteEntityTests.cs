@@ -103,11 +103,24 @@ public sealed class VerseNoteEntityTests
         var note = CreateValidNote();
         note.IsShared.Should().BeFalse();
 
-        note.SetShared(true);
+        note.SetShared(true).IsSuccess.Should().BeTrue();
         note.IsShared.Should().BeTrue();
 
-        note.SetShared(false);
+        note.SetShared(false).IsSuccess.Should().BeTrue();
         note.IsShared.Should().BeFalse();
+    }
+
+    [Fact]
+    public void SetShared_WithBlockedContent_Fails()
+    {
+        var note = VerseNote
+            .Create(_userId, VerseRef.Parse("JHN.3.16"), "This is shit content", [])
+            .Value;
+
+        var result = note.SetShared(true);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Validation.Content.Blocked");
     }
 
     // ─── UpdateContent ────────────────────────────────────────────────────────

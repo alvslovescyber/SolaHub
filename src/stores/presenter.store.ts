@@ -8,6 +8,8 @@ import { isBrowserOffline } from '@/lib/networkStatus'
 
 const DISPLAY_CHANNEL = 'solahub:presenter-display'
 const DISPLAY_STATE_EVENT = 'solahub:presenter-display-state'
+const DISPLAY_READY_EVENT = 'solahub:presenter-display-ready'
+const DISPLAY_CLOSED_EVENT = 'solahub:presenter-display-closed'
 const DISPLAY_SYNC_RETRY_MS = [250, 750, 1500, 3000]
 
 export interface PresenterDisplayState {
@@ -17,6 +19,23 @@ export interface PresenterDisplayState {
   isBlanked: boolean
   planId: string | null
 }
+
+export interface PresenterDisplayReady {
+  type: 'ready'
+}
+
+export interface PresenterDisplayClosed {
+  type: 'closed'
+}
+
+export interface LoadSlidesOptions {
+  clearOnDisplayClose?: boolean
+}
+
+type PresenterDisplayMessage =
+  | PresenterDisplayState
+  | PresenterDisplayReady
+  | PresenterDisplayClosed
 
 export const usePresenterStore = defineStore('presenter', () => {
   const session = ref<PresenterSession>({
@@ -31,6 +50,23 @@ export const usePresenterStore = defineStore('presenter', () => {
   const isBlanked = ref(false)
   const displayChannel =
     typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(DISPLAY_CHANNEL)
+  let unlistenDisplayReady: (() => void) | null = null
+  let unlistenDisplayClosed: (() => void) | null = null
+  let unlistenMainWindowResize: (() => void) | null = null
+  let mainWindowWatcherPromise: Promise<void> | null = null
+  const clearSlidesOnDisplayClose = ref(false)
+
+  if (displayChannel) {
+    displayChannel.onmessage = (message: MessageEvent<PresenterDisplayMessage>) => {
+      if (message.data.type === 'ready' && session.value.slides.length > 0) {
+        syncDisplayState()
+        return
+      }
+      if (message.data.type === 'closed') {
+        markDisplayClosed()
+      }
+    }
+  }
 
   const currentSlide = computed<PresenterSlide | null>(
     () => session.value.slides[session.value.currentIndex] ?? null
@@ -44,14 +80,35 @@ export const usePresenterStore = defineStore('presenter', () => {
       : 0
   )
 
-  function loadSlides(slides: PresenterSlide[], planId: string | null = null): void {
+  function loadSlides(
+    slides: PresenterSlide[],
+    planId: string | null = null,
+    startIndex = 0,
+    options: LoadSlidesOptions = {}
+  ): void {
+    const currentIndex =
+      slides.length === 0 ? 0 : Math.min(Math.max(Math.trunc(startIndex), 0), slides.length - 1)
+
     session.value = {
       ...session.value,
       slides,
-      currentIndex: 0,
+      currentIndex,
       planId,
     }
     isBlanked.value = false
+    clearSlidesOnDisplayClose.value = options.clearOnDisplayClose === true
+    syncDisplayState()
+  }
+
+  function clearSlides(): void {
+    session.value = {
+      ...session.value,
+      slides: [],
+      currentIndex: 0,
+      planId: null,
+    }
+    isBlanked.value = false
+    clearSlidesOnDisplayClose.value = false
     syncDisplayState()
   }
 
@@ -101,11 +158,13 @@ export const usePresenterStore = defineStore('presenter', () => {
   async function openDisplayWindow(monitorIndex = 0): Promise<void> {
     isBlanked.value = false
     if (isTauri) {
+      await listenForDisplayLifecycle()
       await invoke('open_presenter_window', {
         url: '/#/presenter-display',
         monitorIndex,
       })
       session.value.displayWindowOpen = true
+      await listenForMainWindowMinimize()
       syncDisplayState()
       DISPLAY_SYNC_RETRY_MS.forEach((delay) => window.setTimeout(syncDisplayState, delay))
       return
@@ -115,19 +174,17 @@ export const usePresenterStore = defineStore('presenter', () => {
   }
 
   async function closeDisplayWindow(): Promise<void> {
+    stopMainWindowMinimizeWatcher()
+    stopDisplayLifecycleListeners()
     if (isTauri && session.value.displayWindowOpen) {
       await invoke('close_presenter_window')
     }
-    session.value.overlayOpen = false
-    session.value.displayWindowOpen = false
-    isBlanked.value = false
-    syncDisplayState()
+    markDisplayClosed()
   }
 
   function closeOverlay(): void {
-    session.value.overlayOpen = false
-    isBlanked.value = false
-    syncDisplayState()
+    stopMainWindowMinimizeWatcher()
+    markDisplayClosed()
   }
 
   async function toggleFullscreen(): Promise<void> {
@@ -142,6 +199,26 @@ export const usePresenterStore = defineStore('presenter', () => {
     } catch {
       /* fullscreen not supported or blocked */
     }
+  }
+
+  function markDisplayClosed(): void {
+    stopMainWindowMinimizeWatcher()
+    stopDisplayLifecycleListeners()
+    session.value.overlayOpen = false
+    session.value.displayWindowOpen = false
+    isBlanked.value = false
+
+    if (clearSlidesOnDisplayClose.value) {
+      session.value = {
+        ...session.value,
+        slides: [],
+        currentIndex: 0,
+        planId: null,
+      }
+      clearSlidesOnDisplayClose.value = false
+    }
+
+    syncDisplayState()
   }
 
   function applyDisplayState(state: PresenterDisplayState): void {
@@ -175,6 +252,77 @@ export const usePresenterStore = defineStore('presenter', () => {
     void emitDisplayState(state)
   }
 
+  async function listenForDisplayLifecycle(): Promise<void> {
+    if (!isTauri || (unlistenDisplayReady && unlistenDisplayClosed)) return
+
+    try {
+      const { listen } = await import('@tauri-apps/api/event')
+      if (!unlistenDisplayReady) {
+        unlistenDisplayReady = await listen<PresenterDisplayReady>(DISPLAY_READY_EVENT, () => {
+          syncDisplayState()
+        })
+      }
+      if (!unlistenDisplayClosed) {
+        unlistenDisplayClosed = await listen<PresenterDisplayClosed>(DISPLAY_CLOSED_EVENT, () => {
+          markDisplayClosed()
+        })
+      }
+    } catch {
+      // BroadcastChannel retries still cover the browser fallback and boot races.
+    }
+  }
+
+  async function listenForMainWindowMinimize(): Promise<void> {
+    if (!isTauri || unlistenMainWindowResize || mainWindowWatcherPromise) {
+      await mainWindowWatcherPromise
+      return
+    }
+
+    mainWindowWatcherPromise = (async () => {
+      try {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window')
+        const mainWindow = getCurrentWindow()
+        const closeIfMinimized = async () => {
+          try {
+            if (await mainWindow.isMinimized()) {
+              await closeDisplayWindow()
+            }
+          } catch {
+            // If the native query fails, leave presentation control responsive.
+          }
+        }
+
+        const unlisten = await mainWindow.onResized(() => {
+          void closeIfMinimized()
+        })
+
+        if (session.value.displayWindowOpen) {
+          unlistenMainWindowResize = unlisten
+        } else {
+          unlisten()
+        }
+      } catch {
+        // Some browser/test contexts do not expose the native window API.
+      } finally {
+        mainWindowWatcherPromise = null
+      }
+    })()
+
+    await mainWindowWatcherPromise
+  }
+
+  function stopMainWindowMinimizeWatcher(): void {
+    unlistenMainWindowResize?.()
+    unlistenMainWindowResize = null
+  }
+
+  function stopDisplayLifecycleListeners(): void {
+    unlistenDisplayReady?.()
+    unlistenDisplayReady = null
+    unlistenDisplayClosed?.()
+    unlistenDisplayClosed = null
+  }
+
   function broadcastCurrentVerse(): void {
     const slide = currentSlide.value
     const planId = session.value.planId
@@ -193,6 +341,7 @@ export const usePresenterStore = defineStore('presenter', () => {
     hasPrev,
     progress,
     loadSlides,
+    clearSlides,
     next,
     prev,
     goTo,
@@ -219,4 +368,4 @@ async function emitDisplayState(state: PresenterDisplayState): Promise<void> {
   }
 }
 
-export { DISPLAY_CHANNEL, DISPLAY_STATE_EVENT }
+export { DISPLAY_CHANNEL, DISPLAY_CLOSED_EVENT, DISPLAY_READY_EVENT, DISPLAY_STATE_EVENT }

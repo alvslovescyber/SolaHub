@@ -28,7 +28,10 @@ internal sealed class GetPlanByIdQueryHandler(
         if (!canReadPublicPlan && plan.CreatedBy != request.RequestingUserId && !isParticipant)
             return Error.Forbidden("Plans.Forbidden", "You do not have access to this plan.");
 
-        var displayNames = await BuildDisplayNameMapAsync(plan.Participants.Select(p => p.UserId), ct);
+        var displayNames = await BuildDisplayNameMapAsync(
+            plan.Participants.Select(p => p.UserId),
+            ct
+        );
         return ReadingPlanMapper.ToDto(plan, displayNames);
     }
 

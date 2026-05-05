@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { usePresenterStore } from '@/stores/presenter.store'
-import type { PresenterSlide, ScriptureSlide, SongSlide } from '@/types/presenter.types'
+import type {
+  NotationSlide,
+  PresenterSlide,
+  ScriptureSlide,
+  SongSlide,
+} from '@/types/presenter.types'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -22,6 +27,35 @@ function makeSong(i: number): SongSlide {
     text: `Lyric line ${i}`,
     songTitle: 'Amazing Grace',
     sectionLabel: i === 0 ? 'Verse 1' : 'Chorus',
+  }
+}
+
+function makeNotation(): NotationSlide {
+  return {
+    source: 'notation',
+    verseRef: 'notation-sunday-1',
+    title: 'Sunday Notation',
+    text: 'Welcome',
+    background: {
+      type: 'gradient',
+      value: 'linear-gradient(135deg, #111827 0%, #0f766e 100%)',
+      textTone: 'light',
+    },
+    elements: [
+      {
+        id: 'text-1',
+        kind: 'text',
+        text: 'Welcome',
+        x: 10,
+        y: 40,
+        width: 80,
+        height: 16,
+        fontSize: 48,
+        color: '#ffffff',
+        align: 'center',
+        fontWeight: 'bold',
+      },
+    ],
   }
 }
 
@@ -80,6 +114,21 @@ describe('presenter.store', () => {
       const store = usePresenterStore()
       store.loadSlides(makeSlides(2), 'plan-123')
       expect(store.session.planId).toBe('plan-123')
+    })
+
+    it('can start a loaded deck from a selected slide', () => {
+      const store = usePresenterStore()
+      store.loadSlides(makeSlides(3), null, 2)
+
+      expect(store.session.currentIndex).toBe(2)
+      expect(store.currentSlide?.verseRef).toBe('John.3.3')
+    })
+
+    it('clamps the selected start index to the loaded deck', () => {
+      const store = usePresenterStore()
+      store.loadSlides(makeSlides(2), null, 99)
+
+      expect(store.session.currentIndex).toBe(1)
     })
 
     it('persists overlayOpen state across loadSlides', () => {
@@ -245,6 +294,29 @@ describe('presenter.store', () => {
       store.closeOverlay()
       expect(store.session.overlayOpen).toBe(false)
       expect(store.isBlanked).toBe(false)
+    })
+
+    it('clears transient notation slides when the display is closed', async () => {
+      const store = usePresenterStore()
+      store.loadSlides([makeNotation()], null, 0, { clearOnDisplayClose: true })
+      await store.openDisplayWindow()
+
+      await store.closeDisplayWindow()
+
+      expect(store.session.slides).toHaveLength(0)
+      expect(store.currentSlide).toBeNull()
+      expect(store.session.currentIndex).toBe(0)
+    })
+
+    it('keeps explicitly loaded slides after the display is closed', async () => {
+      const store = usePresenterStore()
+      store.loadSlides([makeNotation()])
+      await store.openDisplayWindow()
+
+      await store.closeDisplayWindow()
+
+      expect(store.session.slides).toHaveLength(1)
+      expect(store.currentSlide?.source).toBe('notation')
     })
   })
 

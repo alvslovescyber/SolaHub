@@ -74,4 +74,18 @@ describe('SNotationSlideCanvas', () => {
     expect(wrapper.emitted('elementPointerDown')).toHaveLength(1)
     expect(wrapper.text()).toContain('Church notices')
   })
+
+  it('marks motion backgrounds for animated rendering', () => {
+    const slide = makeSlide()
+    slide.background = {
+      type: 'motion',
+      value: 'linear-gradient(135deg, #020617, #14b8a6, #f59e0b)',
+      textTone: 'light',
+    }
+
+    const wrapper = mount(SNotationSlideCanvas, { props: { slide, mode: 'display' } })
+
+    expect(wrapper.get('.notation-stage').classes()).toContain('solahub-motion-background')
+    expect(wrapper.get('.notation-stage').attributes('style')).toContain('linear-gradient')
+  })
 })

@@ -3,6 +3,8 @@ import { defineConfig, devices } from '@playwright/test'
 const webPort = process.env.E2E_WEB_PORT ?? '3000'
 const webHost = process.env.E2E_WEB_HOST ?? '127.0.0.1'
 const webBaseURL = process.env.E2E_BASE_URL ?? `http://${webHost}:${webPort}`
+const apiPort = process.env.E2E_API_PORT ?? '5000'
+const apiBaseURL = process.env.VITE_API_URL ?? `http://localhost:${apiPort}`
 const webServers = [
   {
     command: `VITE_WEB_ONLY=true vite --host ${webHost} --port ${webPort} --strictPort`,
@@ -14,10 +16,9 @@ const webServers = [
 
 if (process.env.E2E_SKIP_API_SERVER !== 'true') {
   webServers.push({
-    command:
-      'dotnet run --project api/src/SolaHub.API/SolaHub.API.csproj --urls http://localhost:5000',
-    url: 'http://localhost:5000/health',
-    reuseExistingServer: !process.env.CI,
+    command: `dotnet run --project api/src/SolaHub.API/SolaHub.API.csproj --urls ${apiBaseURL}`,
+    url: `${apiBaseURL}/health`,
+    reuseExistingServer: !process.env.CI && process.env.E2E_REUSE_API_SERVER === 'true',
     timeout: 120_000,
     env: {
       ASPNETCORE_ENVIRONMENT: 'Test',
@@ -50,7 +51,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+      use: { ...devices['Desktop Chrome'] },
     },
   ],
 

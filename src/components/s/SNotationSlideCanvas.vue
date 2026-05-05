@@ -36,6 +36,11 @@
     return { ...bg, width: '100%', height: '100%' }
   })
 
+  const stageClass = computed(() => [
+    'notation-stage relative overflow-hidden',
+    props.slide.background.type === 'motion' ? 'solahub-motion-background' : '',
+  ])
+
   function elementStyle(element: NotationElement): CSSProperties {
     return {
       left: `${element.x}%`,
@@ -53,7 +58,7 @@
 
 <template>
   <div
-    class="notation-stage relative overflow-hidden"
+    :class="stageClass"
     :style="stageStyle"
     @pointerdown.self="emit('canvasPointerDown', $event)"
   >

@@ -29,13 +29,13 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Install CSharpier
-        run: |
-          dotnet tool install --global csharpier
-          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+      - name: Restore CSharpier
+        run: dotnet tool restore
+        working-directory: api
 
       - name: Check formatting
-        run: csharpier --check api/
+        run: dotnet tool run csharpier check .
+        working-directory: api
 
   build:
     name: Build & Unit Tests

@@ -17,6 +17,7 @@ public sealed class CollaborationHub(
 ) : Hub
 {
     private const int MaxVerseRefLength = 128;
+
     private static string PlanGroup(Guid planId) => $"plan:{planId}";
 
     private UserId RequireUserId()
@@ -49,7 +50,9 @@ public sealed class CollaborationHub(
         if (trimmed.Length == 0)
             return null;
         if (trimmed.Length > MaxVerseRefLength)
-            throw new HubException($"Verse reference must not exceed {MaxVerseRefLength} characters.");
+            throw new HubException(
+                $"Verse reference must not exceed {MaxVerseRefLength} characters."
+            );
         return trimmed;
     }
 

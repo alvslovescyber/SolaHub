@@ -59,10 +59,7 @@ internal sealed class RegisterCommandHandler(
         // Check uniqueness before hashing (expensive operation).
         // Generic message prevents email enumeration by attackers.
         if (await userRepository.ExistsByEmailAsync(request.Email, ct))
-            return Error.Conflict(
-                "Auth.EmailTaken",
-                "An account with this email already exists."
-            );
+            return Error.Conflict("Auth.EmailTaken", "An account with this email already exists.");
 
         var hash = passwordHasher.Hash(request.Password);
         var userResult = User.Create(request.Email, hash, request.DisplayName);
@@ -83,10 +80,7 @@ internal sealed class RegisterCommandHandler(
             return tokenResult.Error;
 
         if (!await userRepository.TryAddAsync(user, ct))
-            return Error.Conflict(
-                "Auth.EmailTaken",
-                "An account with this email already exists."
-            );
+            return Error.Conflict("Auth.EmailTaken", "An account with this email already exists.");
 
         return new AuthResponse(
             accessToken,

@@ -5,6 +5,8 @@ import type { VerseNote } from '../../src/types/notes.types'
 
 export const TEST_USER_EMAIL = process.env.E2E_USER ?? 'alvistest@gmail.com'
 export const TEST_USER_PASSWORD = process.env.E2E_PASS ?? 'Password1'
+const API_URL = process.env.VITE_API_URL ?? 'http://localhost:5000'
+let defaultTestUserSeeded = false
 
 export function uniqueEmail(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}@example.com`
@@ -49,12 +51,31 @@ export async function clearBrowserState(page: Page): Promise<void> {
 }
 
 export async function loginAsTestUser(page: Page): Promise<void> {
+  await ensureDefaultTestUser(page)
   await clearBrowserState(page)
   await page.goto('/#/login')
   await page.getByLabel('Email').fill(TEST_USER_EMAIL)
   await page.getByLabel('Password').fill(TEST_USER_PASSWORD)
   await page.getByRole('button', { name: 'Sign in with email' }).click()
   await expect(page).toHaveURL(/#\/$/, { timeout: 10_000 })
+}
+
+async function ensureDefaultTestUser(page: Page): Promise<void> {
+  if (defaultTestUserSeeded) return
+
+  const response = await page.request.post(`${API_URL}/api/auth/register`, {
+    data: {
+      displayName: 'Alvis Test',
+      email: TEST_USER_EMAIL,
+      password: TEST_USER_PASSWORD,
+    },
+  })
+
+  if (![201, 409].includes(response.status())) {
+    throw new Error(`Unable to seed E2E login user: ${response.status()} ${await response.text()}`)
+  }
+
+  defaultTestUserSeeded = true
 }
 
 export async function registerUniqueUser(
@@ -207,6 +228,14 @@ export async function mockStableAppApi(page: Page): Promise<void> {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(body),
+    })
+  })
+
+  await page.route('**/api/community**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([]),
     })
   })
 }

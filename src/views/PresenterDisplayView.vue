@@ -1,52 +1,60 @@
 <script setup lang="ts">
-  import { computed, onBeforeUnmount, onMounted } from 'vue'
+  import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
   import {
     DISPLAY_CHANNEL,
+    DISPLAY_CLOSED_EVENT,
+    DISPLAY_READY_EVENT,
     DISPLAY_STATE_EVENT,
     usePresenterStore,
+    type PresenterDisplayClosed,
+    type PresenterDisplayReady,
     type PresenterDisplayState,
   } from '@/stores/presenter.store'
   import { useBiblePreferencesStore } from '@/stores/biblePreferences.store'
   import { SPresenterSlide } from '@/components/s'
-  import { collaborationService } from '@/services/collaboration.service'
   import { isTauri } from '@/lib/platform'
 
   const presenter = usePresenterStore()
   const biblePrefs = useBiblePreferencesStore()
   const slide = computed(() => presenter.currentSlide)
+  const presenterRoot = ref<HTMLElement | null>(null)
 
-  let unsubscribe: (() => void) | null = null
   let channel: BroadcastChannel | null = null
   let unlistenDisplayEvent: (() => void) | null = null
+  let unlistenWindowResize: (() => void) | null = null
   let mounted = false
+  let displayClosedAnnounced = false
 
-  onMounted(() => {
+  onMounted(async () => {
     mounted = true
     if (typeof BroadcastChannel !== 'undefined') {
       channel = new BroadcastChannel(DISPLAY_CHANNEL)
       channel.onmessage = (message: MessageEvent<PresenterDisplayState>) => {
         if (message.data.type === 'state') {
-          presenter.applyDisplayState(message.data)
+          applyDisplayOnlyState(message.data)
         }
       }
     }
 
-    void listenForDisplayState()
+    const displayStateReady = listenForDisplayState()
+    void listenForPresenterWindowMinimize()
 
-    unsubscribe = collaborationService.on((event) => {
-      if (event.type === 'PresenterVerseChanged') {
-        const idx = presenter.session.slides.findIndex((s) => s.verseRef === event.verseRef)
-        if (idx !== -1) presenter.goTo(idx)
-      }
-    })
+    window.addEventListener('keydown', handleDisplayKeydown)
+
+    await nextTick()
+    presenterRoot.value?.focus({ preventScroll: true })
+    await displayStateReady
+    announceDisplayReady()
   })
 
   onBeforeUnmount(() => {
     mounted = false
-    unsubscribe?.()
-    unsubscribe = null
+    announceDisplayClosed()
     unlistenDisplayEvent?.()
     unlistenDisplayEvent = null
+    unlistenWindowResize?.()
+    unlistenWindowResize = null
+    window.removeEventListener('keydown', handleDisplayKeydown)
     channel?.close()
     channel = null
   })
@@ -58,7 +66,7 @@
       const { listen } = await import('@tauri-apps/api/event')
       const unlisten = await listen<PresenterDisplayState>(DISPLAY_STATE_EVENT, (event) => {
         if (event.payload.type === 'state') {
-          presenter.applyDisplayState(event.payload)
+          applyDisplayOnlyState(event.payload)
         }
       })
 
@@ -71,21 +79,141 @@
       // BroadcastChannel remains available as the browser/web fallback.
     }
   }
+
+  async function listenForPresenterWindowMinimize(): Promise<void> {
+    if (!isTauri) return
+
+    try {
+      const [{ invoke }, { getCurrentWindow }] = await Promise.all([
+        import('@tauri-apps/api/core'),
+        import('@tauri-apps/api/window'),
+      ])
+      const presenterWindow = getCurrentWindow()
+      const closeIfMinimized = async () => {
+        try {
+          if (await presenterWindow.isMinimized()) {
+            await invoke('close_presenter_window')
+          }
+        } catch {
+          // Keep the visible presenter responsive if the native API is unavailable.
+        }
+      }
+      const unlisten = await presenterWindow.onResized(() => {
+        void closeIfMinimized()
+      })
+
+      if (mounted) {
+        unlistenWindowResize = unlisten
+      } else {
+        unlisten()
+      }
+    } catch {
+      // Browser display routes do not expose a native window lifecycle.
+    }
+  }
+
+  function announceDisplayReady(): void {
+    const ready = { type: 'ready' } satisfies PresenterDisplayReady
+    channel?.postMessage(ready)
+
+    if (!isTauri) return
+
+    void import('@tauri-apps/api/event')
+      .then(({ emit }) => emit(DISPLAY_READY_EVENT, ready))
+      .catch(() => {
+        // State retries remain in place if the native event channel is unavailable.
+      })
+  }
+
+  function announceDisplayClosed(): void {
+    if (displayClosedAnnounced) return
+    displayClosedAnnounced = true
+
+    const closed = { type: 'closed' } satisfies PresenterDisplayClosed
+    channel?.postMessage(closed)
+
+    if (!isTauri) return
+
+    void import('@tauri-apps/api/event')
+      .then(({ emit }) => emit(DISPLAY_CLOSED_EVENT, closed))
+      .catch(() => {
+        // The window is already closing; the main window also handles explicit close requests.
+      })
+  }
+
+  function applyDisplayOnlyState(state: PresenterDisplayState): void {
+    presenter.applyDisplayState({ ...state, planId: null })
+  }
+
+  function handleDisplayKeydown(event: KeyboardEvent): void {
+    if (event.defaultPrevented) return
+
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+      case 'PageDown':
+      case ' ':
+      case 'Enter':
+        event.preventDefault()
+        presenter.next()
+        break
+      case 'ArrowLeft':
+      case 'ArrowUp':
+      case 'PageUp':
+      case 'Backspace':
+        event.preventDefault()
+        presenter.prev()
+        break
+      case 'b':
+      case 'B':
+        event.preventDefault()
+        presenter.toggleBlank()
+        break
+      case 'Escape':
+        event.preventDefault()
+        void closePresenterDisplay()
+        break
+      default:
+        break
+    }
+  }
+
+  async function closePresenterDisplay(): Promise<void> {
+    announceDisplayClosed()
+
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core')
+        await invoke('close_presenter_window')
+        return
+      } catch {
+        // Fall through to the browser fallback below.
+      }
+    }
+
+    window.close()
+    await presenter.closeDisplayWindow()
+  }
 </script>
 
 <template>
   <div
+    ref="presenterRoot"
+    data-testid="presenter-display-root"
+    tabindex="-1"
     :class="[
       'fixed inset-0 flex flex-col items-center justify-center select-none',
-      biblePrefs.presenterRootClass,
+      presenter.isBlanked ? 'bg-black' : biblePrefs.presenterRootClass,
     ]"
-    :style="biblePrefs.presenterRootStyle"
+    :style="presenter.isBlanked ? undefined : biblePrefs.presenterRootStyle"
   >
     <Transition name="presenter-fade" mode="out-in">
-      <SPresenterSlide v-if="slide" :slide="slide" :slide-key="slide.verseRef" />
-      <div v-else :key="'waiting'" class="text-slate-600 text-xl font-sans">
-        Waiting for presenter…
-      </div>
+      <SPresenterSlide
+        v-if="slide"
+        :slide="slide"
+        :slide-key="slide.verseRef"
+        :blanked="presenter.isBlanked"
+      />
     </Transition>
   </div>
 </template>

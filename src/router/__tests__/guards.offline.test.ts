@@ -65,7 +65,10 @@ describe('offline route guards', () => {
     expect(router.currentRoute.value.name).toBe('notes')
   })
 
-  it('allows presenter while offline when the cached user can present', async () => {
+  it('allows presenter while offline for any previously signed-in user', async () => {
+    localStorage.clear()
+    tokenStorage.set(expiredToken(), 'refresh')
+    saveOfflineUser(member)
     const router = makeRouter()
 
     await router.push('/presenter')
@@ -96,16 +99,25 @@ describe('offline route guards', () => {
     expect(router.currentRoute.value.query.redirect).toBe('/notes')
   })
 
-  it('does not allow cached member users into offline presenter routes', async () => {
+  it('keeps the presenter display route available without a login session', async () => {
     localStorage.clear()
-    tokenStorage.set(expiredToken(), 'refresh')
-    saveOfflineUser(member)
     const router = makeRouter()
 
-    await router.push('/presenter')
+    await router.push('/presenter-display')
     await router.isReady()
 
-    expect(router.currentRoute.value.name).toBe('notes')
+    expect(router.currentRoute.value.name).toBe('presenter-display')
+  })
+
+  it('does not refresh stale tokens on the presenter display route', async () => {
+    setOnlineStatus(true)
+    const router = makeRouter()
+
+    await router.push('/presenter-display')
+    await router.isReady()
+
+    expect(router.currentRoute.value.name).toBe('presenter-display')
+    expect(authMocks.refresh).not.toHaveBeenCalled()
   })
 
   it('keeps offline-ready routes available when an in-memory session expires offline', async () => {
@@ -152,13 +164,14 @@ function makeRouter() {
           { path: '', name: 'dashboard', component: Empty },
           { path: 'notes', name: 'notes', component: Empty, meta: { offlineReady: true } },
           { path: 'plans', name: 'plans', component: Empty },
-          {
-            path: 'presenter',
-            name: 'presenter',
-            component: Empty,
-            meta: { requiresPresenter: true, offlineReady: true },
-          },
+          { path: 'presenter', name: 'presenter', component: Empty, meta: { offlineReady: true } },
         ],
+      },
+      {
+        path: '/presenter-display',
+        name: 'presenter-display',
+        component: Empty,
+        meta: { authIsolated: true, offlineReady: true },
       },
     ],
   })

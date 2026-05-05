@@ -8,6 +8,7 @@ import { clearOfflineUser, loadOfflineUser, saveOfflineUser } from '@/lib/offlin
 import { isBrowserOffline, isNetworkError } from '@/lib/networkStatus'
 import { useNotesStore } from '@/stores/notes.store'
 import { usePlansStore } from '@/stores/plans.store'
+import { useCommunityStore } from '@/stores/community.store'
 import { useVerseAnnotationsStore } from '@/stores/verseAnnotations.store'
 import type { User } from '@/types/user.types'
 
@@ -27,9 +28,7 @@ export const useAuthStore = defineStore('auth', () => {
   )
   const hasOfflineSession = computed(() => user.value !== null && isOfflineSession.value)
   const isAdmin = computed(() => user.value?.role === 'Admin')
-  const isPresenter = computed(
-    () => user.value?.role === 'Presenter' || user.value?.role === 'Pastor' || isAdmin.value
-  )
+  const isPresenter = computed(() => user.value !== null)
 
   async function register(email: string, password: string, displayName: string): Promise<void> {
     isLoading.value = true
@@ -74,6 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
     tokenStorage.clear()
     useNotesStore().reset()
     usePlansStore().reset()
+    useCommunityStore().reset()
     const annotations = useVerseAnnotationsStore()
     annotations.reset()
     annotations.useScope(null)
