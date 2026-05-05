@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { DownloadIcon, ArrowLeftIcon } from 'lucide-vue-next'
 
-  const version = '0.1.0'
+  const version = '0.1.1'
   const REPO = 'alvslovescyber/SolaHub'
 
   function downloadUrl(format: 'dmg' | 'exe' | 'msi', arch: 'aarch64' | 'x64'): string {

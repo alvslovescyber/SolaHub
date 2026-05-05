@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "SolaHub",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "identifier": "com.solahub.app",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -39,6 +39,8 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "SolaHub",
+    "copyright": "© 2026 SolaHub. All rights reserved.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -52,6 +54,18 @@
         "windowSize": { "width": 660, "height": 400 },
         "appPosition": { "x": 180, "y": 200 },
         "applicationsPosition": { "x": 480, "y": 200 }
+      }
+    },
+    "windows": {
+      "nsis": {
+        "headerImage": "assets/nsis-header.bmp",
+        "sidebarImage": "assets/nsis-sidebar.bmp",
+        "installMode": "currentUser",
+        "shortcutName": "SolaHub"
+      },
+      "wix": {
+        "bannerPath": "assets/wix-banner.bmp",
+        "dialogImagePath": "assets/wix-dialog.bmp"
       }
     }
   }
