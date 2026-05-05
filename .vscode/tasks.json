@@ -170,7 +170,7 @@
         "background": {
           "activeOnStart": true,
           "beginsPattern": "Running BeforeDevCommand|VITE",
-          "endsPattern": "Finished `dev` profile|Running `target/debug/solahub`|Webview URL"
+          "endsPattern": "Finished `dev` profile|Webview URL"
         }
       }
     },

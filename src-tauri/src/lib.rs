@@ -11,7 +11,7 @@ pub fn run() {
     if let Err(error) = tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
-            #[cfg(desktop)]
+            #[cfg(all(desktop, not(debug_assertions)))]
             app.handle()
                 .plugin(tauri_plugin_updater::Builder::new().build())?;
 

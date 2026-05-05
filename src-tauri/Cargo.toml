@@ -1,6 +1,6 @@
 [package]
 name = "solahub"
-version = "0.1.4"
+version = "0.1.5"
 description = "SolaHub - Unified Christian Workspace"
 authors = ["SolaHub Team"]
 edition = "2021"

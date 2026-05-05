@@ -81,9 +81,9 @@ describe('SUpdateButton', () => {
 
     expect(button.text()).toBe('Update')
     expect(button.attributes('aria-label')).toBe('Update SolaHub')
-    expect(button.classes()).toContain('bg-surface-raised')
-    expect(button.classes()).toContain('border-line')
-    expect(button.classes()).toContain('dark:bg-white/[0.04]')
+    expect(button.classes()).toContain('bg-black/[0.04]')
+    expect(button.classes()).toContain('border-black/[0.08]')
+    expect(button.classes()).toContain('dark:bg-white/[0.05]')
   })
 
   it('invokes the native updater, shows progress, and preserves the current route until restart', async () => {

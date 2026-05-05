@@ -79,7 +79,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_URL: http://localhost:5000
+          VITE_API_URL: http://localhost:3000
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -87,6 +87,32 @@ jobs:
           name: frontend-dist
           path: dist/
           retention-days: 7
+
+  tauri-check:
+    name: Tauri Rust Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: cargo check (debug — no updater plugin, mirrors dev mode)
+        run: cargo check --manifest-path src-tauri/Cargo.toml
+        # This catches the class of bug where tauri-plugin-updater (or any other
+        # desktop plugin) is registered in debug builds without its tauri.conf.json
+        # config section, causing a startup panic. The updater is gated behind
+        # #[cfg(all(desktop, not(debug_assertions)))] so debug check must pass clean.
 
   e2e:
     name: Playwright E2E
@@ -128,7 +154,7 @@ jobs:
       - name: Run E2E tests
         run: npm run test:e2e
         env:
-          VITE_API_URL: http://localhost:5000
+          VITE_API_URL: http://localhost:3000
           ConnectionStrings__DefaultConnection: >-
             Host=localhost;Port=5432;Database=solahub_test;Username=test;Password=test
           Jwt__SecretKey: playwright-secret-key-must-be-at-least-32-bytes!!

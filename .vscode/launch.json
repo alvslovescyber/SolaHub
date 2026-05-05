@@ -47,10 +47,9 @@
     {
       "name": "Tauri: Dev",
       "type": "lldb-dap",
-      "request": "launch",
+      "request": "attach",
       "program": "${workspaceFolder}/src-tauri/target/debug/solahub",
-      "args": [],
-      "cwd": "${workspaceFolder}",
+      "waitFor": true,
       "preLaunchTask": "tauri: dev",
       "sourceMap": {
         "/rustc/*": "${env:HOME}/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/*"
