@@ -25,6 +25,7 @@ COPY --from=build /app/publish .
 USER $APP_UID
 
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV PORT=3000
 
-EXPOSE 8080
-CMD ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-8080} exec dotnet SolaHub.API.dll"]
+EXPOSE 3000
+CMD ["sh", "-c", "export ASPNETCORE_URLS=http://0.0.0.0:${PORT} && exec dotnet SolaHub.API.dll"]
