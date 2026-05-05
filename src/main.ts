@@ -15,6 +15,17 @@ if (isWindows) {
   document.documentElement.classList.add('is-windows')
 }
 
+// On Windows, the window is `transparent: true` and the CSS body background is
+// transparent. This means the window is fully invisible for ~100ms before Vue
+// renders AppLayout's semi-transparent dark background — users see it as the
+// app "opening then closing." Setting an immediate background on #app prevents
+// this. The glass/acrylic effect still works: AppLayout's bg-slate-950/[0.78]
+// renders on top and the OS acrylic shows through its transparent edges.
+if (isTauri && isWindows) {
+  const root = document.getElementById('app')
+  if (root) root.style.background = 'rgb(2, 6, 23)'
+}
+
 const app = createApp(App)
 
 app.use(createPinia())

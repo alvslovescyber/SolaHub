@@ -58,7 +58,8 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "shortcutName": "SolaHub"
+        "shortcutName": "SolaHub",
+        "webviewInstallMode": { "type": "embedBootstrapper" }
       }
     }
   }
