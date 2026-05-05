@@ -38,6 +38,11 @@ export function registerGuards(router: Router): void {
       return { name: 'login', query: { redirect: to.fullPath } }
     }
 
+    // Route requires admin role
+    if (to.meta.requiresAdmin && auth.user?.role !== 'Admin') {
+      return { name: 'dashboard' }
+    }
+
     // Route requires guest (not logged in)
     if (to.meta.requiresGuest && isAuthenticated && hasUser) {
       return { name: 'dashboard' }

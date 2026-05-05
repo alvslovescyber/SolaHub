@@ -13,6 +13,8 @@ public interface IUserRepository
     Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
     Task<User?> GetByRefreshTokenHashAsync(string refreshTokenHash, CancellationToken ct = default);
     Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default);
+    Task<IReadOnlyList<User>> GetAllAsync(int skip, int take, CancellationToken ct = default);
+    Task<int> CountAsync(CancellationToken ct = default);
     Task AddAsync(User user, CancellationToken ct = default);
     Task<bool> TryAddAsync(User user, CancellationToken ct = default);
     Task<bool> TryRotateRefreshTokenAsync(

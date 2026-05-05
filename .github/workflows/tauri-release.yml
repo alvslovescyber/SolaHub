@@ -1,0 +1,109 @@
+name: Tauri Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.1.0)'
+        required: true
+        default: 'v0.1.0'
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  build-macos:
+    name: macOS (${{ matrix.arch }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64-apple-darwin
+            label: 'Apple Silicon'
+          - arch: x86_64-apple-darwin
+            label: 'Intel'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.arch }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        with:
+          tagName: ${{ github.ref_name || inputs.tag }}
+          releaseName: 'SolaHub ${{ github.ref_name || inputs.tag }}'
+          releaseBody: |
+            ## What's new
+            See the [changelog](https://github.com/alvslovescyber/SolaHub/blob/main/CHANGELOG.md) for details.
+
+            ### Installation
+            - **macOS Apple Silicon**: Download the `.dmg` file ending in `_aarch64.dmg`
+            - **macOS Intel**: Download the `.dmg` file ending in `_x64.dmg`
+            - **Windows**: Download `_x64-setup.exe` (recommended) or the `.msi` package
+          releaseDraft: false
+          prerelease: true
+          args: --target ${{ matrix.arch }}
+
+  build-windows:
+    name: Windows (x64)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        with:
+          tagName: ${{ github.ref_name || inputs.tag }}
+          releaseName: 'SolaHub ${{ github.ref_name || inputs.tag }}'
+          releaseBody: |
+            ## What's new
+            See the [changelog](https://github.com/alvslovescyber/SolaHub/blob/main/CHANGELOG.md) for details.
+          releaseDraft: false
+          prerelease: true

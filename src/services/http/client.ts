@@ -6,7 +6,7 @@ import axios, {
 import { getStorageItem, removeStorageItem, setStorageItem } from '@/lib/safeStorage'
 import { isNetworkError } from '@/lib/networkStatus'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5100'
 
 // Token storage keys
 const ACCESS_TOKEN_KEY = 'solahub:access_token'

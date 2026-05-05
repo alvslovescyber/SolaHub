@@ -93,6 +93,22 @@ export const routes: RouteRecordRaw[] = [
     meta: { authIsolated: true, offlineReady: true },
   },
 
+  // ─── Public ──────────────────────────────────────────────────────────────────
+  {
+    path: '/download/desktop',
+    name: 'download',
+    component: () => import('@/views/DownloadView.vue'),
+    meta: { authIsolated: true },
+  },
+
+  // ─── Admin ───────────────────────────────────────────────────────────────────
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('@/views/AdminView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+
   // ─── 404 ────────────────────────────────────────────────────────────────────
   {
     path: '/:pathMatch(.*)*',

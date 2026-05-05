@@ -42,6 +42,17 @@ public sealed class UserRepository(AppDbContext db) : IUserRepository
         return db.Users.AsNoTracking().AnyAsync(u => u.Email.Value == normalized, ct);
     }
 
+    public Task<IReadOnlyList<User>> GetAllAsync(int skip, int take, CancellationToken ct) =>
+        db.Users
+            .AsNoTracking()
+            .OrderByDescending(u => u.CreatedAt)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(ct)
+            .ContinueWith(t => (IReadOnlyList<User>)t.Result, ct);
+
+    public Task<int> CountAsync(CancellationToken ct) => db.Users.AsNoTracking().CountAsync(ct);
+
     public async Task AddAsync(User user, CancellationToken ct)
     {
         await db.Users.AddAsync(user, ct);

@@ -3,11 +3,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using SolaHub.Application.Common;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.Interfaces.Services;
 using SolaHub.Infrastructure.Auth;
 using SolaHub.Infrastructure.Persistence;
 using SolaHub.Infrastructure.Repositories;
+using SolaHub.Infrastructure.Services;
 using StackExchange.Redis;
 
 namespace SolaHub.Infrastructure;
@@ -68,6 +70,9 @@ public static class DependencyInjection
         services.AddScoped<IVerseNoteRepository, VerseNoteRepository>();
         services.AddScoped<IReadingPlanRepository, ReadingPlanRepository>();
         services.AddScoped<ICommunityPostRepository, CommunityPostRepository>();
+
+        // ─── Domain Services ───────────────────────────────────────────────────
+        services.AddScoped<IAdminService, AdminService>();
 
         // ─── Auth Services ─────────────────────────────────────────────────────
         services.AddSingleton<ITokenService, JwtTokenService>();
