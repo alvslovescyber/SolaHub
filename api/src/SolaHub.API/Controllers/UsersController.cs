@@ -50,6 +50,7 @@ public sealed class UsersController(ISender sender, IUserRepository userReposito
                     ErrorType.Validation => UnprocessableEntity(
                         new { error.Code, error.Description }
                     ),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
                     _ => StatusCode(500, new { error.Code, error.Description }),
                 }
         );

@@ -960,7 +960,12 @@
             <SIconButton size="sm" label="Duplicate slide" @click="duplicateCurrentSlide">
               <Copy class="h-3.5 w-3.5" />
             </SIconButton>
-            <SIconButton size="sm" label="Delete slide" @click="removeCurrentSlide">
+            <SIconButton
+              size="sm"
+              label="Delete slide"
+              :disabled="(currentDeck?.slides.length ?? 0) <= 1"
+              @click="removeCurrentSlide"
+            >
               <Trash2 class="h-3.5 w-3.5 text-red-500" />
             </SIconButton>
           </div>
@@ -1155,9 +1160,7 @@
                 @update:model-value="updateSelectedReference"
               />
               <STextarea
-                :model-value="
-                  selectedElement.kind === 'verse' ? selectedElement.text : selectedElement.text
-                "
+                :model-value="selectedElement.text"
                 label="Text"
                 :rows="selectedElement.kind === 'verse' ? 5 : 4"
                 @update:model-value="updateSelectedText"

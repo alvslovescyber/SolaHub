@@ -488,7 +488,7 @@
           <SIconButton
             label="Previous chapter"
             size="sm"
-            :disabled="!canPrevChapter"
+            :disabled="!canPrevChapter || isLoadingChapter"
             @click="prevChapter"
           >
             <ChevronLeft class="h-4 w-4" />
@@ -499,7 +499,7 @@
           <SIconButton
             label="Next chapter"
             size="sm"
-            :disabled="!canNextChapter"
+            :disabled="!canNextChapter || isLoadingChapter"
             @click="nextChapter"
           >
             <ChevronRight class="h-4 w-4" />

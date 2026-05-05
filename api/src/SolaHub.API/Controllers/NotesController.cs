@@ -27,7 +27,12 @@ public sealed class NotesController(ISender sender) : ControllerBase
 
         return result.Match<IActionResult>(
             value => Ok(value),
-            error => StatusCode(500, new { error.Code, error.Description })
+            error =>
+                error.Type switch
+                {
+                    ErrorType.Forbidden => Forbid(),
+                    _ => StatusCode(500, new { error.Code, error.Description }),
+                }
         );
     }
 
@@ -50,6 +55,8 @@ public sealed class NotesController(ISender sender) : ControllerBase
                 error.Type switch
                 {
                     ErrorType.Validation => BadRequest(new { error.Code, error.Description }),
+                    ErrorType.Forbidden => Forbid(),
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
                     _ => StatusCode(500, new { error.Code, error.Description }),
                 }
         );
@@ -81,6 +88,9 @@ public sealed class NotesController(ISender sender) : ControllerBase
                     ErrorType.Validation => UnprocessableEntity(
                         new { error.Code, error.Description }
                     ),
+                    ErrorType.Forbidden => Forbid(),
+                    ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
                     _ => StatusCode(500, new { error.Code, error.Description }),
                 }
         );
@@ -116,6 +126,7 @@ public sealed class NotesController(ISender sender) : ControllerBase
                     ErrorType.Validation => UnprocessableEntity(
                         new { error.Code, error.Description }
                     ),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
                     _ => StatusCode(500, new { error.Code, error.Description }),
                 }
         );
@@ -138,6 +149,7 @@ public sealed class NotesController(ISender sender) : ControllerBase
                 {
                     ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
                     ErrorType.Forbidden => Forbid(),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
                     _ => StatusCode(500, new { error.Code, error.Description }),
                 }
         );

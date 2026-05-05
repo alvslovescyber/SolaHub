@@ -47,6 +47,7 @@ public sealed class PlansController(ISender sender) : ControllerBase
                 {
                     ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
                     ErrorType.Forbidden => Forbid(),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
                     _ => StatusCode(500, new { error.Code, error.Description }),
                 }
         );
@@ -216,6 +217,7 @@ public sealed class PlansController(ISender sender) : ControllerBase
                 {
                     ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
                     ErrorType.Forbidden => Forbid(),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
                     _ => StatusCode(500, new { error.Code, error.Description }),
                 }
         );
@@ -238,6 +240,7 @@ public sealed class PlansController(ISender sender) : ControllerBase
                 {
                     ErrorType.NotFound => NotFound(new { error.Code, error.Description }),
                     ErrorType.Forbidden => Forbid(),
+                    ErrorType.Conflict => Conflict(new { error.Code, error.Description }),
                     _ => StatusCode(500, new { error.Code, error.Description }),
                 }
         );

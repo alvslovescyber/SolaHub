@@ -59,12 +59,9 @@
     ;(e.target as HTMLInputElement).value = ''
   }
 
-  const initialDisplayName = user.value?.displayName ?? ''
-  const initialEmail = user.value?.email ?? ''
-
   function resetProfile() {
-    displayName.value = initialDisplayName
-    email.value = initialEmail
+    displayName.value = user.value?.displayName ?? ''
+    email.value = user.value?.email ?? ''
     bio.value = ''
   }
 
@@ -116,10 +113,11 @@
     passwordSubmitting.value = true
     try {
       await authService.changePassword(currentPassword.value, newPassword.value)
-      toast.success('Password updated', 'You have been signed out of all other sessions.')
+      toast.success('Password updated', 'Please sign in again with your new password.')
       currentPassword.value = ''
       newPassword.value = ''
       confirmPassword.value = ''
+      await logout()
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { description?: string } } })?.response?.data
         ?.description
@@ -336,7 +334,7 @@
 
               <div class="grid grid-cols-2 gap-4">
                 <SInput v-model="displayName" label="Display name" />
-                <SInput v-model="email" label="Email" type="email" />
+                <SInput :model-value="email" label="Email" type="email" disabled />
               </div>
 
               <STextarea

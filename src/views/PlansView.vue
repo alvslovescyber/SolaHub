@@ -309,7 +309,7 @@
       </div>
       <template #footer>
         <SButton variant="secondary" size="sm" @click="closeCreateModal"> Cancel </SButton>
-        <SButton size="sm" :loading="plans.isSaving" @click="createPlan"> Create plan </SButton>
+        <SButton size="sm" :loading="plans.isSaving" :disabled="!title.trim()" @click="createPlan"> Create plan </SButton>
       </template>
     </SModal>
   </div>
