@@ -42,6 +42,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify checkout
+        run: |
+          echo "=== Build info ==="
+          echo "Tag:    ${{ env.RELEASE_TAG }}"
+          echo "Commit: $(git rev-parse HEAD)"
+          echo "Subject: $(git log -1 --format='%s')"
+          VERSION=$(python3 -c "import json; print(json.load(open('src-tauri/tauri.conf.json'))['version'])")
+          echo "App version in tauri.conf.json: $VERSION"
+          EXPECTED="${{ env.RELEASE_TAG }}"
+          EXPECTED="${EXPECTED#v}"
+          if [ "$VERSION" != "$EXPECTED" ]; then
+            echo "::error::tauri.conf.json version ($VERSION) does not match tag (${{ env.RELEASE_TAG }})"
+            exit 1
+          fi
+          echo "✓ Version matches tag"
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -124,6 +140,8 @@ jobs:
           [ -f "${ARCHIVE}.sig" ] && echo "✓ Signature generated" || { echo "::error::signing did not produce .sig — check TAURI_SIGNING_PRIVATE_KEY format"; exit 1; }
 
       # Upload deterministic updater artifacts so latest.json can point at stable names.
+      # We rename the files before upload to avoid relying on the `#display-name` gh CLI
+      # syntax, which silently misbehaves when --clobber replaces an existing asset.
       - name: Upload updater archive and .sig to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -142,11 +160,14 @@ jobs:
             echo "No updater signature found for $LABEL"
             exit 1
           fi
-          gh release upload "$TAG" "${ARCHIVE}#SolaHub_${LABEL}.app.tar.gz" \
+          UPLOAD_DIR=$(mktemp -d)
+          cp "$ARCHIVE" "$UPLOAD_DIR/SolaHub_${LABEL}.app.tar.gz"
+          cp "$SIG"     "$UPLOAD_DIR/SolaHub_${LABEL}.app.tar.gz.sig"
+          gh release upload "$TAG" "$UPLOAD_DIR/SolaHub_${LABEL}.app.tar.gz" \
             --repo ${{ github.repository }} --clobber
-          gh release upload "$TAG" "${SIG}#SolaHub_${LABEL}.app.tar.gz.sig" \
+          gh release upload "$TAG" "$UPLOAD_DIR/SolaHub_${LABEL}.app.tar.gz.sig" \
             --repo ${{ github.repository }} --clobber
-          echo "Uploaded SolaHub_${LABEL}.app.tar.gz and signature"
+          echo "Uploaded SolaHub_${LABEL}.app.tar.gz and SolaHub_${LABEL}.app.tar.gz.sig"
 
   build-windows:
     name: Windows (x64)

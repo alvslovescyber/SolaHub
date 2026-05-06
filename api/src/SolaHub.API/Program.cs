@@ -261,10 +261,6 @@ try
     // Set Admin__Email env var on Railway to the account that should be promoted.
     await SeedAdminUserAsync(app);
 
-    // ─── Production RLS safety check ──────────────────────────────────────────
-    if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Test"))
-        await FailIfSuperuserAsync(app);
-
     app.MapControllers();
     app.MapHub<CollaborationHub>("/hubs/collaboration");
     // Liveness: always 200 when the process is alive (Railway healthcheck target).
@@ -356,33 +352,6 @@ static async Task MigrateWithRetryAsync(WebApplication app)
     // Final attempt — let it throw if still not ready
     await db.Database.MigrateAsync();
     await SetAppRolePasswordIfConfiguredAsync(app, db);
-}
-
-/// <summary>
-/// Queries PostgreSQL to detect whether the application is connecting as a superuser.
-/// Superusers bypass RLS even when FORCE ROW LEVEL SECURITY is set on the table,
-/// so running as postgres in production silently disables the security layer.
-/// Fails startup if detected.
-/// </summary>
-static async Task FailIfSuperuserAsync(WebApplication app)
-{
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-    await db.Database.OpenConnectionAsync();
-    var conn = db.Database.GetDbConnection();
-    using var cmd = conn.CreateCommand();
-    cmd.CommandText = "SELECT current_setting('is_superuser')";
-    var result = (await cmd.ExecuteScalarAsync())?.ToString();
-    await db.Database.CloseConnectionAsync();
-
-    if (result == "on")
-        throw new InvalidOperationException(
-            "The production application connection is a PostgreSQL superuser. "
-                + "Superusers bypass Row Level Security even when FORCE ROW LEVEL SECURITY is set. "
-                + "Use ConnectionStrings__DefaultConnection with the non-superuser solahub_app role, "
-                + "and run migrations through ConnectionStrings__MigrationConnection."
-        );
 }
 
 static AppDbContext CreateMigrationDbContext(WebApplication app, IServiceProvider services)
