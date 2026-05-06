@@ -46,7 +46,17 @@
   import type { SupportedLanguage } from '@/stores/languageSongs.store'
   import type { Theme } from '@/stores/ui.store'
 
-  const { user, logout } = useAuth()
+  const { user, logout: _logout } = useAuth()
+  const isLoggingOut = ref(false)
+  async function logout() {
+    if (isLoggingOut.value) return
+    isLoggingOut.value = true
+    try {
+      await _logout()
+    } finally {
+      isLoggingOut.value = false
+    }
+  }
   const { theme, setTheme } = useTheme()
   const toast = useSToast()
   const biblePrefs = useBiblePreferencesStore()
@@ -507,7 +517,9 @@
                     Revokes refresh tokens on every device.
                   </p>
                 </div>
-                <SButton variant="danger" size="sm" @click="logout()"> Sign out </SButton>
+                <SButton variant="danger" size="sm" :loading="isLoggingOut" @click="logout()">
+                  Sign out
+                </SButton>
               </div>
             </SCard>
           </template>

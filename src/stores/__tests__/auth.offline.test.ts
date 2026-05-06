@@ -153,6 +153,19 @@ describe('auth store offline session', () => {
     expect(tokenStorage.hasSession()).toBe(false)
     expect(loadOfflineUser()).toBeNull()
   })
+
+  it('falls back to offline session on 5xx server error (cold start)', async () => {
+    tokenStorage.set('expired-access')
+    saveOfflineUser(user)
+    authMocks.refresh.mockRejectedValue({ response: { status: 503 } })
+
+    const auth = useAuthStore()
+    await auth.rehydrate()
+
+    expect(auth.user).toEqual(user)
+    expect(auth.hasOfflineSession).toBe(true)
+    expect(tokenStorage.hasSession()).toBe(true)
+  })
 })
 
 function setOnlineStatus(online: boolean): void {

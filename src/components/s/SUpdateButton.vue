@@ -32,6 +32,7 @@
   const route = useRoute()
 
   const busy = ref(false)
+  const done = ref(false)
   const status = ref<UpdateStatus>('idle')
   const downloadedBytes = ref(0)
   const contentLength = ref<number | null>(null)
@@ -84,6 +85,7 @@
     try {
       const result = await invoke<AppUpdateResult>('install_app_update', { onEvent })
       clearUpdateReturnRoute()
+      done.value = true
 
       if (result.status === 'notConfigured') {
         toast.error(
@@ -113,7 +115,7 @@
 
 <template>
   <button
-    v-if="isTauri && !props.collapsed"
+    v-if="isTauri && !props.collapsed && !done"
     type="button"
     data-no-drag
     :disabled="busy"
@@ -146,7 +148,7 @@
     <span class="relative tabular-nums">{{ buttonLabel }}</span>
   </button>
 
-  <STooltip v-else-if="isTauri" :label="tooltipLabel" placement="right" data-no-drag>
+  <STooltip v-else-if="isTauri && !done" :label="tooltipLabel" placement="right" data-no-drag>
     <button
       type="button"
       data-no-drag

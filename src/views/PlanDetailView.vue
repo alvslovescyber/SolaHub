@@ -179,13 +179,14 @@
   async function addDay() {
     if (!canAddDay.value) return
     const verseRefs = addedPassages.value.map((p) => p.key)
+    const dayAdded = nextDayNumber.value
     try {
       await plans.addDay(props.id, {
-        dayNumber: nextDayNumber.value,
+        dayNumber: dayAdded,
         title: dayTitle.value.trim(),
         verseRefs,
       })
-      toast.success(`Day ${nextDayNumber.value - 1} added`)
+      toast.success(`Day ${dayAdded} added`)
       showAddDay.value = false
       dayTitle.value = ''
       addedPassages.value = []

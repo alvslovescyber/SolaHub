@@ -111,11 +111,24 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authService.refresh()
       setOnlineUser(response.user)
     } catch (e) {
-      if (isNetworkError(e) && user.value) {
-        enterOfflineSession(user.value)
+      if (isNetworkError(e)) {
+        if (user.value) {
+          enterOfflineSession(user.value)
+          return
+        }
+        if (restoreOfflineUser()) return
+        clearSessionState()
         return
       }
-      if (isNetworkError(e) && restoreOfflineUser()) return
+      // 5xx: server temporarily unavailable (Railway cold start / deploy) — don't log out
+      const status = (e as { response?: { status?: number } })?.response?.status
+      if (typeof status === 'number' && status >= 500) {
+        if (user.value) {
+          enterOfflineSession(user.value)
+          return
+        }
+        if (restoreOfflineUser()) return
+      }
       clearSessionState()
     }
   }

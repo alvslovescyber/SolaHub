@@ -147,4 +147,50 @@ describe('SUpdateButton', () => {
     expect(updateMocks.error).toHaveBeenCalledWith('Update failed', 'network unavailable')
     expect(localStorage.getItem(UPDATE_RETURN_ROUTE_KEY)).toBeNull()
   })
+
+  it('hides the button after a successful up-to-date check', async () => {
+    updateMocks.invoke.mockResolvedValue({
+      status: 'upToDate',
+      currentVersion: '0.1.6',
+      version: null,
+    })
+    const SUpdateButton = await loadUpdateButton({ isTauri: true })
+    const wrapper = mount(SUpdateButton)
+
+    expect(wrapper.find('button').exists()).toBe(true)
+
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    expect(updateMocks.success).toHaveBeenCalled()
+    expect(wrapper.find('button').exists()).toBe(false)
+  })
+
+  it('hides the button after a notConfigured result', async () => {
+    updateMocks.invoke.mockResolvedValue({
+      status: 'notConfigured',
+      currentVersion: '0.1.6',
+      version: null,
+    })
+    const SUpdateButton = await loadUpdateButton({ isTauri: true })
+    const wrapper = mount(SUpdateButton)
+
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    expect(updateMocks.error).toHaveBeenCalled()
+    expect(wrapper.find('button').exists()).toBe(false)
+  })
+
+  it('keeps the button visible after a failed update so the user can retry', async () => {
+    updateMocks.invoke.mockRejectedValue(new Error('timeout'))
+    const SUpdateButton = await loadUpdateButton({ isTauri: true })
+    const wrapper = mount(SUpdateButton)
+
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    expect(updateMocks.error).toHaveBeenCalled()
+    expect(wrapper.find('button').exists()).toBe(true)
+  })
 })
