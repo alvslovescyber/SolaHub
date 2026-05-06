@@ -1,19 +1,18 @@
 <script setup lang="ts">
   import { DownloadIcon, ArrowLeftIcon } from 'lucide-vue-next'
 
-  const version = '0.1.1'
-  const REPO = 'alvslovescyber/SolaHub'
+  const version = '0.1.5'
+  const DOWNLOAD_BASE = 'https://pub-c5a5d4bded77499abee30a6e8fd383b8.r2.dev'
 
   function downloadUrl(format: 'dmg' | 'exe' | 'msi', arch: 'aarch64' | 'x64'): string {
-    const base = `https://github.com/${REPO}/releases/download/v${version}`
     const tag = `SolaHub_${version}`
     switch (format) {
       case 'dmg':
-        return `${base}/${tag}_${arch}.dmg`
+        return `${DOWNLOAD_BASE}/${tag}_${arch}.dmg`
       case 'exe':
-        return `${base}/${tag}_x64-setup.exe`
+        return `${DOWNLOAD_BASE}/${tag}_x64-setup.exe`
       case 'msi':
-        return `${base}/${tag}_x64_en-US.msi`
+        return `${DOWNLOAD_BASE}/${tag}_x64_en-US.msi`
     }
   }
 </script>

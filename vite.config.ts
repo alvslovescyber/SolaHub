@@ -29,7 +29,7 @@ export default defineConfig({
       ignored: ['**/src-tauri/**'],
     },
   },
-  envPrefix: ['VITE_', 'TAURI_ENV_*'],
+  envPrefix: ['VITE_'],
   build: {
     target: isWebOnly
       ? 'es2022'

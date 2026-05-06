@@ -20,10 +20,10 @@ export function registerGuards(router: Router): void {
     const token = tokenStorage.getAccess()
     const hasValidToken = hasUsableAccessToken(token)
 
-    // When the access token is missing or expired but a refresh token exists,
+    // When the access token is missing or expired but a server cookie session exists,
     // silently exchange it before routing. This prevents components from mounting
     // with a stale token and triggering unnecessary 401 console errors.
-    if ((!hasValidToken || !auth.user) && tokenStorage.getRefresh()) {
+    if ((!hasValidToken || !auth.user) && tokenStorage.hasSession()) {
       await auth.rehydrate({ force: !hasValidToken })
     }
 

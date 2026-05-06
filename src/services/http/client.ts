@@ -8,21 +8,26 @@ import { isNetworkError } from '@/lib/networkStatus'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
-// Token storage keys
-const ACCESS_TOKEN_KEY = 'solahub:access_token'
-const REFRESH_TOKEN_KEY = 'solahub:refresh_token'
+const SESSION_MARKER_KEY = 'solahub:session'
+const LEGACY_ACCESS_TOKEN_KEY = 'solahub:access_token'
+const LEGACY_REFRESH_TOKEN_KEY = 'solahub:refresh_token'
+let accessToken: string | null = null
 
 // ─── Token helpers ─────────────────────────────────────────────────────────────
 export const tokenStorage = {
-  getAccess: () => getStorageItem(ACCESS_TOKEN_KEY),
-  getRefresh: () => getStorageItem(REFRESH_TOKEN_KEY),
-  set: (access: string, refresh: string) => {
-    setStorageItem(ACCESS_TOKEN_KEY, access)
-    setStorageItem(REFRESH_TOKEN_KEY, refresh)
+  getAccess: () => accessToken,
+  hasSession: () => getStorageItem(SESSION_MARKER_KEY) === '1',
+  set: (access: string) => {
+    accessToken = access
+    setStorageItem(SESSION_MARKER_KEY, '1')
+    removeStorageItem(LEGACY_ACCESS_TOKEN_KEY)
+    removeStorageItem(LEGACY_REFRESH_TOKEN_KEY)
   },
   clear: () => {
-    removeStorageItem(ACCESS_TOKEN_KEY)
-    removeStorageItem(REFRESH_TOKEN_KEY)
+    accessToken = null
+    removeStorageItem(SESSION_MARKER_KEY)
+    removeStorageItem(LEGACY_ACCESS_TOKEN_KEY)
+    removeStorageItem(LEGACY_REFRESH_TOKEN_KEY)
   },
 }
 
@@ -30,6 +35,7 @@ export const tokenStorage = {
 export const http: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15_000,
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -69,8 +75,7 @@ http.interceptors.response.use(
       return Promise.reject(error as Error)
     }
 
-    const refreshToken = tokenStorage.getRefresh()
-    if (!refreshToken) {
+    if (!tokenStorage.hasSession()) {
       tokenStorage.clear()
       return Promise.reject(error as Error)
     }
@@ -90,11 +95,11 @@ http.interceptors.response.use(
 
     try {
       refreshPromise = axios
-        .post<{ accessToken: string; refreshToken: string }>(`${API_BASE_URL}/api/auth/refresh`, {
-          refreshToken,
-        })
+        .post<{
+          accessToken: string
+        }>(`${API_BASE_URL}/api/auth/refresh`, {}, { withCredentials: true })
         .then((res) => {
-          tokenStorage.set(res.data.accessToken, res.data.refreshToken)
+          tokenStorage.set(res.data.accessToken)
           return res.data.accessToken
         })
 

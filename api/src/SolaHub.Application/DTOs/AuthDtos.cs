@@ -1,8 +1,10 @@
+using System.Text.Json.Serialization;
+
 namespace SolaHub.Application.DTOs;
 
 public sealed record AuthResponse(
     string AccessToken,
-    string RefreshToken,
+    [property: JsonIgnore] string RefreshToken,
     DateTimeOffset ExpiresAt,
     UserDto User
 );

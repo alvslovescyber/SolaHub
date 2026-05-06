@@ -1,18 +1,26 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using SolaHub.API.Extensions;
 using SolaHub.Application.Commands.Auth;
 using SolaHub.Application.DTOs;
 using SolaHub.Core.Common;
 using SolaHub.Core.ValueObjects;
+using SolaHub.Infrastructure.Auth;
 
 namespace SolaHub.API.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public sealed class AuthController(ISender sender) : ControllerBase
+public sealed class AuthController(
+    ISender sender,
+    IWebHostEnvironment env,
+    IOptions<JwtOptions> jwtOptions
+) : ControllerBase
 {
+    private const string RefreshTokenCookieName = "solahub_refresh";
+
     /// <summary>Register a new user account.</summary>
     [HttpPost("register")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
@@ -27,7 +35,11 @@ public sealed class AuthController(ISender sender) : ControllerBase
         var result = await sender.Send(command, ct);
 
         return result.Match<IActionResult>(
-            value => CreatedAtAction(nameof(Register), value),
+            value =>
+            {
+                SetRefreshTokenCookie(value.RefreshToken);
+                return CreatedAtAction(nameof(Register), value);
+            },
             error =>
                 error.Type switch
                 {
@@ -53,7 +65,11 @@ public sealed class AuthController(ISender sender) : ControllerBase
         var result = await sender.Send(command, ct);
 
         return result.Match<IActionResult>(
-            value => Ok(value),
+            value =>
+            {
+                SetRefreshTokenCookie(value.RefreshToken);
+                return Ok(value);
+            },
             error =>
                 error.Type switch
                 {
@@ -71,16 +87,30 @@ public sealed class AuthController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh(
-        [FromBody] RefreshTokenRequest request,
+        [FromBody] RefreshTokenRequest? request,
         CancellationToken ct
     )
     {
-        var command = new RefreshTokenCommand(request.RefreshToken);
+        var refreshToken = ResolveRefreshToken(request);
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return Unauthorized(
+                new { Code = "Auth.InvalidToken", Description = "Missing refresh token." }
+            );
+
+        var command = new RefreshTokenCommand(refreshToken);
         var result = await sender.Send(command, ct);
 
         return result.Match<IActionResult>(
-            value => Ok(value),
-            error => Unauthorized(new { error.Code, error.Description })
+            value =>
+            {
+                SetRefreshTokenCookie(value.RefreshToken);
+                return Ok(value);
+            },
+            error =>
+            {
+                ClearRefreshTokenCookie();
+                return Unauthorized(new { error.Code, error.Description });
+            }
         );
     }
 
@@ -90,16 +120,27 @@ public sealed class AuthController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout(
-        [FromBody] RefreshTokenRequest request,
+        [FromBody] RefreshTokenRequest? request,
         CancellationToken ct
     )
     {
+        var refreshToken = ResolveRefreshToken(request);
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            ClearRefreshTokenCookie();
+            return NoContent();
+        }
+
         var userId = User.GetRequiredUserId();
-        var command = new RevokeTokenCommand(userId, request.RefreshToken);
+        var command = new RevokeTokenCommand(userId, refreshToken);
         var result = await sender.Send(command, ct);
 
         return result.Match<IActionResult>(
-            () => NoContent(),
+            () =>
+            {
+                ClearRefreshTokenCookie();
+                return NoContent();
+            },
             error =>
                 error.Type switch
                 {
@@ -136,7 +177,11 @@ public sealed class AuthController(ISender sender) : ControllerBase
         var result = await sender.Send(command, ct);
 
         return result.Match<IActionResult>(
-            () => NoContent(),
+            () =>
+            {
+                ClearRefreshTokenCookie();
+                return NoContent();
+            },
             error =>
                 error.Type switch
                 {
@@ -152,6 +197,41 @@ public sealed class AuthController(ISender sender) : ControllerBase
                 }
         );
     }
+
+    private string? ResolveRefreshToken(RefreshTokenRequest? request) =>
+        !string.IsNullOrWhiteSpace(request?.RefreshToken) ? request.RefreshToken
+        : Request.Cookies.TryGetValue(RefreshTokenCookieName, out var cookieToken) ? cookieToken
+        : null;
+
+    private void SetRefreshTokenCookie(string refreshToken)
+    {
+        Response.Cookies.Append(
+            RefreshTokenCookieName,
+            refreshToken,
+            BuildRefreshCookieOptions(
+                DateTimeOffset.UtcNow.Add(jwtOptions.Value.RefreshTokenExpiry)
+            )
+        );
+    }
+
+    private void ClearRefreshTokenCookie() =>
+        Response.Cookies.Delete(
+            RefreshTokenCookieName,
+            BuildRefreshCookieOptions(DateTimeOffset.UnixEpoch)
+        );
+
+    private CookieOptions BuildRefreshCookieOptions(DateTimeOffset expires)
+    {
+        var isLocal = env.IsDevelopment() || env.IsEnvironment("Test");
+        return new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = !isLocal,
+            SameSite = isLocal ? SameSiteMode.Lax : SameSiteMode.None,
+            Path = "/api/auth",
+            Expires = expires,
+        };
+    }
 }
 
 // ─── Request records ───────────────────────────────────────────────────────────
@@ -159,6 +239,6 @@ public sealed record RegisterRequest(string Email, string Password, string Displ
 
 public sealed record LoginRequest(string Email, string Password);
 
-public sealed record RefreshTokenRequest(string RefreshToken);
+public sealed record RefreshTokenRequest(string? RefreshToken = null);
 
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);

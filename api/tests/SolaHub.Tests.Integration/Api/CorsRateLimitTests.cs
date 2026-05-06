@@ -76,7 +76,7 @@ public sealed class CorsRateLimitTests(ApiFactory factory)
     private static string BuildRateLimitKey(string path)
     {
         var minuteBucket = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute;
-        return $"solahub:ratelimit:auth:unknown:{path}:{minuteBucket}";
+        return $"solahub:ratelimit:auth:ip:unknown:{path}:{minuteBucket}";
     }
 
     private static DistributedCacheEntryOptions ShortTtl() =>

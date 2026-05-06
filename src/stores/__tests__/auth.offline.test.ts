@@ -37,7 +37,6 @@ const user: User = {
 const authResponse: AuthResponse = {
   user,
   accessToken: 'access',
-  refreshToken: 'refresh',
   expiresAt: '2026-05-05T13:00:00.000Z',
 }
 
@@ -50,7 +49,7 @@ beforeEach(() => {
 describe('auth store offline session', () => {
   it('caches the signed-in user after login', async () => {
     authMocks.login.mockImplementation(() => {
-      tokenStorage.set('access', 'refresh')
+      tokenStorage.set('access')
       return Promise.resolve(authResponse)
     })
 
@@ -63,7 +62,7 @@ describe('auth store offline session', () => {
 
   it('restores cached user when token refresh cannot reach the network', async () => {
     setOnlineStatus(false)
-    tokenStorage.set('expired-access', 'refresh')
+    tokenStorage.set('expired-access')
     saveOfflineUser(user)
     authMocks.refresh.mockRejectedValue(new Error('offline'))
 
@@ -72,12 +71,12 @@ describe('auth store offline session', () => {
 
     expect(auth.user).toEqual(user)
     expect(auth.hasOfflineSession).toBe(true)
-    expect(tokenStorage.getRefresh()).toBe('refresh')
+    expect(tokenStorage.hasSession()).toBe(true)
   })
 
   it('keeps an in-memory user available when the token expires offline', async () => {
     setOnlineStatus(false)
-    tokenStorage.set('expired-access', 'refresh')
+    tokenStorage.set('expired-access')
 
     const auth = useAuthStore()
     auth.user = user
@@ -90,7 +89,7 @@ describe('auth store offline session', () => {
   })
 
   it('does not treat an expired online token as authenticated', () => {
-    tokenStorage.set(expiredToken(), 'refresh')
+    tokenStorage.set(expiredToken())
 
     const auth = useAuthStore()
     auth.user = user
@@ -101,7 +100,7 @@ describe('auth store offline session', () => {
 
   it('treats an offline session with an expired token as authenticated for local flows', async () => {
     setOnlineStatus(false)
-    tokenStorage.set(expiredToken(), 'refresh')
+    tokenStorage.set(expiredToken())
     saveOfflineUser(user)
     authMocks.refresh.mockRejectedValue(new Error('offline'))
 
@@ -114,7 +113,7 @@ describe('auth store offline session', () => {
 
   it('does not call refresh while offline when no cached user exists', async () => {
     setOnlineStatus(false)
-    tokenStorage.set(expiredToken(), 'refresh')
+    tokenStorage.set(expiredToken())
 
     const auth = useAuthStore()
     await auth.rehydrate({ force: true })
@@ -126,9 +125,9 @@ describe('auth store offline session', () => {
 
   it('refreshes an expired in-memory session when the API is reachable', async () => {
     const accessToken = validToken()
-    tokenStorage.set('expired-access', 'refresh')
+    tokenStorage.set('expired-access')
     authMocks.refresh.mockImplementation(() => {
-      tokenStorage.set(accessToken, 'rotated-refresh')
+      tokenStorage.set(accessToken)
       return Promise.resolve(authResponse)
     })
 
@@ -142,7 +141,7 @@ describe('auth store offline session', () => {
   })
 
   it('clears tokens and cached user when refresh is rejected by the API', async () => {
-    tokenStorage.set('expired-access', 'refresh')
+    tokenStorage.set('expired-access')
     saveOfflineUser(user)
     authMocks.refresh.mockRejectedValue({ response: { status: 401 } })
 
@@ -151,7 +150,7 @@ describe('auth store offline session', () => {
 
     expect(auth.user).toBeNull()
     expect(tokenStorage.getAccess()).toBeNull()
-    expect(tokenStorage.getRefresh()).toBeNull()
+    expect(tokenStorage.hasSession()).toBe(false)
     expect(loadOfflineUser()).toBeNull()
   })
 })

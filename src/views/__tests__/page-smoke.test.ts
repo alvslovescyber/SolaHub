@@ -214,18 +214,18 @@ describe('route page smoke tests', () => {
     serviceMocks.auth.register.mockResolvedValue({
       user,
       accessToken: 'access',
-      refreshToken: 'refresh',
+      expiresAt: '2026-05-05T13:00:00.000Z',
     })
     serviceMocks.auth.login.mockResolvedValue({
       user,
       accessToken: 'access',
-      refreshToken: 'refresh',
+      expiresAt: '2026-05-05T13:00:00.000Z',
     })
     serviceMocks.auth.logout.mockResolvedValue(undefined)
     serviceMocks.auth.refresh.mockResolvedValue({
       user,
       accessToken: 'access',
-      refreshToken: 'refresh',
+      expiresAt: '2026-05-05T13:00:00.000Z',
     })
     serviceMocks.auth.changePassword.mockResolvedValue(undefined)
 

@@ -99,7 +99,7 @@ export const useAuthStore = defineStore('auth', () => {
    * continue once the server can be reached.
    */
   async function rehydrate(options: RehydrateOptions = {}): Promise<void> {
-    if (!tokenStorage.getRefresh()) return
+    if (!tokenStorage.hasSession()) return
     if (user.value && !options.force) return
     if (isBrowserOffline()) {
       if (user.value) enterOfflineSession(user.value)
@@ -128,7 +128,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function restoreOfflineUser(): boolean {
-    if (!tokenStorage.getRefresh()) return false
+    if (!tokenStorage.hasSession()) return false
     const cached = loadOfflineUser()
     if (!cached) return false
 

@@ -1,3 +1,4 @@
+using System.Net;
 using System.Security.Claims;
 using System.Text;
 using HealthChecks.NpgSql;
@@ -69,12 +70,11 @@ try
         opts.Providers.Add<GzipCompressionProvider>();
     });
 
+    if (!args.Contains("--migrate"))
+        ValidateForwardedHeadersConfiguration(builder.Configuration, builder.Environment);
     builder.Services.Configure<ForwardedHeadersOptions>(opts =>
-    {
-        opts.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-        opts.KnownIPNetworks.Clear();
-        opts.KnownProxies.Clear();
-    });
+        ConfigureForwardedHeaders(opts, builder.Configuration, builder.Environment)
+    );
 
     // ─── JWT Authentication ────────────────────────────────────────────────────
     // Bind a snapshot of JwtOptions so JwtBearer middleware sees the same source
@@ -145,7 +145,7 @@ try
 
                     var repo =
                         context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
-                    var user = await repo.GetByIdAsync(
+                    var user = await repo.GetByIdForAuthenticationAsync(
                         UserId.From(userGuid),
                         context.HttpContext.RequestAborted
                     );
@@ -259,7 +259,7 @@ try
 
     // ─── Production RLS safety check ──────────────────────────────────────────
     if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Test"))
-        await WarnIfSuperuserAsync(app);
+        await FailIfSuperuserAsync(app);
 
     app.MapControllers();
     app.MapHub<CollaborationHub>("/hubs/collaboration");
@@ -295,8 +295,8 @@ static async Task MigrateWithRetryAsync(WebApplication app)
     const int delayMs = 2_000;
 
     using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await using var db = CreateMigrationDbContext(app, scope.ServiceProvider);
 
     for (var attempt = 1; attempt <= maxRetries; attempt++)
     {
@@ -308,6 +308,7 @@ static async Task MigrateWithRetryAsync(WebApplication app)
                 maxRetries
             );
             await db.Database.MigrateAsync();
+            await SetAppRolePasswordIfConfiguredAsync(app, db);
             logger.LogInformation("Database migrations applied successfully.");
             return;
         }
@@ -320,41 +321,145 @@ static async Task MigrateWithRetryAsync(WebApplication app)
 
     // Final attempt — let it throw if still not ready
     await db.Database.MigrateAsync();
+    await SetAppRolePasswordIfConfiguredAsync(app, db);
 }
 
 /// <summary>
 /// Queries PostgreSQL to detect whether the application is connecting as a superuser.
 /// Superusers bypass RLS even when FORCE ROW LEVEL SECURITY is set on the table,
 /// so running as postgres in production silently disables the security layer.
-/// Logs CRITICAL if detected — does not abort startup.
+/// Fails startup if detected.
 /// </summary>
-static async Task WarnIfSuperuserAsync(WebApplication app)
+static async Task FailIfSuperuserAsync(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
+    await db.Database.OpenConnectionAsync();
+    var conn = db.Database.GetDbConnection();
+    using var cmd = conn.CreateCommand();
+    cmd.CommandText = "SELECT current_setting('is_superuser')";
+    var result = (await cmd.ExecuteScalarAsync())?.ToString();
+    await db.Database.CloseConnectionAsync();
+
+    if (result == "on")
+        throw new InvalidOperationException(
+            "The production application connection is a PostgreSQL superuser. "
+                + "Superusers bypass Row Level Security even when FORCE ROW LEVEL SECURITY is set. "
+                + "Use ConnectionStrings__DefaultConnection with the non-superuser solahub_app role, "
+                + "and run migrations through ConnectionStrings__MigrationConnection."
+        );
+}
+
+static AppDbContext CreateMigrationDbContext(WebApplication app, IServiceProvider services)
+{
+    var migrationConnection = app.Configuration.GetConnectionString("MigrationConnection");
+    if (string.IsNullOrWhiteSpace(migrationConnection))
+        return services.GetRequiredService<AppDbContext>();
+
+    var options = new DbContextOptionsBuilder<AppDbContext>()
+        .UseNpgsql(migrationConnection, npgsql => npgsql.EnableRetryOnFailure(5))
+        .UseSnakeCaseNamingConvention()
+        .Options;
+
+    return new AppDbContext(options);
+}
+
+static async Task SetAppRolePasswordIfConfiguredAsync(WebApplication app, AppDbContext db)
+{
+    var appRolePassword = app.Configuration["Database:AppRolePassword"];
+    if (string.IsNullOrWhiteSpace(appRolePassword))
+        return;
+
+    await db.Database.OpenConnectionAsync();
     try
     {
-        await db.Database.OpenConnectionAsync();
         var conn = db.Database.GetDbConnection();
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT current_setting('is_superuser')";
-        var result = (await cmd.ExecuteScalarAsync())?.ToString();
-        await db.Database.CloseConnectionAsync();
-
-        if (result == "on")
-            logger.LogCritical(
-                "DATABASE SECURITY WARNING: The application is connecting as a PostgreSQL "
-                    + "superuser. Superusers bypass Row Level Security even when FORCE ROW LEVEL "
-                    + "SECURITY is set. Switch ConnectionStrings__DefaultConnection to use "
-                    + "solahub_app (non-superuser role) to enforce RLS in production."
-            );
+        var escapedPassword = appRolePassword.Replace("'", "''", StringComparison.Ordinal);
+        cmd.CommandText = $"ALTER ROLE solahub_app WITH PASSWORD '{escapedPassword}'";
+        await cmd.ExecuteNonQueryAsync();
     }
-    catch (Exception ex)
+    finally
     {
-        logger.LogWarning(ex, "Could not determine database privilege level.");
+        await db.Database.CloseConnectionAsync();
     }
+}
+
+static void ValidateForwardedHeadersConfiguration(
+    IConfiguration configuration,
+    IHostEnvironment environment
+)
+{
+    if (environment.IsDevelopment() || environment.IsEnvironment("Test"))
+        return;
+
+    var proxies = configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? [];
+    var networks = configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>() ?? [];
+    var allowUnknown = configuration.GetValue("ForwardedHeaders:AllowUnknownProxies", false);
+
+    if (proxies.Length == 0 && networks.Length == 0 && !allowUnknown)
+    {
+        throw new InvalidOperationException(
+            "Production forwarded headers must be restricted to trusted proxies/networks. "
+                + "Configure ForwardedHeaders:KnownProxies or ForwardedHeaders:KnownNetworks, "
+                + "or explicitly set ForwardedHeaders:AllowUnknownProxies=true only when the API "
+                + "is not directly reachable except through a trusted platform edge."
+        );
+    }
+}
+
+static void ConfigureForwardedHeaders(
+    ForwardedHeadersOptions opts,
+    IConfiguration configuration,
+    IHostEnvironment environment
+)
+{
+    opts.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    opts.ForwardLimit = configuration.GetValue<int?>("ForwardedHeaders:ForwardLimit") ?? 1;
+
+    opts.KnownProxies.Clear();
+    opts.KnownIPNetworks.Clear();
+
+    foreach (
+        var proxy in configuration.GetSection("ForwardedHeaders:KnownProxies").Get<string[]>() ?? []
+    )
+    {
+        if (!IPAddress.TryParse(proxy, out var address))
+            throw new InvalidOperationException(
+                $"Invalid ForwardedHeaders:KnownProxies entry '{proxy}'."
+            );
+        opts.KnownProxies.Add(address);
+    }
+
+    foreach (
+        var network in configuration.GetSection("ForwardedHeaders:KnownNetworks").Get<string[]>()
+            ?? []
+    )
+        opts.KnownIPNetworks.Add(ParseKnownNetwork(network));
+
+    if (
+        configuration.GetValue("ForwardedHeaders:AllowUnknownProxies", false)
+        && !environment.IsDevelopment()
+        && !environment.IsEnvironment("Test")
+    )
+    {
+        // Explicit production break-glass mode for platforms that do not publish stable edge IPs.
+        opts.KnownProxies.Clear();
+        opts.KnownIPNetworks.Clear();
+    }
+}
+
+static System.Net.IPNetwork ParseKnownNetwork(string cidr)
+{
+    if (!System.Net.IPNetwork.TryParse(cidr, out var network))
+    {
+        throw new InvalidOperationException(
+            $"Invalid ForwardedHeaders:KnownNetworks entry '{cidr}'. Use CIDR format, for example 10.0.0.0/8."
+        );
+    }
+
+    return network;
 }
 
 static string[] ResolveCorsOrigins(IConfiguration configuration, IHostEnvironment environment)

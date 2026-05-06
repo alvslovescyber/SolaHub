@@ -114,8 +114,7 @@ test.describe('Offline local-first service flows', () => {
 
     await page.evaluate(() => {
       localStorage.clear()
-      localStorage.setItem('solahub:access_token', 'e2e.expired.signature')
-      localStorage.setItem('solahub:refresh_token', 'offline-refresh-token')
+      localStorage.setItem('solahub:session', '1')
     })
 
     await context.setOffline(true)

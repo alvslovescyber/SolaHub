@@ -30,7 +30,11 @@ public sealed class AuthEndpointTests(ApiFactory factory)
 
         var body = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
-        body.RefreshToken.Should().NotBeNullOrEmpty();
+        GetRefreshCookie(response).Should().NotBeNullOrEmpty();
+        response
+            .Headers.GetValues("Set-Cookie")
+            .Should()
+            .Contain(h => h.Contains("HttpOnly", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
@@ -154,15 +158,12 @@ public sealed class AuthEndpointTests(ApiFactory factory)
                 displayName = "Refresh User",
             }
         );
-        var tokens = await registerResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
+        var tokens = await ReadAuthResponseAsync(registerResponse);
 
-        var response = await _client.PostAsJsonAsync(
-            "/api/auth/refresh",
-            new { refreshToken = tokens!.RefreshToken }
-        );
+        var response = await _client.PostAsJsonAsync("/api/auth/refresh", new { });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var newTokens = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+        var newTokens = await ReadAuthResponseAsync(response);
         newTokens!.AccessToken.Should().NotBe(tokens.AccessToken);
         newTokens.RefreshToken.Should().NotBe(tokens.RefreshToken);
     }
@@ -181,7 +182,7 @@ public sealed class AuthEndpointTests(ApiFactory factory)
                 displayName = "Reuse User",
             }
         );
-        var tokens = await registerResponse.Content.ReadFromJsonAsync<AuthResponseDto>();
+        var tokens = await ReadAuthResponseAsync(registerResponse);
 
         // Use once — success
         await _client.PostAsJsonAsync(
@@ -226,12 +227,29 @@ public sealed class AuthEndpointTests(ApiFactory factory)
             }
         );
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        return (await response.Content.ReadFromJsonAsync<AuthResponseDto>())!;
+        return await ReadAuthResponseAsync(response);
+    }
+
+    private static async Task<AuthResponseDto> ReadAuthResponseAsync(HttpResponseMessage response)
+    {
+        var body = await response.Content.ReadFromJsonAsync<AuthResponseBodyDto>();
+        return new AuthResponseDto(body!.AccessToken, GetRefreshCookie(response), body.ExpiresAt);
+    }
+
+    private static string GetRefreshCookie(HttpResponseMessage response)
+    {
+        var setCookie = response
+            .Headers.GetValues("Set-Cookie")
+            .First(h => h.StartsWith("solahub_refresh=", StringComparison.Ordinal));
+        var value = setCookie.Split(';', 2)[0].Split('=', 2)[1];
+        return Uri.UnescapeDataString(value);
     }
 }
 
+internal sealed record AuthResponseBodyDto(string AccessToken, DateTimeOffset ExpiresAt);
+
 internal sealed record AuthResponseDto(
     string AccessToken,
-    string RefreshToken,
-    DateTimeOffset ExpiresAt
+    string RefreshToken = "",
+    DateTimeOffset ExpiresAt = default
 );

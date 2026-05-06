@@ -29,6 +29,12 @@ public interface IReadingPlanRepository
         CancellationToken ct = default
     );
 
+    Task<bool> TryAddParticipantAsync(
+        ReadingPlanId planId,
+        UserId userId,
+        CancellationToken ct = default
+    );
+
     Task AddAsync(ReadingPlan plan, CancellationToken ct = default);
     Task UpdateAsync(ReadingPlan plan, CancellationToken ct = default);
     Task DeleteAsync(ReadingPlanId id, CancellationToken ct = default);

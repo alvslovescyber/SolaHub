@@ -6,6 +6,7 @@ namespace SolaHub.Core.Interfaces.Repositories;
 public interface IUserRepository
 {
     Task<User?> GetByIdAsync(UserId id, CancellationToken ct = default);
+    Task<User?> GetByIdForAuthenticationAsync(UserId id, CancellationToken ct = default);
     Task<IReadOnlyList<User>> GetByIdsAsync(
         IEnumerable<UserId> ids,
         CancellationToken ct = default

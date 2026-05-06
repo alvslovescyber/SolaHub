@@ -1,12 +1,13 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 using StackExchange.Redis;
 
 namespace SolaHub.API.Middleware;
 
 /// <summary>
-/// Simple fixed-window rate limit for unauthenticated auth endpoints (login, register, refresh).
+/// Fixed-window rate limits for auth endpoints, including IP and account/email buckets.
 /// </summary>
 public sealed class AuthRateLimitMiddleware(
     RequestDelegate next,
@@ -15,7 +16,8 @@ public sealed class AuthRateLimitMiddleware(
     IConnectionMultiplexer? redis = null
 )
 {
-    private const int MaxRequestsPerWindow = 60;
+    private const int MaxIpRequestsPerWindow = 60;
+    private const int MaxAccountRequestsPerWindow = 10;
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> KeyLocks = new();
 
@@ -26,28 +28,46 @@ public sealed class AuthRateLimitMiddleware(
             var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
             var minuteBucket = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute;
             var path = context.Request.Path.Value ?? "";
-            var key = $"solahub:ratelimit:auth:{ip}:{path}:{minuteBucket}";
+            var keys = new List<(string Key, int Limit)>
+            {
+                ($"solahub:ratelimit:auth:ip:{ip}:{path}:{minuteBucket}", MaxIpRequestsPerWindow),
+            };
+
+            var email = await TryReadEmailAsync(context);
+            if (email is not null)
+            {
+                keys.Add(
+                    (
+                        $"solahub:ratelimit:auth:account:{email}:{path}:{minuteBucket}",
+                        MaxAccountRequestsPerWindow
+                    )
+                );
+            }
+
             CleanupExpiredLocks(minuteBucket);
 
-            var limited = redis is not null
-                ? await IsRedisLimitedAsync(key)
-                : await IsDistributedCacheLimitedAsync(key, context.RequestAborted);
-
-            if (limited)
+            foreach (var (key, limit) in keys)
             {
-                context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                context.Response.Headers.RetryAfter = ((int)Window.TotalSeconds).ToString(
-                    CultureInfo.InvariantCulture
-                );
-                await context.Response.WriteAsync("Too many requests. Try again later.");
-                return;
+                var limited = redis is not null
+                    ? await IsRedisLimitedAsync(key, limit)
+                    : await IsDistributedCacheLimitedAsync(key, limit, context.RequestAborted);
+
+                if (limited)
+                {
+                    context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                    context.Response.Headers.RetryAfter = ((int)Window.TotalSeconds).ToString(
+                        CultureInfo.InvariantCulture
+                    );
+                    await context.Response.WriteAsync("Too many requests. Try again later.");
+                    return;
+                }
             }
         }
 
         await next(context);
     }
 
-    private async Task<bool> IsRedisLimitedAsync(string key)
+    private async Task<bool> IsRedisLimitedAsync(string key, int limit)
     {
         try
         {
@@ -55,7 +75,7 @@ public sealed class AuthRateLimitMiddleware(
             var count = await db.StringIncrementAsync(key);
             if (count == 1)
                 await db.KeyExpireAsync(key, Window);
-            return count > MaxRequestsPerWindow;
+            return count > limit;
         }
         catch (Exception ex)
         {
@@ -63,11 +83,15 @@ public sealed class AuthRateLimitMiddleware(
                 ex,
                 "Redis rate-limit operation failed; falling back to memory cache."
             );
-            return await IsDistributedCacheLimitedAsync(key, CancellationToken.None);
+            return await IsDistributedCacheLimitedAsync(key, limit, CancellationToken.None);
         }
     }
 
-    private async Task<bool> IsDistributedCacheLimitedAsync(string key, CancellationToken ct)
+    private async Task<bool> IsDistributedCacheLimitedAsync(
+        string key,
+        int limit,
+        CancellationToken ct
+    )
     {
         var keyLock = KeyLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
         await keyLock.WaitAsync(ct);
@@ -109,7 +133,7 @@ public sealed class AuthRateLimitMiddleware(
                 return true;
             }
 
-            if (count >= MaxRequestsPerWindow)
+            if (count >= limit)
                 return true;
 
             try
@@ -148,9 +172,47 @@ public sealed class AuthRateLimitMiddleware(
             return false;
 
         var path = context.Request.Path;
-        return path.StartsWithSegments("/api/auth/login")
-            || path.StartsWithSegments("/api/auth/register")
-            || path.StartsWithSegments("/api/auth/refresh");
+        return path.StartsWithSegments("/api/auth");
+    }
+
+    private static async Task<string?> TryReadEmailAsync(HttpContext context)
+    {
+        var path = context.Request.Path;
+        if (
+            !path.StartsWithSegments("/api/auth/login")
+            && !path.StartsWithSegments("/api/auth/register")
+        )
+            return null;
+
+        if (!context.Request.HasJsonContentType())
+            return null;
+
+        context.Request.EnableBuffering();
+        try
+        {
+            using var document = await JsonDocument.ParseAsync(
+                context.Request.Body,
+                cancellationToken: context.RequestAborted
+            );
+            if (
+                document.RootElement.TryGetProperty("email", out var emailElement)
+                && emailElement.ValueKind == JsonValueKind.String
+            )
+            {
+                var email = emailElement.GetString()?.Trim().ToLowerInvariant();
+                return string.IsNullOrWhiteSpace(email) ? null : email;
+            }
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+        finally
+        {
+            context.Request.Body.Position = 0;
+        }
+
+        return null;
     }
 
     private static void CleanupExpiredLocks(long currentMinuteBucket)

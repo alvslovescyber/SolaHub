@@ -25,7 +25,11 @@ if (process.env.E2E_SKIP_API_SERVER !== 'true') {
       ASPNETCORE_ENVIRONMENT: 'Test',
       ConnectionStrings__DefaultConnection:
         process.env.ConnectionStrings__DefaultConnection ??
+        'Host=localhost;Port=5432;Database=solahub_test;Username=solahub_app;Password=app-test-password',
+      ConnectionStrings__MigrationConnection:
+        process.env.ConnectionStrings__MigrationConnection ??
         'Host=localhost;Port=5432;Database=solahub_test;Username=test;Password=test',
+      Database__AppRolePassword: process.env.Database__AppRolePassword ?? 'app-test-password',
       Jwt__SecretKey:
         process.env.Jwt__SecretKey ?? 'playwright-secret-key-must-be-at-least-32-bytes!!',
       Jwt__Issuer: process.env.Jwt__Issuer ?? 'SolaHub',

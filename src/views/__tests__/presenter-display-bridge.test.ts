@@ -1,7 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { PresenterDisplayState } from '@/stores/presenter.store'
+import { createPinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DISPLAY_STATE_EVENT, type PresenterDisplayState } from '@/stores/presenter.store'
 import type { NotationSlide } from '@/types/presenter.types'
+import PresenterDisplayView from '../PresenterDisplayView.vue'
 
 const displayMocks = vi.hoisted(() => ({
   invoke: vi.fn(),
@@ -15,6 +17,35 @@ const displayMocks = vi.hoisted(() => ({
   collaborationOn: vi.fn(() => vi.fn()),
   eventHandler: null as ((event: { payload: PresenterDisplayState }) => void) | null,
   windowResizeHandler: null as (() => void) | null,
+}))
+
+vi.mock('@/lib/platform', () => ({
+  isTauri: true,
+  isMac: false,
+  modKeyLabel: 'Ctrl',
+}))
+
+vi.mock('@tauri-apps/api/event', () => ({
+  listen: displayMocks.listen,
+  emit: displayMocks.emit,
+}))
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: displayMocks.invoke,
+}))
+
+vi.mock('@tauri-apps/api/window', () => ({
+  getCurrentWindow: () => ({
+    onResized: displayMocks.onResized,
+    isMinimized: displayMocks.isMinimized,
+  }),
+}))
+
+vi.mock('@/services/collaboration.service', () => ({
+  collaborationService: {
+    on: displayMocks.collaborationOn,
+    pushPresenterVerse: displayMocks.pushPresenterVerse,
+  },
 }))
 
 function makeSlide(index = 1): NotationSlide {
@@ -47,39 +78,11 @@ function makeSlide(index = 1): NotationSlide {
 }
 
 async function mountPresenterDisplayInTauri() {
-  vi.resetModules()
   displayMocks.listen.mockImplementation((_eventName, handler) => {
     displayMocks.eventHandler = handler
     return Promise.resolve(displayMocks.unlisten)
   })
-  vi.doMock('@/lib/platform', () => ({
-    isTauri: true,
-    isMac: false,
-    modKeyLabel: 'Ctrl',
-  }))
-  vi.doMock('@tauri-apps/api/event', () => ({
-    listen: displayMocks.listen,
-    emit: displayMocks.emit,
-  }))
-  vi.doMock('@tauri-apps/api/core', () => ({
-    invoke: displayMocks.invoke,
-  }))
-  vi.doMock('@tauri-apps/api/window', () => ({
-    getCurrentWindow: () => ({
-      onResized: displayMocks.onResized,
-      isMinimized: displayMocks.isMinimized,
-    }),
-  }))
-  vi.doMock('@/services/collaboration.service', () => ({
-    collaborationService: {
-      on: displayMocks.collaborationOn,
-      pushPresenterVerse: displayMocks.pushPresenterVerse,
-    },
-  }))
 
-  const { createPinia } = await import('pinia')
-  const { DISPLAY_STATE_EVENT } = await import('@/stores/presenter.store')
-  const PresenterDisplayView = (await import('../PresenterDisplayView.vue')).default
   const wrapper = mount(PresenterDisplayView, {
     global: {
       plugins: [createPinia()],
@@ -112,10 +115,6 @@ describe('PresenterDisplayView Tauri bridge', () => {
     displayMocks.collaborationOn.mockReturnValue(vi.fn())
     displayMocks.eventHandler = null
     displayMocks.windowResizeHandler = null
-  })
-
-  afterEach(() => {
-    vi.resetModules()
   })
 
   it('renders notation slide state received from the native presenter window event', async () => {

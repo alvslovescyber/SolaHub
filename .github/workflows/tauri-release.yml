@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.1.1)'
+        description: 'Release tag (e.g. v0.1.5)'
         required: true
-        default: 'v0.1.1'
+        default: 'v0.1.5'
 
 permissions:
   contents: write
@@ -18,6 +18,7 @@ env:
   NODE_VERSION: '22'
   R2_PUBLIC_BASE: 'https://pub-c5a5d4bded77499abee30a6e8fd383b8.r2.dev'
   R2_BUCKET: 'solahub-downloads'
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 jobs:
   build-macos:
@@ -85,8 +86,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
           SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
         with:
-          tagName: ${{ github.ref_name || inputs.tag }}
-          releaseName: SolaHub ${{ github.ref_name || inputs.tag }}
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: SolaHub ${{ env.RELEASE_TAG }}
           releaseBody: |
             ## What's new
             See the [changelog](https://github.com/alvslovescyber/SolaHub/blob/main/CHANGELOG.md) for details.
@@ -100,24 +101,30 @@ jobs:
           args: --target ${{ matrix.arch }}
           includeUpdaterJson: false
 
-      # tauri-action doesn't upload .sig files to the release.
-      # Upload them explicitly so publish-r2 can build latest.json.
-      - name: Upload updater .sig to release
+      # Upload deterministic updater artifacts so latest.json can point at stable names.
+      - name: Upload updater archive and .sig to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=${{ github.ref_name || inputs.tag }}
+          TAG=${{ env.RELEASE_TAG }}
           LABEL=${{ matrix.artifact_label }}
+          ARCHIVE=$(find src-tauri/target/${{ matrix.arch }}/release/bundle/macos \
+            -name "*.app.tar.gz" ! -name "*.sig" 2>/dev/null | head -1)
           SIG=$(find src-tauri/target/${{ matrix.arch }}/release/bundle/macos \
             -name "*.app.tar.gz.sig" 2>/dev/null | head -1)
-          if [ -n "$SIG" ] && [ -f "$SIG" ]; then
-            gh release upload "$TAG" \
-              "${SIG}#SolaHub_${LABEL}.app.tar.gz.sig" \
-              --repo ${{ github.repository }} --clobber
-            echo "Uploaded SolaHub_${LABEL}.app.tar.gz.sig"
-          else
-            echo "No .sig file found — build was not signed"
+          if [ -z "$ARCHIVE" ] || [ ! -f "$ARCHIVE" ]; then
+            echo "No updater archive found for $LABEL"
+            exit 1
           fi
+          if [ -z "$SIG" ] || [ ! -f "$SIG" ]; then
+            echo "No updater signature found for $LABEL"
+            exit 1
+          fi
+          gh release upload "$TAG" \
+            "${ARCHIVE}#SolaHub_${LABEL}.app.tar.gz" \
+            "${SIG}#SolaHub_${LABEL}.app.tar.gz.sig" \
+            --repo ${{ github.repository }} --clobber
+          echo "Uploaded SolaHub_${LABEL}.app.tar.gz and signature"
 
   build-windows:
     name: Windows (x64)
@@ -171,8 +178,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
           SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
         with:
-          tagName: ${{ github.ref_name || inputs.tag }}
-          releaseName: SolaHub ${{ github.ref_name || inputs.tag }}
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: SolaHub ${{ env.RELEASE_TAG }}
           releaseBody: |
             ## What's new
             See the [changelog](https://github.com/alvslovescyber/SolaHub/blob/main/CHANGELOG.md) for details.
@@ -187,7 +194,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          TAG=${{ github.ref_name || inputs.tag }}
+          TAG=${{ env.RELEASE_TAG }}
           NSIS_ZIP=$(find src-tauri/target/release/bundle/nsis \
             -name "*.nsis.zip" 2>/dev/null | head -1)
           NSIS_SIG=$(find src-tauri/target/release/bundle/nsis \
@@ -195,9 +202,10 @@ jobs:
           if [ -n "$NSIS_ZIP" ] && [ -f "$NSIS_ZIP" ] && [ -n "$NSIS_SIG" ]; then
             gh release upload "$TAG" "$NSIS_ZIP" "$NSIS_SIG" \
               --repo ${{ github.repository }} --clobber
-            echo "Uploaded $(basename $NSIS_ZIP) and .sig"
+            echo "Uploaded $(basename "$NSIS_ZIP") and .sig"
           else
             echo "No NSIS zip/sig found — build was not signed"
+            exit 1
           fi
 
   publish-r2:
@@ -216,7 +224,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG=${{ github.ref_name || inputs.tag }}
+          TAG=${{ env.RELEASE_TAG }}
+          mkdir -p ./dist
           gh release download "$TAG" \
             --repo ${{ github.repository }} \
             --pattern "*.sig" \
@@ -236,7 +245,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           cd dist
-          for file in *.nsis.zip *.app.tar.gz *.dmg *-setup.exe *.msi; do
+          for file in *.nsis.zip *.nsis.zip.sig *.app.tar.gz *.app.tar.gz.sig *.dmg *-setup.exe *.msi; do
             [ -f "$file" ] || continue
             echo "Uploading $file ..."
             npx wrangler r2 object put "${{ env.R2_BUCKET }}/$file" \
@@ -246,58 +255,19 @@ jobs:
           done
 
       # Build latest.json ourselves from the .sig files.
-      # This bypasses tauri-action's broken updater JSON generation.
       - name: Build latest.json from signatures
         run: |
-          python3 << 'EOF'
-          import json, os, glob, datetime
-
-          R2 = os.environ['R2_PUBLIC_BASE']
-          TAG = os.environ['TAG']
-          version = TAG.lstrip('v')
-
-          platforms = {}
-
-          for sig_file in glob.glob('dist/SolaHub_aarch64.app.tar.gz.sig'):
-              platforms['darwin-aarch64'] = {
-                  'signature': open(sig_file).read().strip(),
-                  'url': f'{R2}/SolaHub_aarch64.app.tar.gz'
-              }
-
-          for sig_file in glob.glob('dist/SolaHub_x64.app.tar.gz.sig'):
-              platforms['darwin-x86_64'] = {
-                  'signature': open(sig_file).read().strip(),
-                  'url': f'{R2}/SolaHub_x64.app.tar.gz'
-              }
-
-          for sig_file in glob.glob('dist/*.nsis.zip.sig'):
-              nsis_name = os.path.basename(sig_file).replace('.sig', '')
-              platforms['windows-x86_64'] = {
-                  'signature': open(sig_file).read().strip(),
-                  'url': f'{R2}/{nsis_name}'
-              }
-
-          if not platforms:
-              print("No .sig files found — skipping latest.json (unsigned build)")
-          else:
-              data = {
-                  'version': version,
-                  'notes': 'See the changelog for details.',
-                  'pub_date': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
-                  'platforms': platforms
-              }
-              with open('dist/latest.json', 'w') as f:
-                  json.dump(data, f, indent=2)
-              print('Generated latest.json:')
-              print(json.dumps(data, indent=2))
-          EOF
+          python3 scripts/generate-tauri-latest-json.py \
+            --dist dist \
+            --tag "${TAG}" \
+            --r2-base "${R2_PUBLIC_BASE}" \
+            --output dist/latest.json
         env:
           R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
-          TAG: ${{ github.ref_name || inputs.tag }}
+          TAG: ${{ env.RELEASE_TAG }}
 
       # latest.json goes live last — once published, users will be offered the update
       - name: Publish latest.json to R2
-        if: hashFiles('dist/latest.json') != ''
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -313,7 +283,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          TAG=${{ github.ref_name || inputs.tag }}
+          TAG=${{ env.RELEASE_TAG }}
           VERSION=${TAG#v}
           sed "s/__VERSION__/${VERSION}/g" scripts/downloads.template.html > dist/downloads.html
           npx wrangler r2 object put "${{ env.R2_BUCKET }}/downloads.html" \

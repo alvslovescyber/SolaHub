@@ -8,7 +8,7 @@ using StackExchange.Redis;
 namespace SolaHub.API.Middleware;
 
 /// <summary>
-/// Fixed-window write limiter for community publishing/reporting endpoints.
+/// Fixed-window write limiter for authenticated mutation endpoints.
 /// </summary>
 public sealed class CommunityWriteRateLimitMiddleware(
     RequestDelegate next,
@@ -17,22 +17,31 @@ public sealed class CommunityWriteRateLimitMiddleware(
     IConnectionMultiplexer? redis = null
 )
 {
-    private const int MaxRequestsPerWindow = 20;
+    private const int MaxCommunityWritesPerWindow = 20;
+    private const int MaxGeneralWritesPerWindow = 120;
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> KeyLocks = new();
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (ShouldLimit(context))
+        var profile = ResolveProfile(context);
+        if (profile is not null)
         {
             var minuteBucket = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMinute;
             var principalKey = ResolvePrincipalKey(context);
-            var key = $"solahub:ratelimit:community:{principalKey}:{minuteBucket}";
+            var key =
+                profile.Value.KeyPrefix == "community"
+                    ? $"solahub:ratelimit:community:{principalKey}:{minuteBucket}"
+                    : $"solahub:ratelimit:writes:{principalKey}:{context.Request.Path}:{minuteBucket}";
             CleanupExpiredLocks(minuteBucket);
 
             var limited = redis is not null
-                ? await IsRedisLimitedAsync(key)
-                : await IsDistributedCacheLimitedAsync(key, context.RequestAborted);
+                ? await IsRedisLimitedAsync(key, profile.Value.Limit)
+                : await IsDistributedCacheLimitedAsync(
+                    key,
+                    profile.Value.Limit,
+                    context.RequestAborted
+                );
 
             if (limited)
             {
@@ -40,7 +49,7 @@ public sealed class CommunityWriteRateLimitMiddleware(
                 context.Response.Headers.RetryAfter = ((int)Window.TotalSeconds).ToString(
                     CultureInfo.InvariantCulture
                 );
-                await context.Response.WriteAsync("Too many community writes. Try again later.");
+                await context.Response.WriteAsync("Too many write requests. Try again later.");
                 return;
             }
         }
@@ -48,7 +57,7 @@ public sealed class CommunityWriteRateLimitMiddleware(
         await next(context);
     }
 
-    private async Task<bool> IsRedisLimitedAsync(string key)
+    private async Task<bool> IsRedisLimitedAsync(string key, int limit)
     {
         try
         {
@@ -56,7 +65,7 @@ public sealed class CommunityWriteRateLimitMiddleware(
             var count = await db.StringIncrementAsync(key);
             if (count == 1)
                 await db.KeyExpireAsync(key, Window);
-            return count > MaxRequestsPerWindow;
+            return count > limit;
         }
         catch (Exception ex)
         {
@@ -64,11 +73,15 @@ public sealed class CommunityWriteRateLimitMiddleware(
                 ex,
                 "Redis community rate-limit operation failed; falling back to memory cache."
             );
-            return await IsDistributedCacheLimitedAsync(key, CancellationToken.None);
+            return await IsDistributedCacheLimitedAsync(key, limit, CancellationToken.None);
         }
     }
 
-    private async Task<bool> IsDistributedCacheLimitedAsync(string key, CancellationToken ct)
+    private async Task<bool> IsDistributedCacheLimitedAsync(
+        string key,
+        int limit,
+        CancellationToken ct
+    )
     {
         var keyLock = KeyLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
         await keyLock.WaitAsync(ct);
@@ -89,7 +102,7 @@ public sealed class CommunityWriteRateLimitMiddleware(
                 count = 0;
             }
 
-            if (count >= MaxRequestsPerWindow)
+            if (count >= limit)
                 return true;
 
             await cache.SetStringAsync(
@@ -116,17 +129,32 @@ public sealed class CommunityWriteRateLimitMiddleware(
         }
     }
 
-    private static bool ShouldLimit(HttpContext context)
+    private static RateLimitProfile? ResolveProfile(HttpContext context)
     {
         if (
             !HttpMethods.IsPost(context.Request.Method)
             && !HttpMethods.IsPut(context.Request.Method)
             && !HttpMethods.IsDelete(context.Request.Method)
         )
-            return false;
+            return null;
 
-        return context.Request.Path.StartsWithSegments("/api/community");
+        var path = context.Request.Path;
+        if (path.StartsWithSegments("/api/community"))
+            return new("community", MaxCommunityWritesPerWindow);
+
+        if (
+            path.StartsWithSegments("/api/notes")
+            || path.StartsWithSegments("/api/plans")
+            || path.StartsWithSegments("/api/users")
+            || path.StartsWithSegments("/api/auth/logout")
+            || path.StartsWithSegments("/api/auth/change-password")
+        )
+            return new("general", MaxGeneralWritesPerWindow);
+
+        return null;
     }
+
+    private readonly record struct RateLimitProfile(string KeyPrefix, int Limit);
 
     private static string ResolvePrincipalKey(HttpContext context)
     {

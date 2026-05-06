@@ -50,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Vulnerable package audit
+        run: npm audit --audit-level=moderate
+
       - name: ESLint
         run: npm run lint
 
@@ -101,11 +104,29 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Rust vulnerable package audit
+        run: cargo audit
+        working-directory: src-tauri
+
+      - name: Rust format check
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+
+      - name: Rust lint
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features
 
       - name: Create stub dist for cargo check
         run: mkdir -p dist && echo '<html></html>' > dist/index.html
@@ -159,7 +180,10 @@ jobs:
         env:
           VITE_API_URL: http://localhost:5000
           ConnectionStrings__DefaultConnection: >-
+            Host=localhost;Port=5432;Database=solahub_test;Username=solahub_app;Password=app-test-password
+          ConnectionStrings__MigrationConnection: >-
             Host=localhost;Port=5432;Database=solahub_test;Username=test;Password=test
+          Database__AppRolePassword: app-test-password
           Jwt__SecretKey: playwright-secret-key-must-be-at-least-32-bytes!!
           Jwt__Issuer: SolaHub
           Jwt__Audience: SolaHub.Desktop

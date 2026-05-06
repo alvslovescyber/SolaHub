@@ -31,7 +31,14 @@ internal sealed class JoinPlanCommandHandler(IReadingPlanRepository planReposito
         if (addResult.IsFailure)
             return addResult.Error;
 
-        await planRepository.UpdateAsync(plan, ct);
+        var inserted = await planRepository.TryAddParticipantAsync(
+            request.PlanId,
+            request.UserId,
+            ct
+        );
+        if (!inserted)
+            return Error.Conflict("Plans.AlreadyParticipant", "User is already a participant.");
+
         return Result.Success();
     }
 }

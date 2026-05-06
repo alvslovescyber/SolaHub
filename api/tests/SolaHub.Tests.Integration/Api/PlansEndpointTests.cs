@@ -71,7 +71,7 @@ public sealed class PlansEndpointTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task JoinPrivatePlan_AsNonCreator_Returns403()
+    public async Task JoinPrivatePlan_AsNonCreator_Returns404WithoutRevealingPlan()
     {
         var owner = await RegisterUser(
             _client,
@@ -111,7 +111,7 @@ public sealed class PlansEndpointTests(ApiFactory factory)
             stranger.AccessToken
         );
         var joinResp = await _client.SendAsync(joinReq);
-        joinResp.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        joinResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact]

@@ -11,6 +11,7 @@ namespace SolaHub.Infrastructure.Persistence.Interceptors;
 ///
 /// app.current_user_id — the authenticated user's UUID (empty string if unauthenticated)
 /// app.is_admin        — 'true' when the JWT carries the Admin role claim
+/// app.auth_context    — set explicitly by repositories for unauthenticated auth lookups
 ///
 /// Registered as a singleton because IHttpContextAccessor is singleton and uses
 /// AsyncLocal internally to isolate per-request values.
@@ -52,6 +53,6 @@ public sealed class AppDbRlsInterceptor(IHttpContextAccessor httpContextAccessor
         }
 
         // Values are either a validated UUID (D-format) or 'true'/'false' — no injection risk.
-        return $"SET app.current_user_id = '{userId}'; SET app.is_admin = '{isAdmin}';";
+        return $"SET app.current_user_id = '{userId}'; SET app.is_admin = '{isAdmin}'; SET app.auth_context = 'false';";
     }
 }

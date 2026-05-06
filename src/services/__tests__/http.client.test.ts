@@ -54,29 +54,29 @@ describe('http client', () => {
   describe('tokenStorage', () => {
     beforeEach(() => tokenStorage.clear())
 
-    it('stores and retrieves access and refresh tokens', () => {
-      tokenStorage.set('acc-abc', 'ref-xyz')
+    it('stores access token in memory and marks the session', () => {
+      tokenStorage.set('acc-abc')
       expect(tokenStorage.getAccess()).toBe('acc-abc')
-      expect(tokenStorage.getRefresh()).toBe('ref-xyz')
+      expect(tokenStorage.hasSession()).toBe(true)
     })
 
-    it('clears both tokens', () => {
-      tokenStorage.set('acc-abc', 'ref-xyz')
+    it('clears access token and session marker', () => {
+      tokenStorage.set('acc-abc')
       tokenStorage.clear()
       expect(tokenStorage.getAccess()).toBeNull()
-      expect(tokenStorage.getRefresh()).toBeNull()
+      expect(tokenStorage.hasSession()).toBe(false)
     })
 
     it('returns null when no token has been stored', () => {
       expect(tokenStorage.getAccess()).toBeNull()
-      expect(tokenStorage.getRefresh()).toBeNull()
+      expect(tokenStorage.hasSession()).toBe(false)
     })
 
-    it('overwrites tokens on subsequent set calls', () => {
-      tokenStorage.set('old-acc', 'old-ref')
-      tokenStorage.set('new-acc', 'new-ref')
+    it('overwrites access token on subsequent set calls', () => {
+      tokenStorage.set('old-acc')
+      tokenStorage.set('new-acc')
       expect(tokenStorage.getAccess()).toBe('new-acc')
-      expect(tokenStorage.getRefresh()).toBe('new-ref')
+      expect(tokenStorage.hasSession()).toBe(true)
     })
   })
 })

@@ -42,7 +42,6 @@ const member: User = {
 const authResponse: AuthResponse = {
   user: pastor,
   accessToken: 'access',
-  refreshToken: 'refresh',
   expiresAt: '2026-05-05T13:00:00.000Z',
 }
 
@@ -50,7 +49,7 @@ beforeEach(() => {
   localStorage.clear()
   vi.resetAllMocks()
   setOnlineStatus(false)
-  tokenStorage.set(expiredToken(), 'refresh')
+  tokenStorage.set(expiredToken())
   saveOfflineUser(pastor)
   authMocks.refresh.mockRejectedValue(new Error('offline'))
 })
@@ -67,7 +66,7 @@ describe('offline route guards', () => {
 
   it('allows presenter while offline for any previously signed-in user', async () => {
     localStorage.clear()
-    tokenStorage.set(expiredToken(), 'refresh')
+    tokenStorage.set(expiredToken())
     saveOfflineUser(member)
     const router = makeRouter()
 
@@ -89,7 +88,7 @@ describe('offline route guards', () => {
 
   it('sends offline-ready routes to login when no cached user exists', async () => {
     localStorage.clear()
-    tokenStorage.set(expiredToken(), 'refresh')
+    tokenStorage.set(expiredToken())
     const router = makeRouter()
 
     await router.push('/notes')
@@ -136,7 +135,7 @@ describe('offline route guards', () => {
     const accessToken = validToken()
     setOnlineStatus(true)
     authMocks.refresh.mockImplementation(() => {
-      tokenStorage.set(accessToken, 'rotated-refresh')
+      tokenStorage.set(accessToken)
       return Promise.resolve(authResponse)
     })
     const router = makeRouter()

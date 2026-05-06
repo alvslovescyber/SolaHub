@@ -29,9 +29,10 @@ psql \
   -h "$POSTGRES_HOST" \
   -p "$POSTGRES_PORT" \
   -U "$POSTGRES_SUPERUSER" \
-  -d "$POSTGRES_DB" <<SQL
+  -d "$POSTGRES_DB" \
+  -v app_password="$SOLAHUB_APP_PASSWORD" <<'SQL'
 -- Set password for the application role created by the migration.
-ALTER ROLE solahub_app WITH PASSWORD '$SOLAHUB_APP_PASSWORD';
+ALTER ROLE solahub_app WITH PASSWORD :'app_password';
 
 -- Verify RLS is active.
 SELECT
@@ -41,6 +42,7 @@ SELECT
 FROM pg_class
 WHERE relname IN (
   'verse_notes', 'reading_plans', 'plan_participants',
+  'reading_plan_days', 'churches',
   'community_posts', 'community_post_reports'
 )
 ORDER BY relname;

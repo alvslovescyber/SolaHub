@@ -19,16 +19,10 @@ export function validAccessToken(): string {
   return `e2e.${payload}.signature`
 }
 
-export function expiredAccessToken(): string {
-  const payload = Buffer.from(JSON.stringify({ exp: 1 })).toString('base64url')
-  return `e2e.${payload}.signature`
-}
-
 export async function seedExpiredOfflineSession(page: Page, user: User): Promise<void> {
   await page.evaluate(
-    ({ accessToken, cachedUser }) => {
-      localStorage.setItem('solahub:access_token', accessToken)
-      localStorage.setItem('solahub:refresh_token', 'offline-refresh-token')
+    ({ cachedUser }) => {
+      localStorage.setItem('solahub:session', '1')
       localStorage.setItem(
         'solahub:offline-user',
         JSON.stringify({
@@ -38,7 +32,7 @@ export async function seedExpiredOfflineSession(page: Page, user: User): Promise
         })
       )
     },
-    { accessToken: expiredAccessToken(), cachedUser: user }
+    { cachedUser: user }
   )
 }
 
@@ -156,7 +150,6 @@ export async function mockAuthenticatedSession(
     ...overrides,
   }
   const accessToken = validAccessToken()
-  const refreshToken = 'reliability-refresh-token'
 
   await page.route('**/api/auth/refresh', async (route) => {
     await route.fulfill({
@@ -164,20 +157,15 @@ export async function mockAuthenticatedSession(
       contentType: 'application/json',
       body: JSON.stringify({
         accessToken,
-        refreshToken,
         expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
         user,
       }),
     })
   })
 
-  await page.addInitScript(
-    ({ token, refresh }) => {
-      localStorage.setItem('solahub:access_token', token)
-      localStorage.setItem('solahub:refresh_token', refresh)
-    },
-    { token: accessToken, refresh: refreshToken }
-  )
+  await page.addInitScript(() => {
+    localStorage.setItem('solahub:session', '1')
+  }, undefined)
 
   return user
 }

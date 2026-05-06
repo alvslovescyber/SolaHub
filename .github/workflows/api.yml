@@ -51,6 +51,9 @@ jobs:
       - name: Restore
         run: dotnet restore api/SolaHub.sln
 
+      - name: Vulnerable package audit
+        run: dotnet list api/SolaHub.sln package --vulnerable --include-transitive
+
       - name: Build
         run: dotnet build api/SolaHub.sln --no-restore --configuration Release
 
@@ -109,7 +112,10 @@ jobs:
           --logger "trx;LogFileName=integration-results.xml"
         env:
           ConnectionStrings__DefaultConnection: >-
+            Host=localhost;Port=5432;Database=solahub_test;Username=solahub_app;Password=app-test-password
+          ConnectionStrings__MigrationConnection: >-
             Host=localhost;Port=5432;Database=solahub_test;Username=test;Password=test
+          Database__AppRolePassword: app-test-password
           Jwt__SecretKey: ci-secret-key-must-be-at-least-32-bytes-long!!
           Jwt__Issuer: SolaHub
           Jwt__Audience: SolaHub.Desktop

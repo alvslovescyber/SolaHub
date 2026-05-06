@@ -9,7 +9,6 @@ const PRESENTER_DISPLAY_CLOSED_EVENT: &str = "solahub:presenter-display-closed";
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     if let Err(error) = tauri::Builder::default()
-        .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             #[cfg(all(desktop, not(debug_assertions)))]
             app.handle()

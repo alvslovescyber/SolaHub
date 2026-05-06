@@ -88,6 +88,28 @@ public sealed class ReadingPlanRepository(AppDbContext db) : IReadingPlanReposit
         );
     }
 
+    public async Task<bool> TryAddParticipantAsync(
+        ReadingPlanId planId,
+        UserId userId,
+        CancellationToken ct = default
+    )
+    {
+        var affected = await db.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO plan_participants (plan_id, user_id, current_day, joined_at)
+            SELECT id, {userId.Value}, 0, {DateTimeOffset.UtcNow}
+            FROM reading_plans
+            WHERE id = {planId.Value}
+              AND is_public = true
+              AND status = 'Active'
+            ON CONFLICT (plan_id, user_id) DO NOTHING;
+            """,
+            ct
+        );
+
+        return affected == 1;
+    }
+
     public async Task AddAsync(ReadingPlan plan, CancellationToken ct)
     {
         await db.ReadingPlans.AddAsync(plan, ct);

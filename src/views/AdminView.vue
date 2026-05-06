@@ -1,6 +1,8 @@
 <script setup lang="ts">
   import { ref, computed, watch, onMounted } from 'vue'
   import { ShieldCheckIcon } from 'lucide-vue-next'
+  import RoleBadge from '@/components/admin/RoleBadge.vue'
+  import StatCard from '@/components/admin/StatCard.vue'
   import { adminService, type AdminStats, type AdminUsersResponse } from '@/services/admin.service'
 
   // ─── Stats ────────────────────────────────────────────────────────────────────
@@ -58,74 +60,6 @@
       year: 'numeric',
     })
   }
-</script>
-
-<script lang="ts">
-  // ─── Sub-components defined inline ──────────────────────────────────────────
-  import { defineComponent, h, type Component } from 'vue'
-  import {
-    UsersIcon,
-    CheckCircleIcon,
-    ShieldIcon,
-    BookOpenIcon,
-    FileTextIcon,
-    MessageSquareIcon,
-    ChurchIcon,
-  } from 'lucide-vue-next'
-
-  const ICONS: Record<string, Component> = {
-    users: UsersIcon,
-    'check-circle': CheckCircleIcon,
-    shield: ShieldIcon,
-    church: ChurchIcon,
-    'file-text': FileTextIcon,
-    'book-open': BookOpenIcon,
-    'message-square': MessageSquareIcon,
-  }
-
-  export const StatCard = defineComponent({
-    props: {
-      label: { type: String, default: '' },
-      value: { type: Number, default: 0 },
-      icon: { type: String, default: 'users' },
-    },
-    setup(props) {
-      return () => {
-        const IconComp = ICONS[props.icon ?? 'users']
-        return h('div', { class: 'rounded-xl border bg-card p-5 space-y-2' }, [
-          h('div', { class: 'flex items-center gap-2 text-muted-foreground' }, [
-            h(IconComp, { class: 'w-4 h-4' }),
-            h('span', { class: 'text-xs font-medium' }, props.label),
-          ]),
-          h(
-            'p',
-            { class: 'text-2xl font-bold tabular-nums' },
-            props.value?.toLocaleString() ?? '—'
-          ),
-        ])
-      }
-    },
-  })
-
-  export const RoleBadge = defineComponent({
-    props: { role: { type: String, default: 'Member' } },
-    setup(props) {
-      const colors: Record<string, string> = {
-        Admin: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-        Pastor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-        Presenter: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-        Member: 'bg-muted text-muted-foreground',
-      }
-      return () =>
-        h(
-          'span',
-          {
-            class: `inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${colors[props.role ?? 'Member'] ?? colors['Member']}`,
-          },
-          props.role ?? 'Member'
-        )
-    },
-  })
 </script>
 
 <template>

@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using SolaHub.Infrastructure.Persistence;
 using SolaHub.Infrastructure.Persistence.Interceptors;
 using Testcontainers.PostgreSql;
@@ -14,6 +16,8 @@ namespace SolaHub.Tests.Integration.Fixtures;
 /// </summary>
 public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    private const string AppRolePassword = "app-test-password";
+
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
         .WithDatabase("solahub_test")
@@ -24,11 +28,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
-
-        // Run migrations after the host is built and postgres is ready
-        await using var scope = Server.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await db.Database.MigrateAsync();
+        _ = Server;
     }
 
     public new async Task DisposeAsync()
@@ -40,6 +40,19 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Test");
+        builder.ConfigureAppConfiguration(
+            (_, config) =>
+            {
+                config.AddInMemoryCollection(
+                    new Dictionary<string, string?>
+                    {
+                        ["ConnectionStrings:DefaultConnection"] = AppConnectionString,
+                        ["ConnectionStrings:MigrationConnection"] = _postgres.GetConnectionString(),
+                        ["Database:AppRolePassword"] = AppRolePassword,
+                    }
+                );
+            }
+        );
 
         builder.ConfigureServices(services =>
         {
@@ -52,11 +65,24 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
             services.AddDbContext<AppDbContext>(
                 (sp, opts) =>
-                    opts.UseNpgsql(_postgres.GetConnectionString())
+                    opts.UseNpgsql(AppConnectionString)
                         .UseSnakeCaseNamingConvention()
                         .AddInterceptors(sp.GetRequiredService<AppDbRlsInterceptor>())
             );
         });
+    }
+
+    private string AppConnectionString
+    {
+        get
+        {
+            var builder = new NpgsqlConnectionStringBuilder(_postgres.GetConnectionString())
+            {
+                Username = "solahub_app",
+                Password = AppRolePassword,
+            };
+            return builder.ConnectionString;
+        }
     }
 }
 

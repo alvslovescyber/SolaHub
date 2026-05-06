@@ -9,11 +9,6 @@
     "core:window:allow-set-fullscreen",
     "core:window:allow-create",
     "core:window:allow-close",
-    "fs:allow-read-text-file",
-    "fs:allow-write-text-file",
-    "fs:allow-read-dir",
-    "fs:allow-mkdir",
-    "fs:allow-exists",
     "updater:default"
   ]
 }
