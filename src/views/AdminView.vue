@@ -15,8 +15,6 @@
     CheckIcon,
     AlertTriangleIcon,
     CopyIcon,
-    CheckCircle2Icon,
-    XCircleIcon,
     BookOpenIcon,
     FileTextIcon,
     MessageSquareIcon,
@@ -320,6 +318,11 @@
     return Math.round((stats.value.activeUsers / stats.value.totalUsers) * 100)
   })
 
+  function switchTab(id: Tab) {
+    activeTab.value = id
+    if (id === 'overview') closePanel()
+  }
+
   onMounted(() => {
     void loadStats()
     void loadUsers()
@@ -358,10 +361,7 @@
               ? 'border-purple-600 text-purple-700 dark:border-purple-400 dark:text-purple-300'
               : 'border-transparent text-ink-muted hover:text-ink-strong',
           ]"
-          @click="
-            activeTab = tab.id
-            if (tab.id === 'overview') closePanel()
-          "
+          @click="switchTab(tab.id)"
         >
           <component :is="tab.icon" class="w-3.5 h-3.5" />
           {{ tab.label }}
