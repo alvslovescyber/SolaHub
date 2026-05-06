@@ -15,7 +15,7 @@ env:
 jobs:
   publish:
     name: Upload installers, updater feed, and downloads page to R2
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, macOS, ARM64]
 
     steps:
       - uses: actions/checkout@v4
