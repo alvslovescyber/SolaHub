@@ -5,7 +5,6 @@
   import { DownloadCloud, RefreshCw } from 'lucide-vue-next'
   import { clearUpdateReturnRoute, rememberUpdateReturnRoute } from '@/lib/appUpdate'
   import { isTauri } from '@/lib/platform'
-  import { useAuthStore } from '@/stores/auth.store'
   import { useUpdateStore } from '@/stores/update.store'
   import STooltip from './STooltip.vue'
   import { useSToast } from './useSToast'
@@ -32,7 +31,6 @@
   const props = defineProps<Props>()
   const toast = useSToast()
   const route = useRoute()
-  const auth = useAuthStore()
   const updateStore = useUpdateStore()
 
   const busy = ref(false)
@@ -107,9 +105,6 @@
           'Build SolaHub with a signed updater key to enable native updates.'
         )
       } else {
-        await auth.rehydrate({ force: true }).catch((error: unknown) => {
-          console.warn('[update] session refresh after update check failed', error)
-        })
         toast.success(
           'Already on the latest version',
           `SolaHub ${result.currentVersion} is the most recent release.`

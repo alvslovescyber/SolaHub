@@ -11,7 +11,6 @@ type UpdateDownloadEvent =
 
 const updateMocks = vi.hoisted(() => ({
   invoke: vi.fn(),
-  rehydrate: vi.fn(),
   success: vi.fn(),
   error: vi.fn(),
   route: { fullPath: '/presenter?tab=songs' },
@@ -39,11 +38,6 @@ async function loadUpdateButton(options: { isTauri: boolean }) {
   vi.doMock('vue-router', () => ({
     useRoute: () => updateMocks.route,
   }))
-  vi.doMock('@/stores/auth.store', () => ({
-    useAuthStore: () => ({
-      rehydrate: updateMocks.rehydrate,
-    }),
-  }))
   vi.doMock('@/stores/update.store', () => ({
     useUpdateStore: () => ({
       hasUpdate: false,
@@ -64,8 +58,6 @@ async function loadUpdateButton(options: { isTauri: boolean }) {
 describe('SUpdateButton', () => {
   beforeEach(() => {
     updateMocks.invoke.mockReset()
-    updateMocks.rehydrate.mockReset()
-    updateMocks.rehydrate.mockResolvedValue(undefined)
     updateMocks.success.mockReset()
     updateMocks.error.mockReset()
     updateMocks.lastChannel = null
@@ -129,7 +121,6 @@ describe('SUpdateButton', () => {
       'Already on the latest version',
       'SolaHub 0.1.0 is the most recent release.'
     )
-    expect(updateMocks.rehydrate).toHaveBeenCalledWith({ force: true })
     expect(localStorage.getItem(UPDATE_RETURN_ROUTE_KEY)).toBeNull()
   })
 
@@ -149,7 +140,6 @@ describe('SUpdateButton', () => {
       'Updates not configured',
       'Build SolaHub with a signed updater key to enable native updates.'
     )
-    expect(updateMocks.rehydrate).not.toHaveBeenCalled()
     expect(localStorage.getItem(UPDATE_RETURN_ROUTE_KEY)).toBeNull()
   })
 
@@ -233,5 +223,44 @@ describe('SUpdateButton', () => {
 
     expect(updateMocks.error).toHaveBeenCalled()
     expect(wrapper.find('button').exists()).toBe(true)
+  })
+
+  it('does not touch the auth session after an upToDate check', async () => {
+    // Regression: a previous implementation called auth.rehydrate() here.
+    // If the API returns any non-5xx error, rehydrate() calls clearSessionState()
+    // internally without throwing, silently logging the user out.
+    const rehydrate = vi.fn()
+    vi.doMock('@/stores/auth.store', () => ({ useAuthStore: () => ({ rehydrate }) }))
+    updateMocks.invoke.mockResolvedValue({
+      status: 'upToDate',
+      currentVersion: '0.1.0',
+      version: null,
+    })
+    const SUpdateButton = await loadUpdateButton({ isTauri: true })
+    const wrapper = mount(SUpdateButton)
+
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    expect(updateMocks.success).toHaveBeenCalled()
+    expect(rehydrate).not.toHaveBeenCalled()
+  })
+
+  it('does not touch the auth session after a notConfigured result', async () => {
+    const rehydrate = vi.fn()
+    vi.doMock('@/stores/auth.store', () => ({ useAuthStore: () => ({ rehydrate }) }))
+    updateMocks.invoke.mockResolvedValue({
+      status: 'notConfigured',
+      currentVersion: '0.1.0',
+      version: null,
+    })
+    const SUpdateButton = await loadUpdateButton({ isTauri: true })
+    const wrapper = mount(SUpdateButton)
+
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    expect(updateMocks.error).toHaveBeenCalled()
+    expect(rehydrate).not.toHaveBeenCalled()
   })
 })
