@@ -142,9 +142,9 @@ jobs:
             echo "No updater signature found for $LABEL"
             exit 1
           fi
-          gh release upload "$TAG" \
-            "${ARCHIVE}#SolaHub_${LABEL}.app.tar.gz" \
-            "${SIG}#SolaHub_${LABEL}.app.tar.gz.sig" \
+          gh release upload "$TAG" "${ARCHIVE}#SolaHub_${LABEL}.app.tar.gz" \
+            --repo ${{ github.repository }} --clobber
+          gh release upload "$TAG" "${SIG}#SolaHub_${LABEL}.app.tar.gz.sig" \
             --repo ${{ github.repository }} --clobber
           echo "Uploaded SolaHub_${LABEL}.app.tar.gz and signature"
 
