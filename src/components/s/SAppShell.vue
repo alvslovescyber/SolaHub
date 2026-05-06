@@ -1,6 +1,8 @@
 <script setup lang="ts">
+  import { onMounted, onUnmounted } from 'vue'
   import { RouterView } from 'vue-router'
   import { useUiStore } from '@/stores/ui.store'
+  import { useUpdateStore } from '@/stores/update.store'
   import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
   import { useResponsiveLayout } from '@/composables/useResponsiveLayout'
   import SSidebar from './SSidebar.vue'
@@ -8,9 +10,13 @@
   import SToast from './SToast.vue'
 
   const ui = useUiStore()
+  const updateStore = useUpdateStore()
 
   useKeyboardShortcuts()
   useResponsiveLayout()
+
+  onMounted(() => updateStore.startPolling())
+  onUnmounted(() => updateStore.stopPolling())
 </script>
 
 <template>

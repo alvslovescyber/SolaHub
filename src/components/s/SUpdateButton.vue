@@ -6,6 +6,7 @@
   import { clearUpdateReturnRoute, rememberUpdateReturnRoute } from '@/lib/appUpdate'
   import { isTauri } from '@/lib/platform'
   import { useAuthStore } from '@/stores/auth.store'
+  import { useUpdateStore } from '@/stores/update.store'
   import STooltip from './STooltip.vue'
   import { useSToast } from './useSToast'
 
@@ -32,6 +33,7 @@
   const toast = useSToast()
   const route = useRoute()
   const auth = useAuthStore()
+  const updateStore = useUpdateStore()
 
   const busy = ref(false)
   const done = ref(false)
@@ -50,12 +52,15 @@
       return progressPercent.value ? `${progressPercent.value}%` : 'Downloading'
     if (status.value === 'installing') return 'Installing'
     if (status.value === 'restarting') return 'Restarting'
-    return 'Update'
+    return updateStore.hasUpdate ? 'Update' : 'Update'
   })
 
-  const tooltipLabel = computed(() =>
-    busy.value ? `Updating SolaHub ${progressPercent.value ?? ''}`.trim() : 'Update SolaHub'
-  )
+  const tooltipLabel = computed(() => {
+    if (busy.value) return `Updating SolaHub ${progressPercent.value ?? ''}`.trim()
+    if (updateStore.hasUpdate && updateStore.availableVersion)
+      return `Update to v${updateStore.availableVersion}`
+    return 'Check for updates'
+  })
 
   const progressStyle = computed(() => ({
     width: progressPercent.value ? `${progressPercent.value}%` : busy.value ? '28%' : '0%',
@@ -93,6 +98,7 @@
     try {
       const result = await invoke<AppUpdateResult>('install_app_update', { onEvent })
       clearUpdateReturnRoute()
+      updateStore.clearUpdate()
       done.value = true
 
       if (result.status === 'notConfigured') {
@@ -128,6 +134,7 @@
 </script>
 
 <template>
+  <!-- Expanded button -->
   <button
     v-if="isTauri && !props.collapsed && !done"
     type="button"
@@ -138,8 +145,9 @@
     :class="[
       'relative h-8 min-w-[5.35rem] overflow-hidden rounded-md px-2.5',
       'inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold text-ink-strong',
-      'border border-black/[0.08] bg-black/[0.04] hover:border-black/[0.13] hover:bg-black/[0.07] active:bg-black/[0.11]',
-      'dark:border-white/[0.10] dark:bg-white/[0.05] dark:hover:border-white/[0.16] dark:hover:bg-white/[0.08]',
+      updateStore.hasUpdate && !busy
+        ? 'border border-brand-500/40 bg-brand-500/10 hover:bg-brand-500/15 dark:border-brand-400/30 dark:bg-brand-400/10 dark:hover:bg-brand-400/15'
+        : 'border border-black/[0.08] bg-black/[0.04] hover:border-black/[0.13] hover:bg-black/[0.07] active:bg-black/[0.11] dark:border-white/[0.10] dark:bg-white/[0.05] dark:hover:border-white/[0.16] dark:hover:bg-white/[0.08]',
       'transition-colors duration-150',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60',
       'disabled:cursor-wait disabled:opacity-80',
@@ -152,16 +160,23 @@
       class="absolute inset-y-0 left-0 bg-brand-500/10 transition-[width] duration-200 dark:bg-brand-300/15"
       :style="progressStyle"
     />
-    <component
-      :is="icon"
-      :class="[
-        'relative h-3.5 w-3.5 shrink-0 text-brand-600 dark:text-brand-300',
-        busy && 'animate-spin',
-      ]"
-    />
+    <span class="relative shrink-0">
+      <component
+        :is="icon"
+        :class="[
+          'h-3.5 w-3.5 text-brand-600 dark:text-brand-300',
+          busy && 'animate-spin',
+        ]"
+      />
+      <span
+        v-if="updateStore.hasUpdate && !busy"
+        class="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-brand-500 ring-1 ring-white dark:ring-surface-base animate-pulse"
+      />
+    </span>
     <span class="relative tabular-nums">{{ buttonLabel }}</span>
   </button>
 
+  <!-- Collapsed icon button -->
   <STooltip v-else-if="isTauri && !done" :label="tooltipLabel" placement="right" data-no-drag>
     <button
       type="button"
@@ -171,8 +186,9 @@
       :class="[
         'relative h-8 w-8 overflow-hidden rounded-md text-brand-600 shadow-xs dark:text-brand-300',
         'inline-flex items-center justify-center',
-        'border border-line bg-surface-raised hover:border-line-strong hover:bg-surface-canvas active:bg-surface-sunken',
-        'dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-brand-400/30 dark:hover:bg-white/[0.06]',
+        updateStore.hasUpdate && !busy
+          ? 'border border-brand-500/40 bg-brand-500/10 hover:bg-brand-500/15 dark:border-brand-400/30 dark:bg-brand-400/10'
+          : 'border border-line bg-surface-raised hover:border-line-strong hover:bg-surface-canvas active:bg-surface-sunken dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-brand-400/30 dark:hover:bg-white/[0.06]',
         'transition-colors duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/60',
         'disabled:cursor-wait disabled:opacity-80',
@@ -184,7 +200,13 @@
         class="absolute inset-y-0 left-0 bg-brand-500/10 transition-[width] duration-200 dark:bg-brand-300/15"
         :style="progressStyle"
       />
-      <component :is="icon" :class="['relative h-4 w-4', busy && 'animate-spin']" />
+      <span class="relative">
+        <component :is="icon" :class="['h-4 w-4', busy && 'animate-spin']" />
+        <span
+          v-if="updateStore.hasUpdate && !busy"
+          class="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-brand-500 ring-1 ring-white dark:ring-surface-base animate-pulse"
+        />
+      </span>
     </button>
   </STooltip>
 </template>

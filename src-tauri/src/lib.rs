@@ -73,6 +73,8 @@ pub fn run() {
             commands::window::close_presenter_window,
             commands::window::set_fullscreen,
             #[cfg(desktop)]
+            commands::update::check_app_update,
+            #[cfg(desktop)]
             commands::update::install_app_update,
         ])
         .run(tauri::generate_context!())
