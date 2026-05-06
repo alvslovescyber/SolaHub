@@ -303,7 +303,8 @@ describe('languageSongs store', () => {
 
       const q = 'worthy'
       const match = store.allLanguageSongs.filter(
-        (s) => s.title.toLowerCase().includes(q) || (s.nativeTitle?.toLowerCase().includes(q) ?? false)
+        (s) =>
+          s.title.toLowerCase().includes(q) || (s.nativeTitle?.toLowerCase().includes(q) ?? false)
       )
       expect(match).toHaveLength(1)
     })
@@ -323,7 +324,8 @@ describe('languageSongs store', () => {
 
       const q = 'കുഞ്ഞ'
       const match = store.allLanguageSongs.filter(
-        (s) => s.title.toLowerCase().includes(q) || (s.nativeTitle?.toLowerCase().includes(q) ?? false)
+        (s) =>
+          s.title.toLowerCase().includes(q) || (s.nativeTitle?.toLowerCase().includes(q) ?? false)
       )
       expect(match).toHaveLength(1)
     })
@@ -343,7 +345,8 @@ describe('languageSongs store', () => {
 
       const q = 'zzznomatch'
       const match = store.allLanguageSongs.filter(
-        (s) => s.title.toLowerCase().includes(q) || (s.nativeTitle?.toLowerCase().includes(q) ?? false)
+        (s) =>
+          s.title.toLowerCase().includes(q) || (s.nativeTitle?.toLowerCase().includes(q) ?? false)
       )
       expect(match).toHaveLength(0)
     })

@@ -21,13 +21,13 @@
   --s-surface-sunken: #f4f4f5;
   --s-surface-raised: #ffffff;
   --s-surface-overlay: rgba(255, 255, 255, 0.96);
-  --s-surface-sidebar: rgba(247, 247, 248, 0.60);
+  --s-surface-sidebar: rgba(247, 247, 248, 0.6);
   --s-surface-vibrancy: rgba(255, 255, 255, 0.72);
 
   --s-titlebar-pad: 0px;
 
   /* ─── Aurora (very subtle ambient washes, used sparingly) ────────────────── */
-  --s-aurora-peach: rgba(255, 180, 160, 0.30);
+  --s-aurora-peach: rgba(255, 180, 160, 0.3);
   --s-aurora-rose: rgba(255, 165, 200, 0.14);
   --s-aurora-violet: rgba(178, 168, 255, 0.12);
   --s-aurora-blue: rgba(140, 175, 255, 0.16);

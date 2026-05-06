@@ -261,8 +261,7 @@
     if (!q) return songs.allSongs
     return songs.allSongs.filter(
       (s) =>
-        s.title.toLowerCase().includes(q) ||
-        (s.nativeTitle?.toLowerCase().includes(q) ?? false)
+        s.title.toLowerCase().includes(q) || (s.nativeTitle?.toLowerCase().includes(q) ?? false)
     )
   })
 

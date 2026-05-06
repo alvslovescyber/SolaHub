@@ -107,6 +107,9 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Create stub dist for cargo check
+        run: mkdir -p dist && echo '<html></html>' > dist/index.html
+
       - name: cargo check (debug — no updater plugin, mirrors dev mode)
         run: cargo check --manifest-path src-tauri/Cargo.toml
         # This catches the class of bug where tauri-plugin-updater (or any other
@@ -154,7 +157,7 @@ jobs:
       - name: Run E2E tests
         run: npm run test:e2e
         env:
-          VITE_API_URL: http://localhost:3000
+          VITE_API_URL: http://localhost:5000
           ConnectionStrings__DefaultConnection: >-
             Host=localhost;Port=5432;Database=solahub_test;Username=test;Password=test
           Jwt__SecretKey: playwright-secret-key-must-be-at-least-32-bytes!!

@@ -35,7 +35,7 @@ class CollaborationService {
   private joinedPlans = new Set<string>()
 
   private buildConnection(): signalR.HubConnection {
-    const base = import.meta.env.VITE_API_URL ?? 'http://localhost:5000'
+    const base = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
     return new signalR.HubConnectionBuilder()
       .withUrl(`${base}/hubs/collaboration`, {
         accessTokenFactory: () => tokenStorage.getAccess() ?? '',
