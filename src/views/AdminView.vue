@@ -623,7 +623,9 @@
 
           <!-- Table -->
           <div class="flex-1 overflow-auto p-4 pt-3 space-y-3">
-            <div class="rounded-lg border border-line bg-surface-raised shadow-card overflow-hidden">
+            <div
+              class="rounded-lg border border-line bg-surface-raised shadow-card overflow-hidden"
+            >
               <table class="w-full text-sm">
                 <thead>
                   <tr class="bg-surface-sunken border-b border-line">
@@ -657,12 +659,18 @@
                 <tbody class="divide-y divide-line-subtle">
                   <tr v-if="usersLoading">
                     <td colspan="5" class="px-4 py-12 text-center text-ink-muted text-sm">
-                      <RefreshCwIcon class="w-4 h-4 animate-spin inline-block mr-2 text-ink-subtle" />
+                      <RefreshCwIcon
+                        class="w-4 h-4 animate-spin inline-block mr-2 text-ink-subtle"
+                      />
                       Loading…
                     </td>
                   </tr>
                   <tr v-else-if="usersError">
-                    <td colspan="5" class="px-4 py-12 text-center text-sm" style="color: var(--s-danger-fg)">
+                    <td
+                      colspan="5"
+                      class="px-4 py-12 text-center text-sm"
+                      style="color: var(--s-danger-fg)"
+                    >
                       {{ usersError }}
                     </td>
                   </tr>
@@ -775,9 +783,7 @@
             class="w-72 shrink-0 border-l border-line flex flex-col overflow-hidden bg-surface-base"
           >
             <!-- Panel header -->
-            <div
-              class="flex items-center justify-between px-4 py-3 border-b border-line shrink-0"
-            >
+            <div class="flex items-center justify-between px-4 py-3 border-b border-line shrink-0">
               <span class="text-xs font-semibold text-ink-muted uppercase tracking-wide"
                 >User Details</span
               >
@@ -791,9 +797,7 @@
 
             <div class="flex-1 overflow-auto">
               <!-- Identity -->
-              <div
-                class="p-5 flex flex-col items-center text-center border-b border-line-subtle"
-              >
+              <div class="p-5 flex flex-col items-center text-center border-b border-line-subtle">
                 <div
                   class="w-14 h-14 rounded-full bg-purple-500/10 dark:bg-purple-500/15 flex items-center justify-center text-lg font-bold text-purple-600 dark:text-purple-400 mb-3"
                 >
@@ -836,9 +840,7 @@
 
               <!-- Account details -->
               <div class="p-4 border-b border-line-subtle space-y-1">
-                <h3
-                  class="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2.5"
-                >
+                <h3 class="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2.5">
                   Account Info
                 </h3>
                 <dl class="space-y-2.5">
@@ -877,9 +879,7 @@
 
               <!-- Role -->
               <div class="p-4 border-b border-line-subtle">
-                <h3
-                  class="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2.5"
-                >
+                <h3 class="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2.5">
                   Role
                 </h3>
                 <select
@@ -894,9 +894,7 @@
 
               <!-- Actions -->
               <div class="p-4 space-y-2">
-                <h3
-                  class="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2.5"
-                >
+                <h3 class="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2.5">
                   Actions
                 </h3>
 
@@ -908,7 +906,9 @@
                     <p class="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">
                       Deactivate this user?
                     </p>
-                    <p class="text-xs text-amber-600/80 dark:text-amber-500/70 mb-3 leading-relaxed">
+                    <p
+                      class="text-xs text-amber-600/80 dark:text-amber-500/70 mb-3 leading-relaxed"
+                    >
                       They'll be signed out immediately and cannot log back in until reactivated.
                     </p>
                     <div class="flex gap-2">
@@ -1098,7 +1098,8 @@
 
             <p class="text-sm text-ink-strong leading-relaxed mb-4">
               You are about to permanently delete
-              <strong>{{ deleteModal.userName }}</strong>'s account and all associated data.
+              <strong>{{ deleteModal.userName }}</strong
+              >'s account and all associated data.
             </p>
 
             <div class="mb-5">
