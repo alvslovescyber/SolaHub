@@ -8,7 +8,22 @@ Never touches: downloads.html, latest.json, or the unversioned .app.tar.gz updat
 Usage:
     python3 scripts/cleanup-r2.py --bucket solahub-downloads [--keep 2] [--dry-run]
 """
-import argparse, os, re, sys, urllib.request, urllib.parse, json
+import argparse, os, re, ssl, sys, urllib.request, urllib.parse, json
+
+
+def _ssl_ctx() -> ssl.SSLContext:
+    """Return an SSL context that works on macOS python.org builds.
+
+    The official macOS Python installer does not wire into the system keychain,
+    so the default context has no CA bundle and HTTPS calls fail with
+    SSLCertVerificationError.  Loading /etc/ssl/cert.pem (the macOS system
+    bundle, always present) fixes this without disabling verification.
+    """
+    ctx = ssl.create_default_context()
+    system_bundle = '/etc/ssl/cert.pem'  # macOS system CA bundle
+    if os.path.exists(system_bundle):
+        ctx.load_verify_locations(system_bundle)
+    return ctx
 
 VERSIONED = re.compile(
     r'^SolaHub_(\d+\.\d+\.\d+)_(aarch64\.dmg|x64\.dmg|x64-setup\.exe|x64_en-US\.msi'
@@ -24,7 +39,7 @@ def cf_api(path, method='GET', body=None):
     req = urllib.request.Request(url, data=data, method=method,
                                   headers={'Authorization': f'Bearer {token}',
                                            'Content-Type': 'application/json'})
-    with urllib.request.urlopen(req) as r:
+    with urllib.request.urlopen(req, context=_ssl_ctx()) as r:
         return json.loads(r.read())
 
 def list_objects(bucket):
