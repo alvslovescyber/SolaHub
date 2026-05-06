@@ -308,7 +308,10 @@ static async Task SeedAdminUserAsync(WebApplication app)
     }
 
     if (user.Role == SolaHub.Core.Enums.UserRole.Admin)
+    {
+        logger.LogInformation("Admin seed: {Email} is already Admin — no change needed.", adminEmail);
         return;
+    }
 
     user.UpdateRole(SolaHub.Core.Enums.UserRole.Admin);
     await db.SaveChangesAsync();
