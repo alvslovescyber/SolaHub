@@ -151,6 +151,7 @@ jobs:
   build-windows:
     name: Windows (x64)
     runs-on: windows-latest
+    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v4
@@ -283,7 +284,8 @@ jobs:
   publish-r2:
     name: Publish update artifacts to R2
     needs: [build-macos, build-windows]
-    runs-on: ubuntu-latest
+    if: always() && needs.build-macos.result == 'success'
+    runs-on: [self-hosted, macOS, ARM64]
 
     steps:
       - uses: actions/checkout@v4
@@ -327,13 +329,15 @@ jobs:
           done
 
       # Build latest.json ourselves from the .sig files.
+      # --windows-optional: publish macOS-only latest.json if Windows build failed.
       - name: Build latest.json from signatures
         run: |
           python3 scripts/generate-tauri-latest-json.py \
             --dist dist \
             --tag "${TAG}" \
             --r2-base "${R2_PUBLIC_BASE}" \
-            --output dist/latest.json
+            --output dist/latest.json \
+            --windows-optional
         env:
           R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
           TAG: ${{ env.RELEASE_TAG }}
