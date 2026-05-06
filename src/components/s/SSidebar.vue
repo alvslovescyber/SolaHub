@@ -11,6 +11,7 @@
     ListChecks,
     Monitor,
     Search,
+    ShieldCheck,
     StickyNote,
     Users,
   } from 'lucide-vue-next'
@@ -247,6 +248,15 @@
           :icon="Users"
           label="Community"
           route-name="community"
+          :collapsed="collapsed"
+        />
+      </SSidebarGroup>
+
+      <SSidebarGroup v-if="auth.isAdmin" label="Admin" :collapsed="collapsed">
+        <SSidebarItem
+          :icon="ShieldCheck"
+          label="Admin Panel"
+          route-name="admin"
           :collapsed="collapsed"
         />
       </SSidebarGroup>
