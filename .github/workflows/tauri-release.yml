@@ -12,7 +12,7 @@ on:
         default: 'v0.1.5'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.event.inputs.tag || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -22,7 +22,7 @@ env:
   NODE_VERSION: '22'
   R2_PUBLIC_BASE: 'https://pub-c5a5d4bded77499abee30a6e8fd383b8.r2.dev'
   R2_BUCKET: 'solahub-downloads'
-  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
 
 jobs:
   build-macos:
