@@ -11,8 +11,9 @@ pub fn run() {
     if let Err(error) = tauri::Builder::default()
         .setup(|app| {
             #[cfg(all(desktop, not(debug_assertions)))]
-            app.handle()
-                .plugin(tauri_plugin_updater::Builder::new().build())?;
+            if let Err(e) = app.handle().plugin(tauri_plugin_updater::Builder::new().build()) {
+                eprintln!("Warning: updater plugin not available (no pubkey configured): {e}");
+            }
 
             let app_data_dir = app.path().app_data_dir().map_err(|error| {
                 std::io::Error::other(format!("Failed to get app data directory: {error}"))
