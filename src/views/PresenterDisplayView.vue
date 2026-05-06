@@ -198,6 +198,7 @@
 
 <template>
   <div
+    id="presenter-display-root"
     ref="presenterRoot"
     data-testid="presenter-display-root"
     tabindex="-1"

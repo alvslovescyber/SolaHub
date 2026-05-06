@@ -42,6 +42,15 @@ html.is-tauri body {
   background: transparent;
 }
 
+/* Presenter display window: solid black from first paint — prevents white
+ * corner bleed-through on macOS transparent windows before Vue mounts. */
+html.is-presenter-display,
+html.is-presenter-display body,
+html.is-presenter-display #app {
+  background: #000;
+  overflow: hidden;
+}
+
 #app {
   width: 100vw;
   height: 100vh;

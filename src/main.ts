@@ -26,6 +26,12 @@ if (isTauri && isWindows) {
   if (root) root.style.background = 'rgb(2, 6, 23)'
 }
 
+// Presenter display window: black background from the very first paint so
+// the macOS rounded-corner/transparency artifacts never appear.
+if (window.location.hash.startsWith('#/presenter-display')) {
+  document.documentElement.classList.add('is-presenter-display')
+}
+
 const app = createApp(App)
 
 app.use(createPinia())

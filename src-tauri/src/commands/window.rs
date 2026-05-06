@@ -71,6 +71,8 @@ pub fn open_presenter_window(
         .title("SolaHub Presenter")
         .fullscreen(false)
         .decorations(false)
+        .transparent(true)
+        .shadow(false)
         .resizable(false)
         .visible(false)
         .always_on_top(true)
