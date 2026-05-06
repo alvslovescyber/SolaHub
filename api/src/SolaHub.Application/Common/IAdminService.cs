@@ -19,4 +19,10 @@ public interface IAdminService
         UpdateUserRequest request,
         CancellationToken ct = default
     );
+
+    Task<bool> DeleteUserAsync(Guid id, CancellationToken ct = default);
+
+    Task<string?> ResetPasswordAsync(Guid id, CancellationToken ct = default);
+
+    Task<bool> RevokeSessionsAsync(Guid id, CancellationToken ct = default);
 }

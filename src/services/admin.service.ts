@@ -10,6 +10,7 @@ export interface AdminUser {
   churchId: string | null
   createdAt: string
   lastLoginAt: string | null
+  sessionVersion: number
 }
 
 export interface AdminUsersResponse {
@@ -56,5 +57,20 @@ export const adminService = {
   async updateUser(id: string, patch: UpdateUserRequest): Promise<AdminUser> {
     const res = await http.patch<AdminUser>(`/api/admin/users/${id}`, patch)
     return res.data
+  },
+
+  async deleteUser(id: string): Promise<void> {
+    await http.delete(`/api/admin/users/${id}`)
+  },
+
+  async resetPassword(id: string): Promise<{ temporaryPassword: string }> {
+    const res = await http.post<{ temporaryPassword: string }>(
+      `/api/admin/users/${id}/reset-password`
+    )
+    return res.data
+  },
+
+  async revokeSessions(id: string): Promise<void> {
+    await http.post(`/api/admin/users/${id}/revoke-sessions`)
   },
 }

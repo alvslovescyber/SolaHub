@@ -43,6 +43,38 @@ public sealed class AdminController(IAdminService adminService) : ControllerBase
         return result is null ? NotFound() : Ok(result);
     }
 
+    /// <summary>Permanently delete a user account and all associated data.</summary>
+    [HttpDelete("users/{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteUser(Guid id, CancellationToken ct = default)
+    {
+        var deleted = await adminService.DeleteUserAsync(id, ct);
+        return deleted ? NoContent() : NotFound();
+    }
+
+    /// <summary>Generate a temporary password for a user and invalidate their sessions.</summary>
+    [HttpPost("users/{id:guid}/reset-password")]
+    [ProducesResponseType(typeof(ResetPasswordResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResetPassword(Guid id, CancellationToken ct = default)
+    {
+        var tempPassword = await adminService.ResetPasswordAsync(id, ct);
+        return tempPassword is null
+            ? NotFound()
+            : Ok(new ResetPasswordResponse(tempPassword));
+    }
+
+    /// <summary>Invalidate all active sessions for a user, forcing re-login on all devices.</summary>
+    [HttpPost("users/{id:guid}/revoke-sessions")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RevokeSessions(Guid id, CancellationToken ct = default)
+    {
+        var result = await adminService.RevokeSessionsAsync(id, ct);
+        return result ? NoContent() : NotFound();
+    }
+
     /// <summary>Aggregate statistics across the platform.</summary>
     [HttpGet("stats")]
     [ProducesResponseType(typeof(AdminStatsDto), StatusCodes.Status200OK)]

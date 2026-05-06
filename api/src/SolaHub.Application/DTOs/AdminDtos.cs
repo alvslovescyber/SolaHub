@@ -9,7 +9,8 @@ public sealed record AdminUserDto(
     bool IsEmailVerified,
     Guid? ChurchId,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? LastLoginAt
+    DateTimeOffset? LastLoginAt,
+    int SessionVersion
 );
 
 public sealed record AdminUsersResponse(
@@ -30,3 +31,5 @@ public sealed record AdminStatsDto(
     int TotalChurches,
     int TotalCommunityPosts
 );
+
+public sealed record ResetPasswordResponse(string TemporaryPassword);

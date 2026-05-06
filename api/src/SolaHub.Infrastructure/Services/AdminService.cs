@@ -2,12 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
 using SolaHub.Core.Enums;
+using SolaHub.Core.Interfaces.Services;
 using SolaHub.Core.ValueObjects;
 using SolaHub.Infrastructure.Persistence;
 
 namespace SolaHub.Infrastructure.Services;
 
-public sealed class AdminService(AppDbContext db) : IAdminService
+public sealed class AdminService(AppDbContext db, IPasswordHasher passwordHasher) : IAdminService
 {
     public async Task<AdminStatsDto> GetStatsAsync(CancellationToken ct = default)
     {
@@ -65,19 +66,7 @@ public sealed class AdminService(AppDbContext db) : IAdminService
             .Take(pageSize)
             .ToListAsync(ct);
 
-        var dtos = users
-            .Select(u => new AdminUserDto(
-                u.Id.Value,
-                u.DisplayName,
-                u.Email.Value,
-                u.Role.ToString(),
-                u.IsActive,
-                u.IsEmailVerified,
-                u.ChurchId?.Value,
-                u.CreatedAt,
-                u.LastLoginAt
-            ))
-            .ToList();
+        var dtos = users.Select(ToDto).ToList();
 
         return new AdminUsersResponse(dtos, total, page, pageSize);
     }
@@ -108,16 +97,73 @@ public sealed class AdminService(AppDbContext db) : IAdminService
 
         await db.SaveChangesAsync(ct);
 
-        return new AdminUserDto(
-            user.Id.Value,
-            user.DisplayName,
-            user.Email.Value,
-            user.Role.ToString(),
-            user.IsActive,
-            user.IsEmailVerified,
-            user.ChurchId?.Value,
-            user.CreatedAt,
-            user.LastLoginAt
+        return ToDto(user);
+    }
+
+    public async Task<bool> DeleteUserAsync(Guid id, CancellationToken ct = default)
+    {
+        var userId = UserId.From(id);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return false;
+
+        db.Users.Remove(user);
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    public async Task<string?> ResetPasswordAsync(Guid id, CancellationToken ct = default)
+    {
+        var userId = UserId.From(id);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return null;
+
+        var tempPassword = GenerateTemporaryPassword();
+        user.ChangePassword(passwordHasher.Hash(tempPassword));
+        await db.SaveChangesAsync(ct);
+        return tempPassword;
+    }
+
+    public async Task<bool> RevokeSessionsAsync(Guid id, CancellationToken ct = default)
+    {
+        var userId = UserId.From(id);
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return false;
+
+        user.InvalidateSessions();
+        await db.SaveChangesAsync(ct);
+        return true;
+    }
+
+    private static AdminUserDto ToDto(Core.Entities.User u) =>
+        new(
+            u.Id.Value,
+            u.DisplayName,
+            u.Email.Value,
+            u.Role.ToString(),
+            u.IsActive,
+            u.IsEmailVerified,
+            u.ChurchId?.Value,
+            u.CreatedAt,
+            u.LastLoginAt,
+            u.SessionVersion
+        );
+
+    private static string GenerateTemporaryPassword()
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#";
+        return string.Create(
+            14,
+            chars,
+            static (span, alphabet) =>
+            {
+                for (int i = 0; i < span.Length; i++)
+                    span[i] = alphabet[
+                        System.Security.Cryptography.RandomNumberGenerator.GetInt32(alphabet.Length)
+                    ];
+            }
         );
     }
 }
