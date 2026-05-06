@@ -32,6 +32,10 @@ on:
       - 'eslint.config.ts'
       - '.github/workflows/frontend.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NODE_VERSION: '22'
 
