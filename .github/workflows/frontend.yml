@@ -122,14 +122,14 @@ jobs:
       - name: Rust format check
         run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 
+      - name: Create stub dist
+        run: mkdir -p dist && echo '<html></html>' > dist/index.html
+
       - name: Rust lint
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
 
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features
-
-      - name: Create stub dist for cargo check
-        run: mkdir -p dist && echo '<html></html>' > dist/index.html
 
       - name: cargo check (debug — no updater plugin, mirrors dev mode)
         run: cargo check --manifest-path src-tauri/Cargo.toml
