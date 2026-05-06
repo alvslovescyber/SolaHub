@@ -208,7 +208,7 @@ describe('SUpdateButton', () => {
       updateMocks.lastChannel?.onmessage({ event: 'Progress', data: { chunkLength: 50 } })
       updateMocks.lastChannel?.onmessage({ event: 'Finished' })
       // app.restart() closes the IPC — invoke never resolves, it rejects
-      return Promise.reject('ipc: webview closed')
+      return Promise.reject(new Error('ipc: webview closed'))
     })
 
     const SUpdateButton = await loadUpdateButton({ isTauri: true })

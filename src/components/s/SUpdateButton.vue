@@ -166,10 +166,7 @@
     <span class="relative shrink-0">
       <component
         :is="icon"
-        :class="[
-          'h-3.5 w-3.5 text-brand-600 dark:text-brand-300',
-          busy && 'animate-spin',
-        ]"
+        :class="['h-3.5 w-3.5 text-brand-600 dark:text-brand-300', busy && 'animate-spin']"
       />
       <span
         v-if="updateStore.hasUpdate && !busy"
