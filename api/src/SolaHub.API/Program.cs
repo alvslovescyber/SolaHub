@@ -257,6 +257,10 @@ try
     if (applyMigrations)
         await MigrateWithRetryAsync(app);
 
+    // ─── Admin bootstrap: promote a specific account to Admin role ────────────
+    // Set Admin__Email env var on Railway to the account that should be promoted.
+    await SeedAdminUserAsync(app);
+
     // ─── Production RLS safety check ──────────────────────────────────────────
     if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Test"))
         await FailIfSuperuserAsync(app);
@@ -284,6 +288,36 @@ finally
 }
 
 return 0;
+
+/// <summary>
+/// Promotes the account identified by Admin:Email to the Admin role on every startup.
+/// Safe to run repeatedly — exits silently if the env var is absent or the user is
+/// already an admin.
+/// </summary>
+static async Task SeedAdminUserAsync(WebApplication app)
+{
+    var adminEmail = app.Configuration["Admin:Email"];
+    if (string.IsNullOrWhiteSpace(adminEmail))
+        return;
+
+    using var scope = app.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    await using var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    var user = await db.Users.FirstOrDefaultAsync(u => u.Email.Value == adminEmail);
+    if (user is null)
+    {
+        logger.LogWarning("Admin seed: no account found for {Email}", adminEmail);
+        return;
+    }
+
+    if (user.Role == SolaHub.Core.Enums.UserRole.Admin)
+        return;
+
+    user.UpdateRole(SolaHub.Core.Enums.UserRole.Admin);
+    await db.SaveChangesAsync();
+    logger.LogInformation("Admin seed: promoted {Email} to Admin role.", adminEmail);
+}
 
 /// <summary>
 /// Applies EF Core migrations at startup with retry logic so the API
