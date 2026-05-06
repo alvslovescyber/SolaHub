@@ -379,12 +379,43 @@ jobs:
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
         run: |
           TAG=${{ env.RELEASE_TAG }}
-          VERSION=${TAG#v}
-          sed "s/__VERSION__/${VERSION}/g" scripts/downloads.template.html > dist/downloads.html
+          MAC_VERSION=${TAG#v}
+
+          # Windows version: use current if we built it, else find latest on R2
+          if ls dist/*.nsis.zip 1>/dev/null 2>&1 || ls dist/*-setup.exe 1>/dev/null 2>&1; then
+            WIN_VERSION="$MAC_VERSION"
+            echo "Windows artifacts present — WIN_VERSION=${WIN_VERSION}"
+          else
+            echo "No Windows artifacts for this release — scanning R2 for latest Windows build..."
+            WIN_VERSION=$(python3 - <<'PYEOF'
+import urllib.request, sys
+
+r2_base = "$R2_PUBLIC_BASE"
+candidates = [
+  "0.1.9","0.1.8","0.1.7","0.1.6","0.1.5","0.1.4","0.1.3","0.1.2","0.1.1","0.1.0"
+]
+for v in candidates:
+    url = f"{r2_base}/SolaHub_{v}_x64-setup.exe"
+    try:
+        urllib.request.urlopen(urllib.request.Request(url, method='HEAD'), timeout=10)
+        print(v)
+        sys.exit(0)
+    except Exception:
+        continue
+print("0.1.6")
+PYEOF
+            )
+            echo "Latest Windows version on R2: ${WIN_VERSION}"
+          fi
+
+          sed -e "s/__MAC_VERSION__/${MAC_VERSION}/g" \
+              -e "s/__WIN_VERSION__/${WIN_VERSION}/g" \
+              scripts/downloads.template.html > dist/downloads.html
           npx wrangler r2 object put "${{ env.R2_BUCKET }}/downloads.html" \
             --file dist/downloads.html \
             --content-type "text/html; charset=utf-8" \
             --remote
-          echo "✅ downloads.html live at ${{ env.R2_PUBLIC_BASE }}/downloads.html (v${VERSION})"
+          echo "✅ downloads.html live (macOS v${MAC_VERSION}, Windows v${WIN_VERSION})"
