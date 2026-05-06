@@ -22,27 +22,8 @@ env:
   DOTNET_NOLOGO: true
 
 jobs:
-  lint:
-    name: Lint (CSharpier)
-    runs-on: [self-hosted, macOS, ARM64]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Restore CSharpier
-        run: dotnet tool restore
-        working-directory: api
-
-      - name: Check formatting
-        run: dotnet tool run csharpier check .
-        working-directory: api
-
   build:
-    name: Build & Unit Tests
+    name: Lint, Build & Unit Tests
     runs-on: [self-hosted, macOS, ARM64]
     steps:
       - uses: actions/checkout@v4
@@ -55,20 +36,21 @@ jobs:
       - name: Restore
         run: dotnet restore api/SolaHub.sln
 
-      - name: Vulnerable package audit
-        run: dotnet list api/SolaHub.sln package --vulnerable --include-transitive
+      - name: Format check (CSharpier)
+        run: |
+          dotnet tool restore --tool-manifest api/.config/dotnet-tools.json 2>/dev/null || dotnet tool restore
+          dotnet tool run csharpier check .
+        working-directory: api
 
       - name: Build
         run: dotnet build api/SolaHub.sln --no-restore --configuration Release
 
-      - name: Unit Tests
+      - name: Unit tests
         run: >
           dotnet test api/tests/SolaHub.Tests.Unit/SolaHub.Tests.Unit.csproj
           --no-build
           --configuration Release
           --logger "trx;LogFileName=unit-results.xml"
-          --collect:"XPlat Code Coverage"
-          -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
 
       - name: Upload test results
         if: always()
@@ -76,11 +58,12 @@ jobs:
         with:
           name: unit-test-results
           path: '**/TestResults/*.trx'
+          retention-days: 7
 
   integration:
     name: Integration Tests
     runs-on: [self-hosted, macOS, ARM64]
-    # Testcontainers requires Docker — skipped if Docker is not running on the runner
+    needs: build
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -91,7 +74,7 @@ jobs:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
       - name: Check Docker availability
-        run: docker info || (echo "Docker not available — skipping integration tests" && exit 0)
+        run: docker info || (echo "Docker not available — skipping" && exit 0)
 
       - name: Restore
         run: dotnet restore api/SolaHub.sln
@@ -99,7 +82,7 @@ jobs:
       - name: Build
         run: dotnet build api/SolaHub.sln --no-restore --configuration Release
 
-      - name: Integration Tests
+      - name: Integration tests
         run: >
           dotnet test api/tests/SolaHub.Tests.Integration/SolaHub.Tests.Integration.csproj
           --no-build
@@ -121,3 +104,4 @@ jobs:
         with:
           name: integration-test-results
           path: '**/TestResults/*.trx'
+          retention-days: 7

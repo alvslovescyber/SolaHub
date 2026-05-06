@@ -11,7 +11,10 @@ pub fn run() {
     if let Err(error) = tauri::Builder::default()
         .setup(|app| {
             #[cfg(all(desktop, not(debug_assertions)))]
-            if let Err(e) = app.handle().plugin(tauri_plugin_updater::Builder::new().build()) {
+            if let Err(e) = app
+                .handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())
+            {
                 eprintln!("Warning: updater plugin not available (no pubkey configured): {e}");
             }
 
