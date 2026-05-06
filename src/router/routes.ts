@@ -56,14 +56,14 @@ export const routes: RouteRecordRaw[] = [
         component: () => import('@/views/PlanDetailView.vue'),
         props: true,
       },
+
+      // SUNDAY
       {
         path: 'notes',
         name: 'notes',
         component: () => import('@/views/NotesView.vue'),
         meta: { offlineReady: true },
       },
-
-      // SUNDAY
       {
         path: 'presenter',
         name: 'presenter',

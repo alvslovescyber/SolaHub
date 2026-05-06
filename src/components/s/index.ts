@@ -1,4 +1,8 @@
 export { default as SAppShell } from './SAppShell.vue'
+export { default as SCalendarAgendaView } from './SCalendarAgendaView.vue'
+export { default as SCalendarEventModal } from './SCalendarEventModal.vue'
+export { default as SCalendarMonthView } from './SCalendarMonthView.vue'
+export { default as SCalendarWeekView } from './SCalendarWeekView.vue'
 export { default as SAvatar } from './SAvatar.vue'
 export { default as SAvatarGroup } from './SAvatarGroup.vue'
 export { default as SBadge } from './SBadge.vue'

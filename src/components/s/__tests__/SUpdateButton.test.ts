@@ -111,8 +111,8 @@ describe('SUpdateButton', () => {
     await flushPromises()
 
     expect(updateMocks.success).toHaveBeenCalledWith(
-      'SolaHub is up to date',
-      'Version 0.1.0 is installed.'
+      'Already on the latest version',
+      'SolaHub 0.1.0 is the most recent release.'
     )
     expect(localStorage.getItem(UPDATE_RETURN_ROUTE_KEY)).toBeNull()
   })

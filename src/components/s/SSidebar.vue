@@ -228,15 +228,15 @@
           :collapsed="collapsed"
           :badge="activePlansCount"
         />
+      </SSidebarGroup>
+
+      <SSidebarGroup label="Sunday" :collapsed="collapsed">
         <SSidebarItem
           :icon="StickyNote"
           label="Notations"
           route-name="notes"
           :collapsed="collapsed"
         />
-      </SSidebarGroup>
-
-      <SSidebarGroup label="Sunday" :collapsed="collapsed">
         <SSidebarItem
           :icon="Monitor"
           label="Presenter"
