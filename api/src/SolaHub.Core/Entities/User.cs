@@ -159,6 +159,18 @@ public sealed class User : BaseEntity<UserId>
         MarkUpdated();
     }
 
+    public void UpdateRole(UserRole role)
+    {
+        Role = role;
+        MarkUpdated();
+    }
+
+    public void Activate()
+    {
+        IsActive = true;
+        MarkUpdated();
+    }
+
     public void Deactivate()
     {
         IsActive = false;

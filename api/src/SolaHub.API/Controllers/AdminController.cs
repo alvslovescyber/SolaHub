@@ -2,49 +2,45 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
-using SolaHub.Core.Interfaces.Repositories;
 
 namespace SolaHub.API.Controllers;
 
 [ApiController]
 [Route("api/admin")]
 [Authorize(Roles = "Admin")]
-public sealed class AdminController(IUserRepository userRepository, IAdminService adminService)
-    : ControllerBase
+public sealed class AdminController(IAdminService adminService) : ControllerBase
 {
     private const int MaxPageSize = 100;
 
-    /// <summary>Paginated list of all registered users.</summary>
+    /// <summary>Paginated, searchable list of all registered users.</summary>
     [HttpGet("users")]
     [ProducesResponseType(typeof(AdminUsersResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUsers(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] string? role = null,
         CancellationToken ct = default
     )
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
+        var result = await adminService.GetUsersAsync(page, pageSize, search, role, ct);
+        return Ok(result);
+    }
 
-        var total = await userRepository.CountAsync(ct);
-        var skip = (page - 1) * pageSize;
-        var users = await userRepository.GetAllAsync(skip, pageSize, ct);
-
-        var dtos = users
-            .Select(u => new AdminUserDto(
-                u.Id.Value,
-                u.DisplayName,
-                u.Email.Value,
-                u.Role.ToString(),
-                u.IsActive,
-                u.IsEmailVerified,
-                u.ChurchId?.Value,
-                u.CreatedAt,
-                u.LastLoginAt
-            ))
-            .ToList();
-
-        return Ok(new AdminUsersResponse(dtos, total, page, pageSize));
+    /// <summary>Update a user's role or active status.</summary>
+    [HttpPatch("users/{id:guid}")]
+    [ProducesResponseType(typeof(AdminUserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateUser(
+        Guid id,
+        [FromBody] UpdateUserRequest request,
+        CancellationToken ct = default
+    )
+    {
+        var result = await adminService.UpdateUserAsync(id, request, ct);
+        return result is null ? NotFound() : Ok(result);
     }
 
     /// <summary>Aggregate statistics across the platform.</summary>

@@ -29,16 +29,32 @@ export interface AdminStats {
   totalCommunityPosts: number
 }
 
+export interface UpdateUserRequest {
+  role?: string
+  isActive?: boolean
+}
+
 export const adminService = {
-  async getUsers(page = 1, pageSize = 20): Promise<AdminUsersResponse> {
-    const res = await http.get<AdminUsersResponse>('/api/admin/users', {
-      params: { page, pageSize },
-    })
+  async getUsers(
+    page = 1,
+    pageSize = 20,
+    search?: string,
+    role?: string
+  ): Promise<AdminUsersResponse> {
+    const params: Record<string, unknown> = { page, pageSize }
+    if (search?.trim()) params.search = search.trim()
+    if (role) params.role = role
+    const res = await http.get<AdminUsersResponse>('/api/admin/users', { params })
     return res.data
   },
 
   async getStats(): Promise<AdminStats> {
     const res = await http.get<AdminStats>('/api/admin/stats')
+    return res.data
+  },
+
+  async updateUser(id: string, patch: UpdateUserRequest): Promise<AdminUser> {
+    const res = await http.patch<AdminUser>(`/api/admin/users/${id}`, patch)
     return res.data
   },
 }

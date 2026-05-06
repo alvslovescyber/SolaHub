@@ -9,6 +9,7 @@
     Monitor,
     Users,
     Settings,
+    ShieldCheck,
     ChevronLeft,
     ChevronRight,
   } from 'lucide-vue-next'
@@ -80,6 +81,28 @@
         <span v-if="!ui.sidebarCollapsed" class="truncate">{{ item.name }}</span>
       </button>
     </nav>
+
+    <!-- Admin (only visible to admins) -->
+    <div
+      v-if="auth.isAdmin"
+      class="px-2 pb-1 pt-2 border-t border-slate-200/70 dark:border-slate-700/50"
+    >
+      <button
+        :title="ui.sidebarCollapsed ? 'Admin' : undefined"
+        :class="[
+          'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium',
+          'transition-colors duration-100',
+          isActive('admin')
+            ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
+            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800/60',
+          ui.sidebarCollapsed && 'justify-center',
+        ]"
+        @click="navigate('admin')"
+      >
+        <ShieldCheck class="h-4 w-4 shrink-0" />
+        <span v-if="!ui.sidebarCollapsed" class="truncate font-sans">Admin</span>
+      </button>
+    </div>
 
     <!-- Bottom: Settings + User + Collapse toggle -->
     <div class="px-2 pb-3 space-y-0.5 border-t border-slate-200/70 dark:border-slate-700/50 pt-2">

@@ -19,6 +19,8 @@ public sealed record AdminUsersResponse(
     int PageSize
 );
 
+public sealed record UpdateUserRequest(string? Role, bool? IsActive);
+
 public sealed record AdminStatsDto(
     int TotalUsers,
     int ActiveUsers,
