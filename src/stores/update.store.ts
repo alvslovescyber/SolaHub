@@ -28,6 +28,7 @@ export const useUpdateStore = defineStore('update', () => {
   }
 
   function startPolling(): void {
+    stopPolling() // clear any existing timer before creating a new one
     void check()
     pollTimer = setInterval(() => void check(), POLL_INTERVAL_MS)
   }
@@ -44,5 +45,5 @@ export const useUpdateStore = defineStore('update', () => {
     availableVersion.value = null
   }
 
-  return { hasUpdate, availableVersion, startPolling, stopPolling, clearUpdate }
+  return { hasUpdate, availableVersion, check, startPolling, stopPolling, clearUpdate }
 })

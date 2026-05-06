@@ -117,6 +117,9 @@
       }
     } catch (error) {
       clearUpdateReturnRoute()
+      // When app.restart() fires on the Rust side the IPC closes and invoke() rejects.
+      // status is already 'installing'/'restarting' at that point — not a real error.
+      if (status.value === 'installing' || status.value === 'restarting') return
       toast.error('Update failed', extractErrorMessage(error))
     } finally {
       busy.value = false

@@ -44,6 +44,13 @@ async function loadUpdateButton(options: { isTauri: boolean }) {
       rehydrate: updateMocks.rehydrate,
     }),
   }))
+  vi.doMock('@/stores/update.store', () => ({
+    useUpdateStore: () => ({
+      hasUpdate: false,
+      availableVersion: null,
+      clearUpdate: vi.fn(),
+    }),
+  }))
   vi.doMock('../useSToast', () => ({
     useSToast: () => ({
       success: updateMocks.success,
@@ -88,7 +95,7 @@ describe('SUpdateButton', () => {
     const button = wrapper.get('button')
 
     expect(button.text()).toBe('Update')
-    expect(button.attributes('aria-label')).toBe('Update SolaHub')
+    expect(button.attributes('aria-label')).toBe('Check for updates')
     expect(button.classes()).toContain('bg-black/[0.04]')
     expect(button.classes()).toContain('border-black/[0.08]')
     expect(button.classes()).toContain('dark:bg-white/[0.05]')
@@ -190,6 +197,30 @@ describe('SUpdateButton', () => {
 
     expect(updateMocks.error).toHaveBeenCalled()
     expect(wrapper.find('button').exists()).toBe(false)
+  })
+
+  it('does not show an error toast when app.restart() closes the IPC mid-install', async () => {
+    // Simulates the real bug: install finds an update, fires Finished, then app.restart()
+    // kills the process — invoke() rejects with an IPC-closed error. This must NOT show
+    // a "Update failed" toast because the update actually succeeded.
+    updateMocks.invoke.mockImplementation(() => {
+      updateMocks.lastChannel?.onmessage({ event: 'Started', data: { contentLength: 50 } })
+      updateMocks.lastChannel?.onmessage({ event: 'Progress', data: { chunkLength: 50 } })
+      updateMocks.lastChannel?.onmessage({ event: 'Finished' })
+      // app.restart() closes the IPC — invoke never resolves, it rejects
+      return Promise.reject('ipc: webview closed')
+    })
+
+    const SUpdateButton = await loadUpdateButton({ isTauri: true })
+    const wrapper = mount(SUpdateButton)
+
+    await wrapper.get('button').trigger('click')
+    await flushPromises()
+
+    // No error toast — the rejection was caused by app.restart(), not a real failure
+    expect(updateMocks.error).not.toHaveBeenCalled()
+    // Button still visible (component is mid-restart; done stays false)
+    expect(wrapper.find('button').exists()).toBe(true)
   })
 
   it('keeps the button visible after a failed update so the user can retry', async () => {
