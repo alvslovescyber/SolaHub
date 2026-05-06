@@ -32,15 +32,15 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| match event {
-            WindowEvent::Resized(_) if window.label() == "main" => {
-                if window.is_minimized().unwrap_or(false) {
-                    close_presenter_window(window.app_handle());
-                }
+            WindowEvent::Resized(_)
+                if window.label() == "main" && window.is_minimized().unwrap_or(false) =>
+            {
+                close_presenter_window(window.app_handle());
             }
-            WindowEvent::Resized(_) if window.label() == "presenter" => {
-                if window.is_minimized().unwrap_or(false) {
-                    let _ = window.close();
-                }
+            WindowEvent::Resized(_)
+                if window.label() == "presenter" && window.is_minimized().unwrap_or(false) =>
+            {
+                let _ = window.close();
             }
             WindowEvent::Destroyed if window.label() == "presenter" => {
                 let _ = window.app_handle().emit(
