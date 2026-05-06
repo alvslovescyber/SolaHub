@@ -205,6 +205,13 @@ jobs:
           prerelease: true
           includeUpdaterJson: false
 
+      # List NSIS bundle output so failures are easy to diagnose.
+      - name: List NSIS bundle directory
+        shell: bash
+        run: |
+          echo "=== src-tauri/target/release/bundle/nsis/ ==="
+          ls -lh src-tauri/target/release/bundle/nsis/ 2>/dev/null || echo "(directory not found)"
+
       # Sign NSIS zip explicitly if Tauri build skipped signing.
       - name: Sign updater NSIS zip (fallback)
         env:
@@ -212,16 +219,36 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
         shell: bash
         run: |
-          NSIS_ZIP=$(find src-tauri/target/release/bundle/nsis \
-            -name "*.nsis.zip" 2>/dev/null | head -1)
-          [ -z "$NSIS_ZIP" ] || [ ! -f "$NSIS_ZIP" ] && { echo "No NSIS zip to sign"; exit 0; }
-          [ -f "${NSIS_ZIP}.sig" ] && { echo "Signature already present"; exit 0; }
-          [ -z "$TAURI_SIGNING_PRIVATE_KEY" ] && { echo "::error::TAURI_SIGNING_PRIVATE_KEY not set — cannot produce .sig"; exit 1; }
+          TAG=${{ env.RELEASE_TAG }}
+          VERSION=${TAG#v}
+          NSIS_DIR="src-tauri/target/release/bundle/nsis"
+          # Prefer the explicit versioned path; fall back to shell glob.
+          NSIS_ZIP="${NSIS_DIR}/SolaHub_${VERSION}_x64-setup.nsis.zip"
+          if [ ! -f "$NSIS_ZIP" ]; then
+            NSIS_ZIP=$(ls "${NSIS_DIR}"/*.nsis.zip 2>/dev/null | head -1)
+          fi
+          if [ -z "$NSIS_ZIP" ] || [ ! -f "$NSIS_ZIP" ]; then
+            echo "No NSIS zip found — skipping fallback signing"
+            exit 0
+          fi
+          if [ -f "${NSIS_ZIP}.sig" ]; then
+            echo "Signature already present at ${NSIS_ZIP}.sig"
+            exit 0
+          fi
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::error::TAURI_SIGNING_PRIVATE_KEY not set — cannot produce .sig"
+            exit 1
+          fi
           echo "Signing $NSIS_ZIP explicitly..."
           npx @tauri-apps/cli signer sign "$NSIS_ZIP" \
             --private-key "$TAURI_SIGNING_PRIVATE_KEY" \
             --password ""
-          [ -f "${NSIS_ZIP}.sig" ] && echo "✓ Signature generated" || { echo "::error::signing did not produce .sig — check TAURI_SIGNING_PRIVATE_KEY format"; exit 1; }
+          if [ -f "${NSIS_ZIP}.sig" ]; then
+            echo "✓ Signature generated"
+          else
+            echo "::error::signing did not produce .sig — check TAURI_SIGNING_PRIVATE_KEY format"
+            exit 1
+          fi
 
       # Upload the NSIS zip (Windows updater binary) and its .sig —
       # tauri-action only uploads the plain .exe, not the updater zip.
@@ -231,18 +258,22 @@ jobs:
         shell: bash
         run: |
           TAG=${{ env.RELEASE_TAG }}
-          NSIS_ZIP=$(find src-tauri/target/release/bundle/nsis \
-            -name "*.nsis.zip" 2>/dev/null | head -1)
-          NSIS_SIG=$(find src-tauri/target/release/bundle/nsis \
-            -name "*.nsis.zip.sig" 2>/dev/null | head -1)
-          if [ -n "$NSIS_ZIP" ] && [ -f "$NSIS_ZIP" ] && [ -n "$NSIS_SIG" ]; then
-            gh release upload "$TAG" "$NSIS_ZIP" "$NSIS_SIG" \
-              --repo ${{ github.repository }} --clobber
-            echo "Uploaded $(basename "$NSIS_ZIP") and .sig"
-          else
-            echo "No NSIS zip/sig found — build was not signed"
+          VERSION=${TAG#v}
+          NSIS_DIR="src-tauri/target/release/bundle/nsis"
+          NSIS_ZIP="${NSIS_DIR}/SolaHub_${VERSION}_x64-setup.nsis.zip"
+          if [ ! -f "$NSIS_ZIP" ]; then
+            NSIS_ZIP=$(ls "${NSIS_DIR}"/*.nsis.zip 2>/dev/null | head -1)
+          fi
+          NSIS_SIG="${NSIS_ZIP}.sig"
+          if [ -z "$NSIS_ZIP" ] || [ ! -f "$NSIS_ZIP" ] || [ ! -f "$NSIS_SIG" ]; then
+            echo "::error::NSIS zip or sig not found — build was not signed"
+            echo "  NSIS_ZIP=${NSIS_ZIP}"
+            echo "  NSIS_SIG=${NSIS_SIG}"
             exit 1
           fi
+          gh release upload "$TAG" "$NSIS_ZIP" "$NSIS_SIG" \
+            --repo ${{ github.repository }} --clobber
+          echo "Uploaded $(basename "$NSIS_ZIP") and .sig"
 
   publish-r2:
     name: Publish update artifacts to R2
