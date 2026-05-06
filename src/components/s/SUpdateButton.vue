@@ -13,7 +13,7 @@
     fullWidth?: boolean
   }
 
-  type UpdateStatus = 'idle' | 'checking' | 'downloading' | 'installing'
+  type UpdateStatus = 'idle' | 'checking' | 'downloading' | 'installing' | 'restarting'
   type UpdateResultStatus = 'notConfigured' | 'upToDate'
 
   interface AppUpdateResult {
@@ -45,8 +45,9 @@
   const buttonLabel = computed(() => {
     if (status.value === 'checking') return 'Checking'
     if (status.value === 'downloading')
-      return progressPercent.value ? `${progressPercent.value}%` : 'Loading'
-    if (status.value === 'installing') return 'Restart'
+      return progressPercent.value ? `${progressPercent.value}%` : 'Downloading'
+    if (status.value === 'installing') return 'Installing'
+    if (status.value === 'restarting') return 'Restarting'
     return 'Update'
   })
 
@@ -79,7 +80,12 @@
         downloadedBytes.value += event.data.chunkLength
         return
       }
+      // Finished = install complete, app.restart() is about to fire on the Rust side.
       status.value = 'installing'
+      // Brief delay so "Installing" renders before Rust transitions to "Restarting".
+      setTimeout(() => {
+        status.value = 'restarting'
+      }, 400)
     })
 
     try {
@@ -93,7 +99,10 @@
           'Build SolaHub with a signed updater key to enable native updates.'
         )
       } else {
-        toast.success('SolaHub is up to date', `Version ${result.currentVersion} is installed.`)
+        toast.success(
+          'Already on the latest version',
+          `SolaHub ${result.currentVersion} is the most recent release.`
+        )
       }
     } catch (error) {
       clearUpdateReturnRoute()

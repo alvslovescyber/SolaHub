@@ -33,10 +33,13 @@
     ui.initTheme()
     if (isAuthIsolatedRoute.value) return
 
-    void auth.rehydrate()
     const returnRoute = consumeUpdateReturnRoute()
     if (returnRoute && returnRoute !== route.fullPath) {
-      void router.replace(returnRoute)
+      // Rehydrate first so the router guard finds a valid session when it fires
+      // for the restored route after an in-app update + restart.
+      void auth.rehydrate().then(() => router.replace(returnRoute))
+    } else {
+      void auth.rehydrate()
     }
     window.addEventListener('auth:session-expired', onSessionExpired)
   })
