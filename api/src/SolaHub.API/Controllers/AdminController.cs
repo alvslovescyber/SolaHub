@@ -60,9 +60,7 @@ public sealed class AdminController(IAdminService adminService) : ControllerBase
     public async Task<IActionResult> ResetPassword(Guid id, CancellationToken ct = default)
     {
         var tempPassword = await adminService.ResetPasswordAsync(id, ct);
-        return tempPassword is null
-            ? NotFound()
-            : Ok(new ResetPasswordResponse(tempPassword));
+        return tempPassword is null ? NotFound() : Ok(new ResetPasswordResponse(tempPassword));
     }
 
     /// <summary>Invalidate all active sessions for a user, forcing re-login on all devices.</summary>
