@@ -1,4 +1,5 @@
 using System.Data.Common;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -44,7 +45,9 @@ public sealed class AppDbRlsInterceptor(IHttpContextAccessor httpContextAccessor
 
         if (ctx?.User?.Identity?.IsAuthenticated == true)
         {
-            var raw = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var raw =
+                ctx.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                ?? ctx.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
             if (Guid.TryParse(raw, out var parsed))
                 userId = parsed.ToString("D");
 

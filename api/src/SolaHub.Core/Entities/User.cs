@@ -29,8 +29,6 @@ public sealed class User : BaseEntity<UserId>
     public ChurchId? ChurchId { get; private set; }
     public bool IsEmailVerified { get; private set; }
     public DateTimeOffset? LastLoginAt { get; private set; }
-    public string? RefreshToken { get; private set; }
-    public DateTimeOffset? RefreshTokenExpiry { get; private set; }
     public int SessionVersion { get; private set; }
     public bool IsActive { get; private set; } = true;
 
@@ -91,39 +89,11 @@ public sealed class User : BaseEntity<UserId>
         return Result.Ok;
     }
 
-    /// <param name="refreshTokenHash">Hashed refresh token (never store the raw token).</param>
-    public Result UpdateRefreshToken(string refreshTokenHash, DateTimeOffset expiry)
+    public void InvalidateSessions()
     {
-        if (string.IsNullOrWhiteSpace(refreshTokenHash))
-            return Result.Failure(
-                Error.Validation("User.InvalidToken", "Refresh token cannot be empty.")
-            );
-
-        if (expiry <= DateTimeOffset.UtcNow)
-            return Result.Failure(
-                Error.Validation("User.InvalidExpiry", "Token expiry must be in the future.")
-            );
-
-        RefreshToken = refreshTokenHash;
-        RefreshTokenExpiry = expiry;
-        MarkUpdated();
-        return Result.Ok;
-    }
-
-    public void RevokeRefreshToken()
-    {
-        RefreshToken = null;
-        RefreshTokenExpiry = null;
         SessionVersion++;
         MarkUpdated();
     }
-
-    /// <param name="refreshTokenHash">HMAC hash of the client-supplied refresh token.</param>
-    public bool HasValidRefreshTokenHash(string? refreshTokenHash) =>
-        refreshTokenHash is not null
-        && RefreshToken == refreshTokenHash
-        && RefreshTokenExpiry.HasValue
-        && RefreshTokenExpiry.Value > DateTimeOffset.UtcNow;
 
     public void RecordLogin()
     {
@@ -154,14 +124,17 @@ public sealed class User : BaseEntity<UserId>
         if (string.IsNullOrWhiteSpace(newPasswordHash))
             throw new ArgumentException("Password hash cannot be empty.", nameof(newPasswordHash));
         PasswordHash = newPasswordHash;
-        // Revoke active session so all devices must re-authenticate after a password change
-        RevokeRefreshToken();
-        MarkUpdated();
+        // Force all issued access tokens to fail validation after a password change.
+        InvalidateSessions();
     }
 
     public void UpdateRole(UserRole role)
     {
+        if (Role == role)
+            return;
+
         Role = role;
+        SessionVersion++;
         MarkUpdated();
     }
 
@@ -174,8 +147,7 @@ public sealed class User : BaseEntity<UserId>
     public void Deactivate()
     {
         IsActive = false;
-        RevokeRefreshToken();
-        MarkUpdated();
+        InvalidateSessions();
     }
 }
 

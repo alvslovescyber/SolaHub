@@ -21,6 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const isOfflineSession = ref(false)
+  let rehydratePromise: Promise<void> | null = null
 
   const hasValidAccessToken = computed(() => hasUsableAccessToken(tokenStorage.getAccess()))
   const isAuthenticated = computed(
@@ -86,6 +87,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  function acceptRefreshedSession(nextUser: User): void {
+    setOnlineUser(nextUser)
+  }
+
   function handleSessionExpired(): void {
     if (isBrowserOffline() && restoreOfflineUser()) return
     clearSessionState()
@@ -101,6 +106,17 @@ export const useAuthStore = defineStore('auth', () => {
   async function rehydrate(options: RehydrateOptions = {}): Promise<void> {
     if (!tokenStorage.hasSession()) return
     if (user.value && !options.force) return
+
+    if (rehydratePromise) return rehydratePromise
+
+    rehydratePromise = runRehydrate().finally(() => {
+      rehydratePromise = null
+    })
+
+    return rehydratePromise
+  }
+
+  async function runRehydrate(): Promise<void> {
     if (isBrowserOffline()) {
       if (user.value) enterOfflineSession(user.value)
       else restoreOfflineUser()
@@ -170,6 +186,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     updateUser,
+    acceptRefreshedSession,
     handleSessionExpired,
     rehydrate,
     restoreOfflineUser,

@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -30,11 +31,41 @@ public sealed class AuthEndpointTests(ApiFactory factory)
 
         var body = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
         body!.AccessToken.Should().NotBeNullOrEmpty();
+        body.User.Id.Should().NotBe(Guid.Empty);
+        body.User.Email.Should().Be(body.User.Email.ToLowerInvariant());
         GetRefreshCookie(response).Should().NotBeNullOrEmpty();
         response
             .Headers.GetValues("Set-Cookie")
             .Should()
             .Contain(h => h.Contains("HttpOnly", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task Register_IssuesTokenWithUuidSubjectAndRoleClaim()
+    {
+        var response = await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email = $"claims_{Guid.NewGuid():N}@example.com",
+                password = "SecureP@ss1",
+                displayName = "Claims User",
+            }
+        );
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.Content.ReadFromJsonAsync<AuthResponseBodyDto>();
+
+        var token = new JwtSecurityTokenHandler().ReadJwtToken(body!.AccessToken);
+        token
+            .Claims.First(c => c.Type == JwtRegisteredClaimNames.Sub)
+            .Value.Should()
+            .Be(body.User.Id.ToString());
+        token
+            .Claims.First(c => c.Type == JwtRegisteredClaimNames.Email)
+            .Value.Should()
+            .Be(body.User.Email);
+        token.Claims.First(c => c.Type == "role").Value.Should().Be("Member");
+        token.Claims.First(c => c.Type == "session_version").Value.Should().Be("0");
     }
 
     [Fact]
@@ -199,6 +230,88 @@ public sealed class AuthEndpointTests(ApiFactory factory)
         second.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    [Fact]
+    public async Task Refresh_WithTwoActiveLoginSessions_BothCanRefresh()
+    {
+        var email = $"multi_session_{Guid.NewGuid():N}@example.com";
+        const string password = "SecureP@ss1";
+
+        await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email,
+                password,
+                displayName = "Multi Session User",
+            }
+        );
+
+        var firstLogin = await _client.PostAsJsonAsync("/api/auth/login", new { email, password });
+        firstLogin.StatusCode.Should().Be(HttpStatusCode.OK);
+        var firstSession = await ReadAuthResponseAsync(firstLogin);
+
+        var secondLogin = await _client.PostAsJsonAsync("/api/auth/login", new { email, password });
+        secondLogin.StatusCode.Should().Be(HttpStatusCode.OK);
+        var secondSession = await ReadAuthResponseAsync(secondLogin);
+        secondSession.RefreshToken.Should().NotBe(firstSession.RefreshToken);
+
+        var firstRefresh = await _client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            new { refreshToken = firstSession.RefreshToken }
+        );
+        firstRefresh.StatusCode.Should().Be(HttpStatusCode.OK);
+        var firstRotated = await ReadAuthResponseAsync(firstRefresh);
+        firstRotated.RefreshToken.Should().NotBe(firstSession.RefreshToken);
+
+        var secondRefresh = await _client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            new { refreshToken = secondSession.RefreshToken }
+        );
+        secondRefresh.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task ChangePassword_RevokesAllRefreshSessions()
+    {
+        var email = $"password_sessions_{Guid.NewGuid():N}@example.com";
+        const string oldPassword = "SecureP@ss1";
+        const string newPassword = "SecureP@ss2";
+
+        var registerResponse = await _client.PostAsJsonAsync(
+            "/api/auth/register",
+            new
+            {
+                email,
+                password = oldPassword,
+                displayName = "Password Session User",
+            }
+        );
+        var firstSession = await ReadAuthResponseAsync(registerResponse);
+
+        var secondLogin = await _client.PostAsJsonAsync(
+            "/api/auth/login",
+            new { email, password = oldPassword }
+        );
+        secondLogin.StatusCode.Should().Be(HttpStatusCode.OK);
+        var secondSession = await ReadAuthResponseAsync(secondLogin);
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, "/api/auth/change-password");
+        req.Headers.Authorization = new AuthenticationHeaderValue(
+            "Bearer",
+            firstSession.AccessToken
+        );
+        req.Content = JsonContent.Create(new { currentPassword = oldPassword, newPassword });
+
+        var changeResponse = await _client.SendAsync(req);
+        changeResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var refreshAfterPasswordChange = await _client.PostAsJsonAsync(
+            "/api/auth/refresh",
+            new { refreshToken = secondSession.RefreshToken }
+        );
+        refreshAfterPasswordChange.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
     // ─── Logout ────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -233,7 +346,12 @@ public sealed class AuthEndpointTests(ApiFactory factory)
     private static async Task<AuthResponseDto> ReadAuthResponseAsync(HttpResponseMessage response)
     {
         var body = await response.Content.ReadFromJsonAsync<AuthResponseBodyDto>();
-        return new AuthResponseDto(body!.AccessToken, GetRefreshCookie(response), body.ExpiresAt);
+        return new AuthResponseDto(
+            body!.AccessToken,
+            GetRefreshCookie(response),
+            body.ExpiresAt,
+            body.User
+        );
     }
 
     private static string GetRefreshCookie(HttpResponseMessage response)
@@ -246,10 +364,26 @@ public sealed class AuthEndpointTests(ApiFactory factory)
     }
 }
 
-internal sealed record AuthResponseBodyDto(string AccessToken, DateTimeOffset ExpiresAt);
+internal sealed record AuthResponseBodyDto(
+    string AccessToken,
+    DateTimeOffset ExpiresAt,
+    AuthUserDto User
+);
+
+internal sealed record AuthUserDto(
+    Guid Id,
+    string DisplayName,
+    string Email,
+    string Role,
+    Guid? ChurchId,
+    bool IsEmailVerified,
+    bool IsActive,
+    DateTimeOffset CreatedAt
+);
 
 internal sealed record AuthResponseDto(
     string AccessToken,
     string RefreshToken = "",
-    DateTimeOffset ExpiresAt = default
+    DateTimeOffset ExpiresAt = default,
+    AuthUserDto User = default!
 );

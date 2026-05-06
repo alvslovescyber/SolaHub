@@ -29,7 +29,7 @@ test.describe('App shell and primary routes', () => {
     await expect(page.getByRole('button', { name: 'Collapse sidebar' })).toBeVisible()
 
     const sidebarRoutes = [
-      { name: 'Calendar', hash: /#\/calendar/, text: 'Calendar coming soon' },
+      { name: 'Calendar', hash: /#\/calendar/, text: 'Church services, events, and speakers' },
       { name: 'Bible', hash: /#\/bible/, text: 'Bible' },
       { name: 'Plans', hash: /#\/plans/, text: 'Reading plans' },
       { name: 'Notations', hash: /#\/notes/, text: 'Notations' },

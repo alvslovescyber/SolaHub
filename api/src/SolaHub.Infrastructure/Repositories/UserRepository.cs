@@ -44,12 +44,6 @@ public sealed class UserRepository(AppDbContext db, IHttpContextAccessor httpCon
         );
     }
 
-    public Task<User?> GetByRefreshTokenHashAsync(string refreshTokenHash, CancellationToken ct) =>
-        ExecuteWithAuthContextAsync(
-            () => db.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshTokenHash, ct),
-            ct
-        );
-
     public Task<bool> ExistsByEmailAsync(string email, CancellationToken ct)
     {
         var normalized = email.Trim().ToLowerInvariant();
@@ -94,39 +88,6 @@ public sealed class UserRepository(AppDbContext db, IHttpContextAccessor httpCon
             db.Entry(user).State = EntityState.Detached;
             return false;
         }
-    }
-
-    public async Task<bool> TryRotateRefreshTokenAsync(
-        UserId userId,
-        string expectedRefreshTokenHash,
-        string newRefreshTokenHash,
-        DateTimeOffset newExpiry,
-        CancellationToken ct = default
-    )
-    {
-        var now = DateTimeOffset.UtcNow;
-        var affected = await ExecuteWithAuthContextAsync(
-            () =>
-                db
-                    .Users.Where(u =>
-                        u.Id == userId
-                        && u.IsActive
-                        && u.RefreshToken == expectedRefreshTokenHash
-                        && u.RefreshTokenExpiry.HasValue
-                        && u.RefreshTokenExpiry.Value > now
-                    )
-                    .ExecuteUpdateAsync(
-                        setters =>
-                            setters
-                                .SetProperty(u => u.RefreshToken, newRefreshTokenHash)
-                                .SetProperty(u => u.RefreshTokenExpiry, newExpiry)
-                                .SetProperty(u => u.UpdatedAt, now),
-                        ct
-                    ),
-            ct
-        );
-
-        return affected == 1;
     }
 
     public async Task UpdateAsync(User user, CancellationToken ct)

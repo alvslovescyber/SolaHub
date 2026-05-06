@@ -11,6 +11,7 @@ type UpdateDownloadEvent =
 
 const updateMocks = vi.hoisted(() => ({
   invoke: vi.fn(),
+  rehydrate: vi.fn(),
   success: vi.fn(),
   error: vi.fn(),
   route: { fullPath: '/presenter?tab=songs' },
@@ -38,6 +39,11 @@ async function loadUpdateButton(options: { isTauri: boolean }) {
   vi.doMock('vue-router', () => ({
     useRoute: () => updateMocks.route,
   }))
+  vi.doMock('@/stores/auth.store', () => ({
+    useAuthStore: () => ({
+      rehydrate: updateMocks.rehydrate,
+    }),
+  }))
   vi.doMock('../useSToast', () => ({
     useSToast: () => ({
       success: updateMocks.success,
@@ -51,6 +57,8 @@ async function loadUpdateButton(options: { isTauri: boolean }) {
 describe('SUpdateButton', () => {
   beforeEach(() => {
     updateMocks.invoke.mockReset()
+    updateMocks.rehydrate.mockReset()
+    updateMocks.rehydrate.mockResolvedValue(undefined)
     updateMocks.success.mockReset()
     updateMocks.error.mockReset()
     updateMocks.lastChannel = null
@@ -114,6 +122,7 @@ describe('SUpdateButton', () => {
       'Already on the latest version',
       'SolaHub 0.1.0 is the most recent release.'
     )
+    expect(updateMocks.rehydrate).toHaveBeenCalledWith({ force: true })
     expect(localStorage.getItem(UPDATE_RETURN_ROUTE_KEY)).toBeNull()
   })
 
@@ -133,6 +142,7 @@ describe('SUpdateButton', () => {
       'Updates not configured',
       'Build SolaHub with a signed updater key to enable native updates.'
     )
+    expect(updateMocks.rehydrate).not.toHaveBeenCalled()
     expect(localStorage.getItem(UPDATE_RETURN_ROUTE_KEY)).toBeNull()
   })
 

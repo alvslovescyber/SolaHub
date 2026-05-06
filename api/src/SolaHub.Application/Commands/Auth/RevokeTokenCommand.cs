@@ -19,7 +19,7 @@ public sealed class RevokeTokenCommandValidator : AbstractValidator<RevokeTokenC
 }
 
 internal sealed class RevokeTokenCommandHandler(
-    IUserRepository userRepository,
+    IUserSessionRepository userSessionRepository,
     IRefreshTokenHasher refreshTokenHasher
 ) : IRequestHandler<RevokeTokenCommand, Result>
 {
@@ -29,18 +29,18 @@ internal sealed class RevokeTokenCommandHandler(
             return Error.Validation("Auth.InvalidToken", "Refresh token is required.");
 
         var refreshHash = refreshTokenHasher.Hash(request.RefreshToken);
-        var user = await userRepository.GetByRefreshTokenHashAsync(refreshHash, ct);
-        if (user is null || !user.HasValidRefreshTokenHash(refreshHash))
+        var session = await userSessionRepository.GetByRefreshTokenHashAsync(refreshHash, ct);
+        if (session is null || !session.IsValid(DateTimeOffset.UtcNow))
             return Error.Unauthorized("Auth.InvalidToken", "Token not recognized.");
 
-        if (user.Id != request.RequestingUserId)
+        if (session.UserId != request.RequestingUserId)
             return Error.Forbidden(
                 "Auth.TokenOwnerMismatch",
                 "The refresh token does not belong to the signed-in user."
             );
 
-        user.RevokeRefreshToken();
-        await userRepository.UpdateAsync(user, ct);
+        session.Revoke(DateTimeOffset.UtcNow);
+        await userSessionRepository.UpdateAsync(session, ct);
 
         return Result.Success();
     }

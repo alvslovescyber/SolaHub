@@ -1,5 +1,6 @@
 using FluentAssertions;
 using SolaHub.Core.Entities;
+using SolaHub.Core.Enums;
 using SolaHub.Core.ValueObjects;
 
 namespace SolaHub.Tests.Unit.Domain;
@@ -39,71 +40,17 @@ public sealed class UserEntityTests
         result.IsFailure.Should().BeTrue();
     }
 
-    // ─── UpdateRefreshToken ────────────────────────────────────────────────────
+    // ─── InvalidateSessions ───────────────────────────────────────────────────
 
     [Fact]
-    public void UpdateRefreshToken_WithFutureExpiry_Succeeds()
+    public void InvalidateSessions_IncrementsSessionVersion()
     {
         var user = CreateValidUser();
-        var expiry = DateTimeOffset.UtcNow.AddDays(7);
+        var initialSessionVersion = user.SessionVersion;
 
-        var result = user.UpdateRefreshToken("new-token", expiry);
+        user.InvalidateSessions();
 
-        result.IsSuccess.Should().BeTrue();
-        user.RefreshToken.Should().Be("new-token");
-        user.RefreshTokenExpiry.Should().Be(expiry);
-    }
-
-    [Fact]
-    public void UpdateRefreshToken_WithPastExpiry_ReturnsFailure()
-    {
-        var user = CreateValidUser();
-        var expiry = DateTimeOffset.UtcNow.AddDays(-1);
-
-        var result = user.UpdateRefreshToken("token", expiry);
-
-        result.IsFailure.Should().BeTrue();
-    }
-
-    // ─── HasValidRefreshTokenHash ──────────────────────────────────────────────
-
-    [Fact]
-    public void HasValidRefreshTokenHash_WithMatchingNonExpiredHash_ReturnsTrue()
-    {
-        var user = CreateValidUser();
-        user.UpdateRefreshToken("stored-hash", DateTimeOffset.UtcNow.AddDays(7));
-
-        user.HasValidRefreshTokenHash("stored-hash").Should().BeTrue();
-    }
-
-    [Fact]
-    public void HasValidRefreshTokenHash_WithNullHash_ReturnsFalse()
-    {
-        var user = CreateValidUser();
-        user.HasValidRefreshTokenHash(null).Should().BeFalse();
-    }
-
-    [Fact]
-    public void HasValidRefreshTokenHash_WithWrongHash_ReturnsFalse()
-    {
-        var user = CreateValidUser();
-        user.UpdateRefreshToken("correct-hash", DateTimeOffset.UtcNow.AddDays(7));
-
-        user.HasValidRefreshTokenHash("wrong-hash").Should().BeFalse();
-    }
-
-    // ─── RevokeRefreshToken ────────────────────────────────────────────────────
-
-    [Fact]
-    public void RevokeRefreshToken_ClearsToken()
-    {
-        var user = CreateValidUser();
-        user.UpdateRefreshToken("token", DateTimeOffset.UtcNow.AddDays(7));
-
-        user.RevokeRefreshToken();
-
-        user.RefreshToken.Should().BeNull();
-        user.HasValidRefreshTokenHash("token").Should().BeFalse();
+        user.SessionVersion.Should().Be(initialSessionVersion + 1);
     }
 
     // ─── VerifyEmail ───────────────────────────────────────────────────────────
@@ -122,15 +69,40 @@ public sealed class UserEntityTests
     // ─── Deactivate ───────────────────────────────────────────────────────────
 
     [Fact]
-    public void Deactivate_SetsIsActiveFalse_AndRevokesToken()
+    public void Deactivate_SetsIsActiveFalse_AndInvalidatesSessions()
     {
         var user = CreateValidUser();
-        user.UpdateRefreshToken("token", DateTimeOffset.UtcNow.AddDays(7));
+        var initialSessionVersion = user.SessionVersion;
 
         user.Deactivate();
 
         user.IsActive.Should().BeFalse();
-        user.RefreshToken.Should().BeNull();
+        user.SessionVersion.Should().Be(initialSessionVersion + 1);
+    }
+
+    // ─── UpdateRole ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void UpdateRole_WithNewRole_IncrementsSessionVersion()
+    {
+        var user = CreateValidUser();
+        var initialSessionVersion = user.SessionVersion;
+
+        user.UpdateRole(UserRole.Admin);
+
+        user.Role.Should().Be(UserRole.Admin);
+        user.SessionVersion.Should().Be(initialSessionVersion + 1);
+    }
+
+    [Fact]
+    public void UpdateRole_WithSameRole_DoesNotIncrementSessionVersion()
+    {
+        var user = CreateValidUser();
+        var initialSessionVersion = user.SessionVersion;
+
+        user.UpdateRole(UserRole.Member);
+
+        user.SessionVersion.Should().Be(initialSessionVersion);
     }
 
     // ─── JoinChurch / LeaveChurch ──────────────────────────────────────────────

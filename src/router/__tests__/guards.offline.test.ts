@@ -21,11 +21,11 @@ vi.mock('@/services/auth.service', () => ({
 const Empty = { template: '<div />' }
 
 const pastor: User = {
-  id: 'user-1',
+  id: '00000000-0000-4000-8000-000000000001',
   email: 'pastor@example.com',
   displayName: 'Pastor One',
   role: 'Pastor',
-  churchId: 'church-1',
+  churchId: '00000000-0000-4000-8000-000000000002',
   isEmailVerified: true,
   isActive: true,
   createdAt: '2026-05-05T12:00:00.000Z',
@@ -33,7 +33,7 @@ const pastor: User = {
 
 const member: User = {
   ...pastor,
-  id: 'user-member',
+  id: '00000000-0000-4000-8000-000000000003',
   email: 'member@example.com',
   displayName: 'Member One',
   role: 'Member',

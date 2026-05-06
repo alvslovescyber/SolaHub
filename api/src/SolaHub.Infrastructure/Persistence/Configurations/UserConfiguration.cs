@@ -39,8 +39,6 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
                 value => value.HasValue ? ChurchId.From(value.Value) : (ChurchId?)null
             );
 
-        builder.Property(u => u.RefreshToken).HasMaxLength(500);
-        builder.Property(u => u.RefreshTokenExpiry);
         builder.Property(u => u.SessionVersion).IsRequired();
         builder.Property(u => u.IsEmailVerified).IsRequired();
         builder.Property(u => u.IsActive).IsRequired();
@@ -48,7 +46,6 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.UpdatedAt).IsRequired();
 
         // Indexes for common lookups
-        builder.HasIndex(u => u.RefreshToken).HasFilter("refresh_token IS NOT NULL");
         builder.HasIndex(u => u.ChurchId).HasFilter("church_id IS NOT NULL");
 
         builder

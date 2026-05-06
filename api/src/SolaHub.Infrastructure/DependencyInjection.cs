@@ -73,6 +73,7 @@ public static class DependencyInjection
 
         // ─── Repositories ──────────────────────────────────────────────────────
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserSessionRepository, UserSessionRepository>();
         services.AddScoped<IVerseNoteRepository, VerseNoteRepository>();
         services.AddScoped<IReadingPlanRepository, ReadingPlanRepository>();
         services.AddScoped<ICommunityPostRepository, CommunityPostRepository>();

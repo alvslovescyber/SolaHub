@@ -11,13 +11,7 @@ import type { CalendarEvent } from '@/stores/calendar.store'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function makeEvent(
-  id: string,
-  startH: number,
-  endH: number,
-  startM = 0,
-  endM = 0
-): CalendarEvent {
+function makeEvent(id: string, startH: number, endH: number, startM = 0, endM = 0): CalendarEvent {
   const base = '2026-05-06'
   const pad = (n: number) => String(n).padStart(2, '0')
   return {
@@ -68,11 +62,7 @@ describe('layoutDay', () => {
   })
 
   it('three simultaneous events each get cols=3', () => {
-    const items = layoutDay([
-      makeEvent('a', 9, 11),
-      makeEvent('b', 9, 11),
-      makeEvent('c', 9, 11),
-    ])
+    const items = layoutDay([makeEvent('a', 9, 11), makeEvent('b', 9, 11), makeEvent('c', 9, 11)])
     expect(items.every((i) => i.cols === 3)).toBe(true)
     expect(new Set(items.map((i) => i.col)).size).toBe(3)
   })

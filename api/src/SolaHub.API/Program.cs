@@ -95,6 +95,7 @@ try
         .Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(opts =>
         {
+            opts.MapInboundClaims = false;
             opts.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
@@ -106,6 +107,8 @@ try
                 ValidateAudience = true,
                 ValidAudience = jwtOptions.Audience,
                 ValidateLifetime = true,
+                NameClaimType = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub,
+                RoleClaimType = "role",
                 ClockSkew = TimeSpan.FromSeconds(30), // tight clock skew
             };
 
@@ -298,24 +301,42 @@ static async Task SeedAdminUserAsync(WebApplication app)
 
     using var scope = app.Services.CreateScope();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    await using var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await using var db = CreateMigrationDbContext(app, scope.ServiceProvider);
 
-    var user = await db.Users.FirstOrDefaultAsync(u => u.Email.Value == adminEmail);
-    if (user is null)
+    await db.Database.OpenConnectionAsync();
+    try
     {
-        logger.LogWarning("Admin seed: no account found for {Email}", adminEmail);
-        return;
-    }
+        await db.Database.ExecuteSqlRawAsync("SET app.auth_context = 'true'");
 
-    if (user.Role == SolaHub.Core.Enums.UserRole.Admin)
+        var normalizedEmail = adminEmail.Trim().ToLowerInvariant();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Email.Value == normalizedEmail);
+        if (user is null)
+        {
+            logger.LogWarning("Admin seed: no account found for {Email}", normalizedEmail);
+            return;
+        }
+
+        if (user.Role == SolaHub.Core.Enums.UserRole.Admin)
+        {
+            logger.LogInformation(
+                "Admin seed: {Email} is already Admin — no change needed.",
+                normalizedEmail
+            );
+            return;
+        }
+
+        user.UpdateRole(SolaHub.Core.Enums.UserRole.Admin);
+        await db.SaveChangesAsync();
+        logger.LogInformation("Admin seed: promoted {Email} to Admin role.", normalizedEmail);
+    }
+    finally
     {
-        logger.LogInformation("Admin seed: {Email} is already Admin — no change needed.", adminEmail);
-        return;
+        await db.Database.ExecuteSqlRawAsync(
+            "SET app.auth_context = 'false'",
+            CancellationToken.None
+        );
+        await db.Database.CloseConnectionAsync();
     }
-
-    user.UpdateRole(SolaHub.Core.Enums.UserRole.Admin);
-    await db.SaveChangesAsync();
-    logger.LogInformation("Admin seed: promoted {Email} to Admin role.", adminEmail);
 }
 
 /// <summary>

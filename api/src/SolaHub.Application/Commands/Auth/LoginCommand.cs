@@ -4,6 +4,7 @@ using SolaHub.Application.Common;
 using SolaHub.Application.DTOs;
 using SolaHub.Application.Mappers;
 using SolaHub.Core.Common;
+using SolaHub.Core.Entities;
 using SolaHub.Core.Interfaces.Repositories;
 using SolaHub.Core.Interfaces.Services;
 
@@ -22,6 +23,7 @@ public sealed class LoginCommandValidator : AbstractValidator<LoginCommand>
 
 internal sealed class LoginCommandHandler(
     IUserRepository userRepository,
+    IUserSessionRepository userSessionRepository,
     IPasswordHasher passwordHasher,
     ITokenService tokenService,
     IRefreshTokenHasher refreshTokenHasher
@@ -50,15 +52,16 @@ internal sealed class LoginCommandHandler(
         var now = DateTimeOffset.UtcNow;
         var accessToken = tokenService.GenerateAccessToken(user);
         var newRefreshToken = tokenService.GenerateRefreshToken();
-        var refreshHash = refreshTokenHasher.Hash(newRefreshToken);
-        var tokenResult = user.UpdateRefreshToken(
-            refreshHash,
+        var sessionResult = UserSession.Create(
+            user.Id,
+            refreshTokenHasher.Hash(newRefreshToken),
             now.Add(tokenService.RefreshTokenLifetime)
         );
-        if (tokenResult.IsFailure)
-            return tokenResult.Error;
+        if (sessionResult.IsFailure)
+            return sessionResult.Error;
 
         await userRepository.UpdateAsync(user, ct);
+        await userSessionRepository.AddAsync(sessionResult.Value, ct);
 
         return new AuthResponse(
             accessToken,

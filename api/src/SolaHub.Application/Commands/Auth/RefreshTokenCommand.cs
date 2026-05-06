@@ -21,6 +21,7 @@ public sealed class RefreshTokenCommandValidator : AbstractValidator<RefreshToke
 
 internal sealed class RefreshTokenCommandHandler(
     IUserRepository userRepository,
+    IUserSessionRepository userSessionRepository,
     ITokenService tokenService,
     IRefreshTokenHasher refreshTokenHasher
 ) : IRequestHandler<RefreshTokenCommand, Result<AuthResponse>>
@@ -31,9 +32,14 @@ internal sealed class RefreshTokenCommandHandler(
     )
     {
         var refreshHash = refreshTokenHasher.Hash(request.RefreshToken);
-        var user = await userRepository.GetByRefreshTokenHashAsync(refreshHash, ct);
+        var session = await userSessionRepository.GetByRefreshTokenHashAsync(refreshHash, ct);
+        var now = DateTimeOffset.UtcNow;
 
-        if (user is null || !user.HasValidRefreshTokenHash(refreshHash))
+        if (session is null || !session.IsValid(now))
+            return Error.Unauthorized("Auth.InvalidToken", "Invalid or expired refresh token.");
+
+        var user = await userRepository.GetByIdForAuthenticationAsync(session.UserId, ct);
+        if (user is null)
             return Error.Unauthorized("Auth.InvalidToken", "Invalid or expired refresh token.");
 
         if (!user.IsActive)
@@ -43,22 +49,20 @@ internal sealed class RefreshTokenCommandHandler(
             );
 
         // Rotate refresh token on every use — prevents stolen-token reuse
-        var now = DateTimeOffset.UtcNow;
         var newAccessToken = tokenService.GenerateAccessToken(user);
         var newRefreshToken = tokenService.GenerateRefreshToken();
         var newHash = refreshTokenHasher.Hash(newRefreshToken);
-        var tokenResult = user.UpdateRefreshToken(
-            newHash,
-            now.Add(tokenService.RefreshTokenLifetime)
-        );
+        var newExpiry = now.Add(tokenService.RefreshTokenLifetime);
+        var tokenResult = session.Rotate(newHash, newExpiry, now);
         if (tokenResult.IsFailure)
             return tokenResult.Error;
 
-        var rotated = await userRepository.TryRotateRefreshTokenAsync(
-            user.Id,
+        var rotated = await userSessionRepository.TryRotateAsync(
+            session.Id,
             refreshHash,
             newHash,
-            now.Add(tokenService.RefreshTokenLifetime),
+            newExpiry,
+            now,
             ct
         );
         if (!rotated)

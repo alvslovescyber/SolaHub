@@ -20,16 +20,17 @@
     Grid3x3,
     Columns,
   } from 'lucide-vue-next'
-  import {
-    SButton,
-    SIconButton,
-    STopBar,
-  } from '@/components/s'
+  import { SButton, SIconButton, STopBar } from '@/components/s'
   import SCalendarWeekView from '@/components/s/SCalendarWeekView.vue'
   import SCalendarMonthView from '@/components/s/SCalendarMonthView.vue'
   import SCalendarAgendaView from '@/components/s/SCalendarAgendaView.vue'
   import SCalendarEventModal from '@/components/s/SCalendarEventModal.vue'
-  import { useCalendarStore, type CalendarEvent, type CalendarView, CATEGORY_CONFIG } from '@/stores/calendar.store'
+  import {
+    useCalendarStore,
+    type CalendarEvent,
+    type CalendarView,
+    CATEGORY_CONFIG,
+  } from '@/stores/calendar.store'
 
   const store = useCalendarStore()
 
@@ -161,7 +162,9 @@
     <!-- ── Main layout ─────────────────────────────────────────────────── -->
     <div class="flex flex-1 min-h-0 overflow-hidden">
       <!-- ── Left sidebar ─────────────────────────────────────────────── -->
-      <div class="w-52 shrink-0 border-r border-line flex flex-col gap-4 pt-4 px-3 bg-surface-base overflow-y-auto">
+      <div
+        class="w-52 shrink-0 border-r border-line flex flex-col gap-4 pt-4 px-3 bg-surface-base overflow-y-auto"
+      >
         <!-- Nav controls -->
         <div class="flex items-center justify-between gap-1">
           <SIconButton size="sm" label="Previous" @click="miniNavigate(-1)">
@@ -190,10 +193,13 @@
               :key="day.toISOString()"
               :class="[
                 'text-[11px] rounded-full aspect-square flex items-center justify-center transition-colors',
-                isToday(day) ? 'bg-brand-500 text-white font-bold' :
-                isSameDay(day, store.currentDate) ? 'bg-brand-100 text-brand-700 font-semibold' :
-                !isSameMonth(day, miniDate) ? 'text-ink-muted/40' :
-                'text-ink-base hover:bg-surface-raised',
+                isToday(day)
+                  ? 'bg-brand-500 text-white font-bold'
+                  : isSameDay(day, store.currentDate)
+                    ? 'bg-brand-100 text-brand-700 font-semibold'
+                    : !isSameMonth(day, miniDate)
+                      ? 'text-ink-muted/40'
+                      : 'text-ink-base hover:bg-surface-raised',
               ]"
               @click="miniDayClick(day)"
             >
@@ -204,7 +210,9 @@
 
         <!-- View selector -->
         <div class="flex flex-col gap-0.5">
-          <p class="text-[10px] uppercase tracking-widest text-ink-muted font-semibold mb-1 px-1">View</p>
+          <p class="text-[10px] uppercase tracking-widest text-ink-muted font-semibold mb-1 px-1">
+            View
+          </p>
           <button
             v-for="opt in viewOptions"
             :key="opt.id"
@@ -223,7 +231,9 @@
 
         <!-- Category legend -->
         <div class="flex flex-col gap-0.5">
-          <p class="text-[10px] uppercase tracking-widest text-ink-muted font-semibold mb-1 px-1">Categories</p>
+          <p class="text-[10px] uppercase tracking-widest text-ink-muted font-semibold mb-1 px-1">
+            Categories
+          </p>
           <div
             v-for="(cfg, key) in CATEGORY_CONFIG"
             :key="key"
@@ -238,7 +248,9 @@
       <!-- ── Calendar content ──────────────────────────────────────────── -->
       <div class="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
         <!-- Toolbar -->
-        <div class="flex items-center gap-2 px-4 py-2 border-b border-line shrink-0 bg-surface-base">
+        <div
+          class="flex items-center gap-2 px-4 py-2 border-b border-line shrink-0 bg-surface-base"
+        >
           <SButton size="sm" variant="secondary" @click="store.goToToday()">Today</SButton>
           <SIconButton size="sm" label="Previous" @click="store.navigate('prev')">
             <ChevronLeft class="h-4 w-4" />

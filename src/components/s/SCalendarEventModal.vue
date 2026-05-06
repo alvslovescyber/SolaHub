@@ -21,6 +21,8 @@
 
   const props = withDefaults(defineProps<Props>(), {
     event: null,
+    defaultStart: undefined,
+    defaultEnd: undefined,
   })
 
   const emit = defineEmits<{
@@ -107,20 +109,11 @@
 </script>
 
 <template>
-  <SModal
-    :open="open"
-    :title="event ? 'Edit event' : 'New event'"
-    size="md"
-    @close="emit('close')"
-  >
+  <SModal :open="open" :title="event ? 'Edit event' : 'New event'" size="md" @close="emit('close')">
     <div class="flex flex-col gap-4">
       <SInput v-model="title" label="Title" placeholder="Event title" required autofocus />
 
-      <SSelect
-        v-model="(category as string)"
-        label="Category"
-        :options="categoryOptions"
-      />
+      <SSelect v-model="category as string" label="Category" :options="categoryOptions" />
 
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
@@ -170,12 +163,7 @@
 
     <template #footer>
       <div class="flex w-full items-center justify-between">
-        <SIconButton
-          v-if="event"
-          label="Delete event"
-          size="sm"
-          @click="emit('delete', event!.id)"
-        >
+        <SIconButton v-if="event" label="Delete event" size="sm" @click="emit('delete', event!.id)">
           <Trash2 class="h-4 w-4 text-red-500" />
         </SIconButton>
         <div v-else />

@@ -49,6 +49,7 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
 
 internal sealed class RegisterCommandHandler(
     IUserRepository userRepository,
+    IUserSessionRepository userSessionRepository,
     IPasswordHasher passwordHasher,
     ITokenService tokenService,
     IRefreshTokenHasher refreshTokenHasher
@@ -71,16 +72,18 @@ internal sealed class RegisterCommandHandler(
         var accessToken = tokenService.GenerateAccessToken(user);
         var refreshToken = tokenService.GenerateRefreshToken();
         var refreshExpiry = now.Add(tokenService.RefreshTokenLifetime);
-
-        var tokenResult = user.UpdateRefreshToken(
+        var sessionResult = UserSession.Create(
+            user.Id,
             refreshTokenHasher.Hash(refreshToken),
             refreshExpiry
         );
-        if (tokenResult.IsFailure)
-            return tokenResult.Error;
+        if (sessionResult.IsFailure)
+            return sessionResult.Error;
 
         if (!await userRepository.TryAddAsync(user, ct))
             return Error.Conflict("Auth.EmailTaken", "An account with this email already exists.");
+
+        await userSessionRepository.AddAsync(sessionResult.Value, ct);
 
         return new AuthResponse(
             accessToken,

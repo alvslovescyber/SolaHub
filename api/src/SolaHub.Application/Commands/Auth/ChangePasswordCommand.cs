@@ -38,6 +38,7 @@ public sealed class ChangePasswordCommandValidator : AbstractValidator<ChangePas
 
 internal sealed class ChangePasswordCommandHandler(
     IUserRepository userRepository,
+    IUserSessionRepository userSessionRepository,
     IPasswordHasher passwordHasher
 ) : IRequestHandler<ChangePasswordCommand, Result>
 {
@@ -53,6 +54,7 @@ internal sealed class ChangePasswordCommandHandler(
         var newHash = passwordHasher.Hash(request.NewPassword);
         user.ChangePassword(newHash);
         await userRepository.UpdateAsync(user, ct);
+        await userSessionRepository.RevokeAllForUserAsync(user.Id, DateTimeOffset.UtcNow, ct);
         return Result.Ok;
     }
 }

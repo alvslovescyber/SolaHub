@@ -83,6 +83,8 @@ public sealed class StronglyTypedIdTests
         var id1 = UserId.New();
         var id2 = UserId.New();
         id1.Should().NotBe(id2);
+        id1.Value.Version.Should().Be(7);
+        id2.Value.Version.Should().Be(7);
     }
 
     [Fact]
@@ -91,6 +93,13 @@ public sealed class StronglyTypedIdTests
         var guid = Guid.NewGuid();
         var id = UserId.From(guid);
         id.Value.Should().Be(guid);
+    }
+
+    [Fact]
+    public void UserId_From_RejectsEmptyGuid()
+    {
+        var action = () => UserId.From(Guid.Empty);
+        action.Should().Throw<ArgumentException>();
     }
 
     [Fact]

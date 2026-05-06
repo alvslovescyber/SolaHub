@@ -63,7 +63,6 @@
   }
 
   const ROLES = ['Member', 'Presenter', 'Pastor', 'Admin'] as const
-  type Role = (typeof ROLES)[number]
 
   function setRoleFilter(role: string) {
     roleFilter.value = roleFilter.value === role ? '' : role
@@ -202,10 +201,10 @@
       <!-- Tab bar -->
       <div class="flex gap-1" role="tablist">
         <button
-          v-for="tab in ([
+          v-for="tab in [
             { id: 'overview', label: 'Overview', icon: ActivityIcon },
             { id: 'users', label: 'Users', icon: UsersIcon },
-          ] as const)"
+          ] as const"
           :key="tab.id"
           role="tab"
           :aria-selected="activeTab === tab.id"
@@ -248,7 +247,11 @@
             <StatCard label="Churches" :value="stats.totalChurches" icon="church" />
             <StatCard label="Notes" :value="stats.totalNotes" icon="file-text" />
             <StatCard label="Reading Plans" :value="stats.totalPlans" icon="book-open" />
-            <StatCard label="Community Posts" :value="stats.totalCommunityPosts" icon="message-square" />
+            <StatCard
+              label="Community Posts"
+              :value="stats.totalCommunityPosts"
+              icon="message-square"
+            />
           </div>
           <p v-else-if="statsError" class="text-sm text-destructive">{{ statsError }}</p>
         </section>
@@ -338,19 +341,29 @@
           <table class="w-full text-sm">
             <thead class="bg-muted/40">
               <tr>
-                <th class="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                <th
+                  class="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide"
+                >
                   User
                 </th>
-                <th class="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide hidden md:table-cell">
+                <th
+                  class="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide hidden md:table-cell"
+                >
                   Joined
                 </th>
-                <th class="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide hidden lg:table-cell">
+                <th
+                  class="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide hidden lg:table-cell"
+                >
                   Last login
                 </th>
-                <th class="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                <th
+                  class="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide"
+                >
                   Role
                 </th>
-                <th class="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                <th
+                  class="text-left px-4 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide"
+                >
                   Status
                 </th>
               </tr>
@@ -367,9 +380,7 @@
                   {{ usersError }}
                 </td>
               </tr>
-              <tr
-                v-else-if="!usersData?.users.length"
-              >
+              <tr v-else-if="!usersData?.users.length">
                 <td colspan="5" class="px-4 py-10 text-center text-muted-foreground text-sm">
                   No users match your filters.
                 </td>
@@ -481,8 +492,8 @@
           <p class="text-muted-foreground">
             <template v-if="usersData">
               Showing
-              {{ (page - 1) * PAGE_SIZE + 1 }}–{{ Math.min(page * PAGE_SIZE, usersData.total) }}
-              of {{ usersData.total.toLocaleString() }}
+              {{ (page - 1) * PAGE_SIZE + 1 }}–{{ Math.min(page * PAGE_SIZE, usersData.total) }} of
+              {{ usersData.total.toLocaleString() }}
             </template>
           </p>
           <div class="flex items-center gap-1.5">

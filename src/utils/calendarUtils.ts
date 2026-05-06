@@ -57,15 +57,15 @@ export function layoutDay(
 
   function find(i: number): number {
     while (parent[i] !== i) {
-      parent[i] = parent[parent[i]]!
-      i = parent[i]!
+      parent[i] = parent[parent[i]]
+      i = parent[i]
     }
     return i
   }
 
   for (let i = 0; i < placed.length; i++) {
     for (let j = i + 1; j < placed.length; j++) {
-      if (placed[j]!.startMin < placed[i]!.endMin) {
+      if (placed[j].startMin < placed[i].endMin) {
         // j starts before i ends → they overlap
         const ri = find(i)
         const rj = find(j)
@@ -80,7 +80,7 @@ export function layoutDay(
   const clusterMaxCol = new Map<number, number>()
   for (let i = 0; i < placed.length; i++) {
     const root = find(i)
-    clusterMaxCol.set(root, Math.max(clusterMaxCol.get(root) ?? 0, placed[i]!.col))
+    clusterMaxCol.set(root, Math.max(clusterMaxCol.get(root) ?? 0, placed[i].col))
   }
 
   return placed.map((p, i) => ({

@@ -44,7 +44,10 @@
 
 <template>
   <div class="flex flex-col gap-0 overflow-y-auto">
-    <div v-if="!grouped.length" class="flex flex-col items-center justify-center py-16 text-ink-muted">
+    <div
+      v-if="!grouped.length"
+      class="flex flex-col items-center justify-center py-16 text-ink-muted"
+    >
       <Clock class="h-8 w-8 mb-3 opacity-40" />
       <p class="text-sm">No events in the next 28 days</p>
     </div>

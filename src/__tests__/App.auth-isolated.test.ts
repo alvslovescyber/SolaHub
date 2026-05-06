@@ -9,6 +9,7 @@ const appMocks = vi.hoisted(() => ({
   initTheme: vi.fn(),
   rehydrate: vi.fn(),
   handleSessionExpired: vi.fn(),
+  acceptRefreshedSession: vi.fn(),
   replace: vi.fn(),
 }))
 
@@ -22,6 +23,7 @@ vi.mock('@/stores/auth.store', () => ({
   useAuthStore: () => ({
     rehydrate: appMocks.rehydrate,
     handleSessionExpired: appMocks.handleSessionExpired,
+    acceptRefreshedSession: appMocks.acceptRefreshedSession,
   }),
 }))
 
@@ -39,6 +41,7 @@ describe('App auth-isolated routes', () => {
     appMocks.initTheme.mockClear()
     appMocks.rehydrate.mockClear()
     appMocks.handleSessionExpired.mockClear()
+    appMocks.acceptRefreshedSession.mockClear()
     appMocks.replace.mockClear()
   })
 
@@ -53,6 +56,11 @@ describe('App auth-isolated routes', () => {
 
     window.dispatchEvent(new CustomEvent('auth:session-expired'))
     expect(appMocks.handleSessionExpired).not.toHaveBeenCalled()
+
+    window.dispatchEvent(
+      new CustomEvent('auth:session-refreshed', { detail: { user: { id: 'admin-1' } } })
+    )
+    expect(appMocks.acceptRefreshedSession).not.toHaveBeenCalled()
 
     wrapper.unmount()
   })
@@ -69,10 +77,20 @@ describe('App auth-isolated routes', () => {
     window.dispatchEvent(new CustomEvent('auth:session-expired'))
     expect(appMocks.handleSessionExpired).toHaveBeenCalledOnce()
 
+    window.dispatchEvent(
+      new CustomEvent('auth:session-refreshed', { detail: { user: { id: 'admin-1' } } })
+    )
+    expect(appMocks.acceptRefreshedSession).toHaveBeenCalledWith({ id: 'admin-1' })
+
     appMocks.handleSessionExpired.mockClear()
+    appMocks.acceptRefreshedSession.mockClear()
     wrapper.unmount()
     window.dispatchEvent(new CustomEvent('auth:session-expired'))
     expect(appMocks.handleSessionExpired).not.toHaveBeenCalled()
+    window.dispatchEvent(
+      new CustomEvent('auth:session-refreshed', { detail: { user: { id: 'admin-2' } } })
+    )
+    expect(appMocks.acceptRefreshedSession).not.toHaveBeenCalled()
   })
 })
 

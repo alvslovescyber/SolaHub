@@ -74,9 +74,7 @@ export const useCalendarStore = defineStore('calendar', () => {
   const monthStart = computed(() => startOfMonth(currentDate.value))
   const monthEnd = computed(() => endOfMonth(currentDate.value))
 
-  const weekDays = computed(() =>
-    Array.from({ length: 7 }, (_, i) => addDays(weekStart.value, i))
-  )
+  const weekDays = computed(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart.value, i)))
 
   function eventsForDay(date: Date): CalendarEvent[] {
     return events.value.filter((e) => isSameDay(parseISO(e.start), date))
@@ -108,7 +106,7 @@ export const useCalendarStore = defineStore('calendar', () => {
   function updateEvent(id: string, updates: Partial<Omit<CalendarEvent, 'id'>>) {
     const idx = events.value.findIndex((e) => e.id === id)
     if (idx !== -1) {
-      events.value[idx] = { ...events.value[idx]!, ...updates }
+      events.value[idx] = { ...events.value[idx], ...updates }
       persist()
     }
   }

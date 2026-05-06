@@ -51,13 +51,14 @@ public sealed class RlsConfigurationTests(ApiFactory factory)
                   'community_posts',
                   'community_post_reports',
                   'users',
+                  'user_sessions',
                   'churches'
                 )
                 """
             )
             .ToListAsync();
 
-        rows.Should().HaveCount(8);
+        rows.Should().HaveCount(9);
         rows.Should().OnlyContain(row => row.RlsEnabled && row.RlsForced);
     }
 

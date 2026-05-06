@@ -65,7 +65,10 @@
     </div>
 
     <!-- Weeks grid -->
-    <div class="flex-1 grid overflow-hidden" :style="{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }">
+    <div
+      class="flex-1 grid overflow-hidden"
+      :style="{ gridTemplateRows: `repeat(${weeks.length}, 1fr)` }"
+    >
       <div
         v-for="(week, wi) in weeks"
         :key="wi"
@@ -105,7 +108,8 @@
                 :style="{ backgroundColor: CATEGORY_CONFIG[event.category].color }"
                 @click.stop="emit('event-click', event)"
               >
-                {{ event.allDay ? '' : format(parseISO(event.start), 'h:mma') + ' ' }}{{ event.title }}
+                {{ event.allDay ? '' : format(parseISO(event.start), 'h:mma') + ' '
+                }}{{ event.title }}
               </div>
             </template>
             <div

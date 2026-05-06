@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { ref, computed, onMounted, onUnmounted } from 'vue'
   import { format, isSameDay, parseISO, isToday } from 'date-fns'
-  import { MapPin, User } from 'lucide-vue-next'
+  import { MapPin } from 'lucide-vue-next'
   import type { CalendarEvent } from '@/stores/calendar.store'
   import { CATEGORY_CONFIG } from '@/stores/calendar.store'
   import {
@@ -90,7 +90,8 @@
     const end = new Date(event.end)
     const startMin = start.getHours() * 60 + start.getMinutes()
     const durationMin = Math.max((end.getTime() - start.getTime()) / 60_000, 15)
-    const grabOffsetMin = (e.clientY - (e.currentTarget as HTMLElement).getBoundingClientRect().top) / PX_PER_MIN
+    const grabOffsetMin =
+      (e.clientY - (e.currentTarget as HTMLElement).getBoundingClientRect().top) / PX_PER_MIN
 
     drag.value = { eventId: event.id, durationMin, grabOffsetMin, ghost: { dayIdx, startMin } }
   }
@@ -165,7 +166,7 @@
       drag.value = null
     }
     if (resize.value) {
-      const { eventId, startMin, dayIdx, currentEndMin } = resize.value
+      const { eventId, dayIdx, currentEndMin } = resize.value
       const targetDay = props.days[dayIdx]
       if (targetDay) {
         const newEnd = new Date(targetDay)
@@ -347,9 +348,7 @@
                 class="text-[11px] leading-snug truncate opacity-85 mt-0.5"
               >
                 {{ formatEventTime(item.event.start) }}
-                <template v-if="item.event.speaker">
-                  &middot; {{ item.event.speaker }}
-                </template>
+                <template v-if="item.event.speaker"> &middot; {{ item.event.speaker }} </template>
               </div>
               <div
                 v-if="item.durationMin * PX_PER_MIN >= 52 && item.event.location"

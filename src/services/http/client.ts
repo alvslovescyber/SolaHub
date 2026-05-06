@@ -5,13 +5,20 @@ import axios, {
 } from 'axios'
 import { getStorageItem, removeStorageItem, setStorageItem } from '@/lib/safeStorage'
 import { isNetworkError } from '@/lib/networkStatus'
+import type { User } from '@/types/user.types'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 const SESSION_MARKER_KEY = 'solahub:session'
 const LEGACY_ACCESS_TOKEN_KEY = 'solahub:access_token'
 const LEGACY_REFRESH_TOKEN_KEY = 'solahub:refresh_token'
+export const AUTH_SESSION_REFRESHED_EVENT = 'auth:session-refreshed'
 let accessToken: string | null = null
+
+interface RefreshResponse {
+  accessToken: string
+  user?: User
+}
 
 // ─── Token helpers ─────────────────────────────────────────────────────────────
 export const tokenStorage = {
@@ -95,11 +102,14 @@ http.interceptors.response.use(
 
     try {
       refreshPromise = axios
-        .post<{
-          accessToken: string
-        }>(`${API_BASE_URL}/api/auth/refresh`, {}, { withCredentials: true })
+        .post<RefreshResponse>(`${API_BASE_URL}/api/auth/refresh`, {}, { withCredentials: true })
         .then((res) => {
           tokenStorage.set(res.data.accessToken)
+          if (res.data.user) {
+            window.dispatchEvent(
+              new CustomEvent(AUTH_SESSION_REFRESHED_EVENT, { detail: { user: res.data.user } })
+            )
+          }
           return res.data.accessToken
         })
 

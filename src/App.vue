@@ -4,6 +4,8 @@
   import { useUiStore } from '@/stores/ui.store'
   import { useAuthStore } from '@/stores/auth.store'
   import { consumeUpdateReturnRoute } from '@/lib/appUpdate'
+  import { AUTH_SESSION_REFRESHED_EVENT } from '@/services/http/client'
+  import type { User } from '@/types/user.types'
 
   const ui = useUiStore()
   const auth = useAuthStore()
@@ -29,6 +31,12 @@
     auth.handleSessionExpired()
   }
 
+  function onSessionRefreshed(event: Event) {
+    if (isAuthIsolatedRoute.value) return
+    const user = (event as CustomEvent<{ user?: User }>).detail?.user
+    if (user) auth.acceptRefreshedSession(user)
+  }
+
   onMounted(() => {
     ui.initTheme()
     if (isAuthIsolatedRoute.value) return
@@ -42,10 +50,12 @@
       void auth.rehydrate()
     }
     window.addEventListener('auth:session-expired', onSessionExpired)
+    window.addEventListener(AUTH_SESSION_REFRESHED_EVENT, onSessionRefreshed)
   })
 
   onBeforeUnmount(() => {
     window.removeEventListener('auth:session-expired', onSessionExpired)
+    window.removeEventListener(AUTH_SESSION_REFRESHED_EVENT, onSessionRefreshed)
   })
 </script>
 

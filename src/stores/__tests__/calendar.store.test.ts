@@ -225,14 +225,14 @@ describe('weekDays', () => {
     const store = useCalendarStore()
     store.currentDate = new Date('2026-05-06') // Wednesday
     const sunday = startOfWeek(new Date('2026-05-06'), { weekStartsOn: 0 })
-    expect(isoDay(store.weekDays[0]!)).toBe(isoDay(sunday))
+    expect(isoDay(store.weekDays[0])).toBe(isoDay(sunday))
   })
 
   it('ends on Saturday', () => {
     const store = useCalendarStore()
     store.currentDate = new Date('2026-05-06')
     const sunday = startOfWeek(new Date('2026-05-06'), { weekStartsOn: 0 })
-    expect(isoDay(store.weekDays[6]!)).toBe(isoDay(addDays(sunday, 6)))
+    expect(isoDay(store.weekDays[6])).toBe(isoDay(addDays(sunday, 6)))
   })
 })
 
@@ -274,9 +274,7 @@ describe('localStorage resilience', () => {
   })
 
   it('loads previously saved events on initialisation', () => {
-    const saved: CalendarEvent[] = [
-      { ...makeEvent(), id: 'saved-1' } as CalendarEvent,
-    ]
+    const saved: CalendarEvent[] = [{ ...makeEvent(), id: 'saved-1' }]
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saved))
     const store = useCalendarStore()
     expect(store.events).toHaveLength(1)

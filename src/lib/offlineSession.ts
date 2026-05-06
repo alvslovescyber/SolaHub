@@ -4,6 +4,7 @@ import type { User, UserRole } from '@/types/user.types'
 const OFFLINE_USER_KEY = 'solahub:offline-user'
 const OFFLINE_USER_SCHEMA_VERSION = 1
 const USER_ROLES: UserRole[] = ['Member', 'Presenter', 'Pastor', 'Admin']
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu
 
 interface OfflineUserEnvelope {
   schemaVersion: typeof OFFLINE_USER_SCHEMA_VERSION
@@ -33,6 +34,7 @@ function normalizeUser(value: unknown): User | null {
 
   if (
     typeof row.id !== 'string' ||
+    !isUuid(row.id) ||
     typeof row.email !== 'string' ||
     typeof row.displayName !== 'string' ||
     typeof row.createdAt !== 'string' ||
@@ -47,7 +49,7 @@ function normalizeUser(value: unknown): User | null {
     email: row.email,
     displayName: row.displayName,
     role: row.role,
-    churchId: typeof row.churchId === 'string' ? row.churchId : null,
+    churchId: typeof row.churchId === 'string' && isUuid(row.churchId) ? row.churchId : null,
     isEmailVerified: row.isEmailVerified === true,
     isActive: true,
     createdAt: row.createdAt,
@@ -70,4 +72,8 @@ function normalizeOfflineUserCache(value: unknown): User | null {
 
 function isUserRole(value: unknown): value is UserRole {
   return typeof value === 'string' && USER_ROLES.includes(value as UserRole)
+}
+
+function isUuid(value: string): boolean {
+  return UUID_PATTERN.test(value)
 }

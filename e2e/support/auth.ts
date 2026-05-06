@@ -139,11 +139,11 @@ export async function mockAuthenticatedSession(
   overrides: Partial<User> = {}
 ): Promise<User> {
   const user: User = {
-    id: '00000000-0000-0000-0000-000000000001',
+    id: '00000000-0000-4000-8000-000000000001',
     email: 'reliability@example.com',
     displayName: 'Reliability User',
     role: 'Pastor',
-    churchId: 'church-1',
+    churchId: '00000000-0000-4000-8000-000000000002',
     isEmailVerified: true,
     isActive: true,
     createdAt: '2026-05-05T12:00:00.000Z',
@@ -174,7 +174,7 @@ export async function mockStableAppApi(page: Page): Promise<void> {
   const now = '2026-05-05T12:00:00.000Z'
   const note: VerseNote = {
     id: 'note-reliability-1',
-    userId: '00000000-0000-0000-0000-000000000001',
+    userId: '00000000-0000-4000-8000-000000000001',
     verseRef: 'JHN.3.16',
     content: 'Reliability note for route health checks.',
     tags: ['reliability'],
@@ -188,12 +188,12 @@ export async function mockStableAppApi(page: Page): Promise<void> {
     description: 'Stable mocked reading plan for route health checks.',
     status: 'Active',
     isPublic: true,
-    createdBy: '00000000-0000-0000-0000-000000000001',
+    createdBy: '00000000-0000-4000-8000-000000000001',
     createdAt: now,
     days: [{ dayNumber: 1, title: 'John 3', verseRefs: ['JHN.3.16'] }],
     participants: [
       {
-        userId: '00000000-0000-0000-0000-000000000001',
+        userId: '00000000-0000-4000-8000-000000000001',
         displayName: 'Reliability User',
         currentDay: 0,
         joinedAt: now,

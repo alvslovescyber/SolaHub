@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -30,7 +31,9 @@ public sealed class CollaborationHub(
 
     private UserId RequireUserId()
     {
-        var sub = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        var sub =
+            Context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? Context.User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
         if (string.IsNullOrEmpty(sub) || !Guid.TryParse(sub, out var guid))
             throw new HubException("Missing or invalid user identity.");
         return UserId.From(guid);
@@ -79,7 +82,9 @@ public sealed class CollaborationHub(
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var sub = Context.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+        var sub =
+            Context.User?.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? Context.User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
         if (Guid.TryParse(sub, out var guid))
         {
             if (exception is not null)

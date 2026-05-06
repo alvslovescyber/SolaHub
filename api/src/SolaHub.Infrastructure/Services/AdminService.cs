@@ -88,7 +88,7 @@ public sealed class AdminService(AppDbContext db) : IAdminService
         CancellationToken ct = default
     )
     {
-        var userId = new UserId(id);
+        var userId = UserId.From(id);
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
         if (user is null)
             return null;

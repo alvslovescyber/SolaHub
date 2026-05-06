@@ -7,6 +7,7 @@ namespace SolaHub.Infrastructure.Persistence;
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<Church> Churches => Set<Church>();
     public DbSet<VerseNote> VerseNotes => Set<VerseNote>();
     public DbSet<ReadingPlan> ReadingPlans => Set<ReadingPlan>();

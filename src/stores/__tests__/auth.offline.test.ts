@@ -24,11 +24,11 @@ vi.mock('@/services/auth.service', () => ({
 }))
 
 const user: User = {
-  id: 'user-1',
+  id: '00000000-0000-4000-8000-000000000001',
   email: 'pastor@example.com',
   displayName: 'Pastor One',
   role: 'Pastor',
-  churchId: 'church-1',
+  churchId: '00000000-0000-4000-8000-000000000002',
   isEmailVerified: true,
   isActive: true,
   createdAt: '2026-05-05T12:00:00.000Z',
@@ -138,6 +138,44 @@ describe('auth store offline session', () => {
     expect(authMocks.refresh).toHaveBeenCalledOnce()
     expect(auth.hasOfflineSession).toBe(false)
     expect(tokenStorage.getAccess()).toBe(accessToken)
+  })
+
+  it('deduplicates concurrent session refreshes', async () => {
+    tokenStorage.set('expired-access')
+    let resolveRefresh: (value: AuthResponse) => void = () => {}
+    authMocks.refresh.mockReturnValue(
+      new Promise<AuthResponse>((resolve) => {
+        resolveRefresh = resolve
+      })
+    )
+
+    const auth = useAuthStore()
+    const first = auth.rehydrate({ force: true })
+    const second = auth.rehydrate({ force: true })
+
+    expect(authMocks.refresh).toHaveBeenCalledOnce()
+
+    tokenStorage.set('access')
+    resolveRefresh(authResponse)
+    await Promise.all([first, second])
+
+    expect(auth.user).toEqual(user)
+    expect(auth.hasOfflineSession).toBe(false)
+  })
+
+  it('accepts background refresh user data as an online session', () => {
+    tokenStorage.set('access')
+    saveOfflineUser(user)
+
+    const auth = useAuthStore()
+    auth.restoreOfflineUser()
+    expect(auth.hasOfflineSession).toBe(true)
+
+    auth.acceptRefreshedSession({ ...user, role: 'Admin' })
+
+    expect(auth.user?.role).toBe('Admin')
+    expect(auth.hasOfflineSession).toBe(false)
+    expect(loadOfflineUser()?.role).toBe('Admin')
   })
 
   it('clears tokens and cached user when refresh is rejected by the API', async () => {

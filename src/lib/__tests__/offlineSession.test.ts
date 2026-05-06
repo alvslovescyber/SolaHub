@@ -3,11 +3,11 @@ import { clearOfflineUser, loadOfflineUser, saveOfflineUser } from '@/lib/offlin
 import type { User } from '@/types/user.types'
 
 const user: User = {
-  id: 'user-1',
+  id: '00000000-0000-4000-8000-000000000001',
   email: 'pastor@example.com',
   displayName: 'Pastor One',
   role: 'Pastor',
-  churchId: 'church-1',
+  churchId: '00000000-0000-4000-8000-000000000002',
   isEmailVerified: true,
   isActive: true,
   createdAt: '2026-05-05T12:00:00.000Z',
@@ -56,6 +56,18 @@ describe('offlineSession', () => {
     saveOfflineUser({ ...user, isActive: false })
 
     expect(loadOfflineUser()).toBeNull()
+  })
+
+  it('rejects cached users without a UUID user id', () => {
+    localStorage.setItem('solahub:offline-user', JSON.stringify({ ...user, id: 'user-1' }))
+
+    expect(loadOfflineUser()).toBeNull()
+  })
+
+  it('drops invalid cached church ids instead of trusting them', () => {
+    localStorage.setItem('solahub:offline-user', JSON.stringify({ ...user, churchId: 'church-1' }))
+
+    expect(loadOfflineUser()).toEqual({ ...user, churchId: null })
   })
 
   it('returns null for malformed cached user data', () => {
