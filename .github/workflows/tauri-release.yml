@@ -229,7 +229,8 @@ jobs:
           # Prefer the explicit versioned path; fall back to shell glob.
           NSIS_ZIP="${NSIS_DIR}/SolaHub_${VERSION}_x64-setup.nsis.zip"
           if [ ! -f "$NSIS_ZIP" ]; then
-            NSIS_ZIP=$(ls "${NSIS_DIR}"/*.nsis.zip 2>/dev/null | head -1)
+            # || true: ls returns 2 when the glob finds no files; prevent set -e from aborting
+            NSIS_ZIP=$(ls "${NSIS_DIR}"/*.nsis.zip 2>/dev/null | head -1) || true
           fi
           if [ -z "$NSIS_ZIP" ] || [ ! -f "$NSIS_ZIP" ]; then
             echo "No NSIS zip found — skipping fallback signing"
