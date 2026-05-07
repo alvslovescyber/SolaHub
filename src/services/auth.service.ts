@@ -8,13 +8,13 @@ export const authService = {
       password,
       displayName,
     })
-    tokenStorage.set(res.data.accessToken)
+    tokenStorage.set(res.data.accessToken, res.data.refreshToken)
     return res.data
   },
 
   async login(email: string, password: string): Promise<AuthResponse> {
     const res = await http.post<AuthResponse>('/api/auth/login', { email, password })
-    tokenStorage.set(res.data.accessToken)
+    tokenStorage.set(res.data.accessToken, res.data.refreshToken)
     return res.data
   },
 
@@ -31,8 +31,10 @@ export const authService = {
 
   async refresh(): Promise<AuthResponse> {
     if (!tokenStorage.hasSession()) throw new Error('No active session available')
-    const res = await http.post<AuthResponse>('/api/auth/refresh', {})
-    tokenStorage.set(res.data.accessToken)
+    const res = await http.post<AuthResponse>('/api/auth/refresh', {
+      refreshToken: tokenStorage.getRefresh(),
+    })
+    tokenStorage.set(res.data.accessToken, res.data.refreshToken)
     return res.data
   },
 

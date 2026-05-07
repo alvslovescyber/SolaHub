@@ -10,6 +10,7 @@ import type { User } from '@/types/user.types'
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 const SESSION_MARKER_KEY = 'solahub:session'
+const REFRESH_TOKEN_KEY = 'solahub:rt'
 const LEGACY_ACCESS_TOKEN_KEY = 'solahub:access_token'
 const LEGACY_REFRESH_TOKEN_KEY = 'solahub:refresh_token'
 export const AUTH_SESSION_REFRESHED_EVENT = 'auth:session-refreshed'
@@ -17,22 +18,26 @@ let accessToken: string | null = null
 
 interface RefreshResponse {
   accessToken: string
+  refreshToken: string
   user?: User
 }
 
 // ─── Token helpers ─────────────────────────────────────────────────────────────
 export const tokenStorage = {
   getAccess: () => accessToken,
+  getRefresh: () => getStorageItem(REFRESH_TOKEN_KEY),
   hasSession: () => getStorageItem(SESSION_MARKER_KEY) === '1',
-  set: (access: string) => {
+  set: (access: string, refresh?: string) => {
     accessToken = access
     setStorageItem(SESSION_MARKER_KEY, '1')
+    if (refresh) setStorageItem(REFRESH_TOKEN_KEY, refresh)
     removeStorageItem(LEGACY_ACCESS_TOKEN_KEY)
     removeStorageItem(LEGACY_REFRESH_TOKEN_KEY)
   },
   clear: () => {
     accessToken = null
     removeStorageItem(SESSION_MARKER_KEY)
+    removeStorageItem(REFRESH_TOKEN_KEY)
     removeStorageItem(LEGACY_ACCESS_TOKEN_KEY)
     removeStorageItem(LEGACY_REFRESH_TOKEN_KEY)
   },
@@ -102,9 +107,13 @@ http.interceptors.response.use(
 
     try {
       refreshPromise = axios
-        .post<RefreshResponse>(`${API_BASE_URL}/api/auth/refresh`, {}, { withCredentials: true })
+        .post<RefreshResponse>(
+          `${API_BASE_URL}/api/auth/refresh`,
+          { refreshToken: tokenStorage.getRefresh() },
+          { withCredentials: true }
+        )
         .then((res) => {
-          tokenStorage.set(res.data.accessToken)
+          tokenStorage.set(res.data.accessToken, res.data.refreshToken)
           if (res.data.user) {
             window.dispatchEvent(
               new CustomEvent(AUTH_SESSION_REFRESHED_EVENT, { detail: { user: res.data.user } })

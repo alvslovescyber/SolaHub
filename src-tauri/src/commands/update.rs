@@ -70,6 +70,7 @@ pub enum UpdateDownloadEvent {
     Progress {
         chunk_length: usize,
     },
+    Installing,
     Finished,
 }
 
@@ -119,12 +120,17 @@ pub async fn install_app_update(
                 let _ = on_event.send(UpdateDownloadEvent::Progress { chunk_length });
             },
             || {
-                let _ = on_event.send(UpdateDownloadEvent::Finished);
+                // Download complete, installation beginning.
+                let _ = on_event.send(UpdateDownloadEvent::Installing);
             },
         )
         .await
         .map_err(|error| error.to_string())?;
 
+    // Installation succeeded — signal the UI then give it a moment to render
+    // "Restarting" before the process is replaced.
+    let _ = on_event.send(UpdateDownloadEvent::Finished);
+    tokio::time::sleep(std::time::Duration::from_millis(150)).await;
     app.restart();
 }
 

@@ -17,5 +17,6 @@ export interface AuthTokens {
 }
 
 export interface AuthResponse extends AuthTokens {
+  refreshToken: string
   user: User
 }

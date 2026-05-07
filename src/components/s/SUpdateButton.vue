@@ -26,6 +26,7 @@
   type UpdateDownloadEvent =
     | { event: 'Started'; data: { contentLength?: number | null } }
     | { event: 'Progress'; data: { chunkLength: number } }
+    | { event: 'Installing' }
     | { event: 'Finished' }
 
   const props = defineProps<Props>()
@@ -38,6 +39,7 @@
   const status = ref<UpdateStatus>('idle')
   const downloadedBytes = ref(0)
   const contentLength = ref<number | null>(null)
+  const willRestart = ref(false)
 
   const progressPercent = computed(() => {
     if (!contentLength.value || contentLength.value <= 0) return null
@@ -85,12 +87,13 @@
         downloadedBytes.value += event.data.chunkLength
         return
       }
-      // Finished = install complete, app.restart() is about to fire on the Rust side.
-      status.value = 'installing'
-      // Brief delay so "Installing" renders before Rust transitions to "Restarting".
-      setTimeout(() => {
-        status.value = 'restarting'
-      }, 400)
+      if (event.event === 'Installing') {
+        status.value = 'installing'
+        return
+      }
+      // Finished = installation succeeded, app.restart() fires in ~150ms.
+      willRestart.value = true
+      status.value = 'restarting'
     })
 
     try {
@@ -112,15 +115,17 @@
       }
     } catch (error) {
       clearUpdateReturnRoute()
-      // When app.restart() fires on the Rust side the IPC closes and invoke() rejects.
-      // status is already 'installing'/'restarting' at that point — not a real error.
-      if (status.value === 'installing' || status.value === 'restarting') return
+      // When app.restart() fires the IPC closes and invoke() rejects — not a real error.
+      if (willRestart.value) return
       toast.error('Update failed', extractErrorMessage(error))
     } finally {
-      busy.value = false
-      status.value = 'idle'
-      downloadedBytes.value = 0
-      contentLength.value = null
+      // Don't reset state when restarting — the app is about to die anyway.
+      if (!willRestart.value) {
+        busy.value = false
+        status.value = 'idle'
+        downloadedBytes.value = 0
+        contentLength.value = null
+      }
     }
   }
 

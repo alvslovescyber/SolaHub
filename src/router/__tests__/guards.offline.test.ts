@@ -42,6 +42,7 @@ const member: User = {
 const authResponse: AuthResponse = {
   user: pastor,
   accessToken: 'access',
+  refreshToken: 'refresh',
   expiresAt: '2026-05-05T13:00:00.000Z',
 }
 
