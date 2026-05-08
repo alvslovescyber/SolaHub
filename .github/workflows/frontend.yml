@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/**'
       - 'src-tauri/**'
+      - 'e2e/**'
       - 'package.json'
       - 'package-lock.json'
       - 'vite.config.ts'
@@ -13,12 +14,14 @@ on:
       - 'postcss.config.js'
       - 'tsconfig*.json'
       - 'eslint.config.ts'
+      - 'playwright.config.ts'
       - '.github/workflows/frontend.yml'
   pull_request:
     branches: [main]
     paths:
       - 'src/**'
       - 'src-tauri/**'
+      - 'e2e/**'
       - 'package.json'
       - 'package-lock.json'
       - 'vite.config.ts'
@@ -26,6 +29,7 @@ on:
       - 'postcss.config.js'
       - 'tsconfig*.json'
       - 'eslint.config.ts'
+      - 'playwright.config.ts'
       - '.github/workflows/frontend.yml'
 
 concurrency:
@@ -34,11 +38,14 @@ concurrency:
 
 env:
   NODE_VERSION: '22'
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
 
 jobs:
   js:
-    name: JS — Lint, Types, Tests & Build
-    runs-on: [self-hosted, macOS, ARM64]
+    name: JS — Lint, Format, Types, Tests & Build
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -72,8 +79,7 @@ jobs:
 
   rust:
     name: Rust — Format, Lint & Tests
-    runs-on: [self-hosted, macOS, ARM64]
-    needs: js
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -98,3 +104,78 @@ jobs:
 
       - name: Tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features
+
+  e2e:
+    name: E2E — Playwright
+    runs-on: ubuntu-latest
+    needs: js
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Restore .NET dependencies
+        run: dotnet restore api/SolaHub.sln
+
+      - name: Build API
+        run: dotnet build api/SolaHub.sln --no-restore --configuration Release
+
+      - name: Setup database users
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c "CREATE USER solahub_app WITH PASSWORD 'app-test-password';"
+          psql -h localhost -U postgres -c "CREATE USER test WITH SUPERUSER PASSWORD 'test';"
+          psql -h localhost -U postgres -c "CREATE DATABASE solahub_test OWNER test;"
+          psql -h localhost -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE solahub_test TO solahub_app;"
+
+      - name: Run E2E tests
+        run: npx playwright test
+        env:
+          CI: true
+          VITE_API_URL: http://localhost:5000
+          E2E_WEB_PORT: '3000'
+          E2E_API_PORT: '5000'
+          ConnectionStrings__DefaultConnection: 'Host=localhost;Port=5432;Database=solahub_test;Username=solahub_app;Password=app-test-password'
+          ConnectionStrings__MigrationConnection: 'Host=localhost;Port=5432;Database=solahub_test;Username=test;Password=test'
+          Database__AppRolePassword: 'app-test-password'
+          Jwt__SecretKey: 'playwright-secret-key-must-be-at-least-32-bytes!!'
+          Jwt__Issuer: 'SolaHub'
+          Jwt__Audience: 'SolaHub.Desktop'
+          Cors__AllowedOrigins: 'http://127.0.0.1:3000'
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

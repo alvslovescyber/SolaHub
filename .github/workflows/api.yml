@@ -23,8 +23,8 @@ env:
 
 jobs:
   build:
-    name: Lint, Build & Unit Tests
-    runs-on: [self-hosted, macOS, ARM64]
+    name: Format, Build & Unit Tests
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -38,7 +38,7 @@ jobs:
 
       - name: Format check (CSharpier)
         run: |
-          dotnet tool restore --tool-manifest api/.config/dotnet-tools.json 2>/dev/null || dotnet tool restore
+          dotnet tool restore --tool-manifest api/.config/dotnet-tools.json
           dotnet tool run csharpier check .
         working-directory: api
 
@@ -62,9 +62,9 @@ jobs:
 
   integration:
     name: Integration Tests
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: ubuntu-latest
     needs: build
-    continue-on-error: true
+
     steps:
       - uses: actions/checkout@v4
 
@@ -72,9 +72,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Check Docker availability
-        run: docker info || (echo "Docker not available — skipping" && exit 0)
 
       - name: Restore
         run: dotnet restore api/SolaHub.sln

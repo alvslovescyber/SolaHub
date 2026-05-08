@@ -15,7 +15,7 @@ env:
 jobs:
   publish:
     name: Upload installers, updater feed, and downloads page to R2
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -86,7 +86,9 @@ jobs:
         run: |
           TAG=${{ inputs.tag }}
           VERSION=${TAG#v}
-          sed "s/__VERSION__/${VERSION}/g" scripts/downloads.template.html > dist/downloads.html
+          sed -e "s/__MAC_VERSION__/${VERSION}/g" \
+              -e "s/__WIN_VERSION__/${VERSION}/g" \
+              scripts/downloads.template.html > dist/downloads.html
           npx wrangler r2 object put "${{ env.R2_BUCKET }}/downloads.html" \
             --file dist/downloads.html \
             --content-type "text/html; charset=utf-8" \

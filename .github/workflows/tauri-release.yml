@@ -27,10 +27,9 @@ env:
 jobs:
   build-macos:
     name: macOS (${{ matrix.label }})
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: macos-latest
     strategy:
       fail-fast: false
-      max-parallel: 1
       matrix:
         include:
           - arch: aarch64-apple-darwin
@@ -125,9 +124,6 @@ jobs:
             --password ""
           [ -f "${ARCHIVE}.sig" ] && echo "✓ Signature generated" || { echo "::error::signing did not produce .sig — check TAURI_SIGNING_PRIVATE_KEY format"; exit 1; }
 
-      # Upload deterministic updater artifacts so latest.json can point at stable names.
-      # We rename the files before upload to avoid relying on the `#display-name` gh CLI
-      # syntax, which silently misbehaves when --clobber replaces an existing asset.
       - name: Upload updater archive and .sig to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -258,7 +254,7 @@ jobs:
     name: Publish update artifacts to R2
     needs: [build-macos, build-windows]
     if: always() && needs.build-macos.result == 'success'
-    runs-on: [self-hosted, macOS, ARM64]
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -285,7 +281,6 @@ jobs:
           echo "--- Downloaded ---"
           ls -lh ./dist/
 
-      # Upload all installer binaries first so they exist before latest.json goes live
       - name: Upload binaries to R2
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -301,8 +296,6 @@ jobs:
               --remote
           done
 
-      # Build latest.json ourselves from the .sig files.
-      # --windows-optional: publish macOS-only latest.json if Windows build failed.
       - name: Build latest.json from signatures
         run: |
           python3 scripts/generate-tauri-latest-json.py \
@@ -315,7 +308,6 @@ jobs:
           R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
           TAG: ${{ env.RELEASE_TAG }}
 
-      # latest.json goes live last — once published, users will be offered the update
       - name: Publish latest.json to R2
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -334,16 +326,15 @@ jobs:
           R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
         run: |
           TAG=${{ env.RELEASE_TAG }}
-          MAC_VERSION=${TAG#v}
-          WIN_VERSION="$MAC_VERSION"
-          sed -e "s/__MAC_VERSION__/${MAC_VERSION}/g" \
-              -e "s/__WIN_VERSION__/${WIN_VERSION}/g" \
+          VERSION=${TAG#v}
+          sed -e "s/__MAC_VERSION__/${VERSION}/g" \
+              -e "s/__WIN_VERSION__/${VERSION}/g" \
               scripts/downloads.template.html > dist/downloads.html
           npx wrangler r2 object put "${{ env.R2_BUCKET }}/downloads.html" \
             --file dist/downloads.html \
             --content-type "text/html; charset=utf-8" \
             --remote
-          echo "✅ downloads.html live (macOS v${MAC_VERSION}, Windows v${WIN_VERSION})"
+          echo "✅ downloads.html live (v${VERSION})"
 
       - name: Clean up old versions from R2
         continue-on-error: true
