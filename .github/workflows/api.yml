@@ -50,7 +50,7 @@ jobs:
           dotnet test api/tests/SolaHub.Tests.Unit/SolaHub.Tests.Unit.csproj
           --no-build
           --configuration Release
-          --logger "trx;LogFileName=unit-results.xml"
+          --logger trx
 
       - name: Upload test results
         if: always()
@@ -84,7 +84,7 @@ jobs:
           dotnet test api/tests/SolaHub.Tests.Integration/SolaHub.Tests.Integration.csproj
           --no-build
           --configuration Release
-          --logger "trx;LogFileName=integration-results.xml"
+          --logger trx
         env:
           ConnectionStrings__DefaultConnection: >-
             Host=localhost;Port=5432;Database=solahub_test;Username=solahub_app;Password=app-test-password
