@@ -155,10 +155,109 @@ jobs:
             --repo ${{ github.repository }} --clobber
           echo "Uploaded SolaHub_${LABEL}.app.tar.gz and SolaHub_${LABEL}.app.tar.gz.sig"
 
+  build-windows:
+    name: Windows (x64)
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify checkout
+        shell: bash
+        run: |
+          echo "=== Build info ==="
+          echo "Tag:    ${{ env.RELEASE_TAG }}"
+          echo "Commit: $(git rev-parse HEAD)"
+          echo "Subject: $(git log -1 --format='%s')"
+          VERSION=$(python3 -c "import json; print(json.load(open('src-tauri/tauri.conf.json'))['version'])")
+          echo "App version in tauri.conf.json: $VERSION"
+          EXPECTED="${{ env.RELEASE_TAG }}"
+          EXPECTED="${EXPECTED#v}"
+          if [ "$VERSION" != "$EXPECTED" ]; then
+            echo "::error::tauri.conf.json version ($VERSION) does not match tag (${{ env.RELEASE_TAG }})"
+            exit 1
+          fi
+          echo "✓ Version matches tag"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Inject updater config
+        shell: bash
+        run: python3 scripts/inject-updater-config.py
+        env:
+          SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
+          R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
+
+      - name: Build & sign Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+          SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
+        with:
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: SolaHub ${{ env.RELEASE_TAG }}
+          releaseBody: |
+            ## What's new
+            See the [changelog](https://github.com/alvslovescyber/SolaHub/blob/main/CHANGELOG.md) for details.
+
+            ### Download
+            - **macOS Apple Silicon** — `SolaHub_*_aarch64.dmg`
+            - **macOS Intel** — `SolaHub_*_x64.dmg`
+            - **Windows** — `SolaHub_*_x64-setup.exe`
+          releaseDraft: false
+          prerelease: true
+          args: --target x86_64-pc-windows-msvc
+          includeUpdaterJson: false
+
+      - name: Upload updater archive and .sig to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${{ env.RELEASE_TAG }}
+          BUNDLE_DIR="src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis"
+          ARCHIVE=$(find "$BUNDLE_DIR" -name "*.nsis.zip" ! -name "*.sig" 2>/dev/null | head -1)
+          SIG=$(find "$BUNDLE_DIR" -name "*.nsis.zip.sig" 2>/dev/null | head -1)
+          if [ -z "$ARCHIVE" ] || [ ! -f "$ARCHIVE" ]; then
+            echo "No updater archive found"
+            exit 1
+          fi
+          if [ -z "$SIG" ] || [ ! -f "$SIG" ]; then
+            echo "No updater signature found"
+            exit 1
+          fi
+          UPLOAD_DIR=$(mktemp -d)
+          cp "$ARCHIVE" "$UPLOAD_DIR/SolaHub_x64.nsis.zip"
+          cp "$SIG"     "$UPLOAD_DIR/SolaHub_x64.nsis.zip.sig"
+          gh release upload "$TAG" "$UPLOAD_DIR/SolaHub_x64.nsis.zip" \
+            --repo ${{ github.repository }} --clobber
+          gh release upload "$TAG" "$UPLOAD_DIR/SolaHub_x64.nsis.zip.sig" \
+            --repo ${{ github.repository }} --clobber
+          echo "Uploaded SolaHub_x64.nsis.zip and SolaHub_x64.nsis.zip.sig"
+
   publish-r2:
     name: Publish update artifacts to R2
-    needs: [build-macos]
-    if: needs.build-macos.result == 'success'
+    needs: [build-macos, build-windows]
+    if: always() && needs.build-macos.result == 'success'
     runs-on: [self-hosted, macOS, ARM64]
 
     steps:
@@ -236,17 +335,7 @@ jobs:
         run: |
           TAG=${{ env.RELEASE_TAG }}
           MAC_VERSION=${TAG#v}
-
-          # Windows version: use current if we built it, else find latest on R2
-          if ls dist/*.nsis.zip 1>/dev/null 2>&1 || ls dist/*-setup.exe 1>/dev/null 2>&1; then
-            WIN_VERSION="$MAC_VERSION"
-            echo "Windows artifacts present — WIN_VERSION=${WIN_VERSION}"
-          else
-            echo "No Windows artifacts for this release — scanning R2 for latest Windows build..."
-            WIN_VERSION=$(python3 scripts/find-latest-windows.py)
-            echo "Latest Windows version on R2: ${WIN_VERSION}"
-          fi
-
+          WIN_VERSION="$MAC_VERSION"
           sed -e "s/__MAC_VERSION__/${MAC_VERSION}/g" \
               -e "s/__WIN_VERSION__/${WIN_VERSION}/g" \
               scripts/downloads.template.html > dist/downloads.html
