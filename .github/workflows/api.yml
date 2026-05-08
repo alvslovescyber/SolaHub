@@ -38,7 +38,7 @@ jobs:
 
       - name: Format check (CSharpier)
         run: |
-          dotnet tool restore --tool-manifest api/.config/dotnet-tools.json
+          dotnet tool restore --tool-manifest .config/dotnet-tools.json
           dotnet tool run csharpier check .
         working-directory: api
 
