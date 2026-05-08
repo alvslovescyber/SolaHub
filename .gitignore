@@ -39,6 +39,11 @@ appsettings.Test.json
 # ─── Local tooling config (may contain embedded credentials) ──────────────────
 .claude/settings.local.json
 
+# ─── Internal / private docs (not for public consumption) ─────────────────────
+.audit/
+docs/AUDIT_MASTER_CHECKLIST.md
+docs/SCALABILITY.md
+
 # ─── IDE: VS Code ─────────────────────────────────────────────────────────────
 # Shared project configs are tracked; personal overrides are not.
 .vscode/*
