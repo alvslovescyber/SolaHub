@@ -1,0 +1,16 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=solahub_test;Username=solahub_app;Password=YOUR_APP_PASSWORD",
+    "MigrationConnection": "Host=localhost;Port=5432;Database=solahub_test;Username=YOUR_MIGRATION_USER;Password=YOUR_MIGRATION_PASSWORD"
+  },
+  "Database": {
+    "AppRolePassword": "YOUR_APP_PASSWORD"
+  },
+  "Jwt": {
+    "SecretKey": "YOUR_TEST_JWT_SECRET_MUST_BE_AT_LEAST_32_BYTES_LONG",
+    "Issuer": "SolaHub",
+    "Audience": "SolaHub.Desktop",
+    "AccessTokenExpiryMinutes": 60,
+    "RefreshTokenExpiryDays": 30
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Information",
+      "Microsoft.EntityFrameworkCore.Database.Command": "Information"
+    }
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5433;Database=solahub_dev;Username=postgres;Password=YOUR_POSTGRES_PASSWORD;Include Error Detail=true",
+    "Redis": ""
+  },
+  "Jwt": {
+    "SecretKey": "YOUR_JWT_SECRET_KEY_MUST_BE_AT_LEAST_32_BYTES_LONG",
+    "Issuer": "SolaHub",
+    "Audience": "SolaHub.Desktop",
+    "AccessTokenExpiryMinutes": 60,
+    "RefreshTokenExpiryDays": 7
+  }
+}

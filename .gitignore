@@ -30,9 +30,14 @@ src-tauri/gen/           # Tauri auto-generated Android/iOS scaffolding
 .env.local
 .env.*.local
 !.env.example
-# ASP.NET Core user secrets
+# ASP.NET Core user secrets and local overrides
 **/secrets.json
 appsettings.Production.json
+appsettings.Development.json
+appsettings.Test.json
+
+# ─── Local tooling config (may contain embedded credentials) ──────────────────
+.claude/settings.local.json
 
 # ─── IDE: VS Code ─────────────────────────────────────────────────────────────
 # Shared project configs are tracked; personal overrides are not.

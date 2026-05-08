@@ -1,0 +1,101 @@
+SolaHub Source Available License
+Version 1.0, 2026
+
+Copyright (c) 2026 SolaHub. All rights reserved.
+
+TERMS AND CONDITIONS
+
+1. DEFINITIONS
+
+"Software" refers to SolaHub and all associated source code, documentation,
+assets, configuration, and build files contained in this repository.
+
+"You" refers to any individual or legal entity exercising rights under this
+License.
+
+"Commercial Use" means any use of the Software, in whole or in part, that
+is primarily intended for commercial advantage or monetary compensation,
+including but not limited to: incorporating the Software into a product or
+service sold to end users, using the Software to provide paid services to
+third parties, or operating the Software as part of a revenue-generating
+business.
+
+2. GRANT OF RIGHTS
+
+Subject to the terms and conditions of this License, you are granted a
+limited, non-exclusive, non-transferable, revocable right to:
+
+  a) View and read the source code for personal learning and educational
+     purposes.
+
+  b) Run the Software locally on your own machine for personal,
+     non-commercial use.
+
+  c) Fork this repository on GitHub solely for the purpose of contributing
+     improvements back to this project via pull requests.
+
+3. RESTRICTIONS
+
+You may NOT, without prior written permission from the copyright holder:
+
+  a) Use, copy, modify, merge, sublicense, distribute, or sell copies of
+     the Software or any substantial portion thereof for Commercial Use.
+
+  b) Redistribute the Software or any derivative works, whether in source
+     or binary form, to any third party.
+
+  c) Use the Software's name, branding, logos, or trade dress to endorse
+     or promote any product or service derived from this Software.
+
+  d) Remove or alter any copyright notices, license notices, or attributions
+     contained in the Software.
+
+  e) Deploy a modified or unmodified version of this Software as a public-
+     facing service or product without written permission.
+
+  f) Use the Software's code, architecture, or design as the basis for a
+     competing product.
+
+4. CONTRIBUTIONS
+
+By submitting a pull request or otherwise contributing code to this project,
+you agree that your contribution will be licensed under the same terms as
+this License, and you represent that you have the right to grant such a
+license.
+
+5. ATTRIBUTION
+
+Any permitted use of the Software must retain this copyright notice and
+license text in all copies or substantial portions of the Software.
+
+6. DISCLAIMER OF WARRANTIES
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. THE COPYRIGHT HOLDER
+MAKES NO REPRESENTATIONS ABOUT THE SUITABILITY OF THIS SOFTWARE FOR ANY
+PURPOSE.
+
+7. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES,
+OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE,
+ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+8. TERMINATION
+
+This License and all rights granted herein terminate automatically if you
+fail to comply with any of its terms. Upon termination, you must destroy
+all copies of the Software in your possession.
+
+9. GOVERNING LAW
+
+This License shall be governed by and construed in accordance with
+applicable law, without regard to conflict of law principles.
+
+---
+
+For commercial licensing inquiries, sponsorship, or to request permissions
+beyond the scope of this License, please open an issue on the project's
+GitHub repository.
