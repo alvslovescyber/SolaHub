@@ -24,6 +24,9 @@ config.setdefault('plugins', {})['updater'] = {
     'endpoints': [r2_base + '/latest.json'],
 }
 
+# Required for Tauri 2 to produce .nsis.zip/.app.tar.gz updater bundles.
+config.setdefault('bundle', {})['createUpdaterArtifacts'] = 'v1Compatible'
+
 with open('src-tauri/tauri.conf.json', 'w') as f:
     json.dump(config, f, indent=2)
 
