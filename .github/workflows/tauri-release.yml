@@ -301,3 +301,19 @@ jobs:
             --clobber
           echo "✅ latest.json uploaded to release ${{ env.RELEASE_TAG }}"
           echo "🔗 Update endpoint: https://github.com/${{ github.repository }}/releases/latest/download/latest.json"
+
+      # Trigger the solahub.org landing page to redeploy so download links
+      # reflect the new version immediately (no waiting for ISR cache expiry).
+      # Requires secret RAILWAY_WEBSITE_SERVICE_ID and RAILWAY_TOKEN.
+      - name: Redeploy solahub.org landing page
+        if: ${{ secrets.RAILWAY_TOKEN != '' && secrets.RAILWAY_WEBSITE_SERVICE_ID != '' }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          SERVICE_ID: ${{ secrets.RAILWAY_WEBSITE_SERVICE_ID }}
+        run: |
+          curl -s --fail-with-body -X POST "https://backboard.railway.app/graphql/v2" \
+            -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": \"mutation { serviceInstanceRedeploy(serviceId: \\\"$SERVICE_ID\\\") }\"}" \
+          && echo "✅ Landing page redeploy triggered" \
+          || echo "⚠️  Landing page redeploy skipped (check RAILWAY_TOKEN / RAILWAY_WEBSITE_SERVICE_ID secrets)"

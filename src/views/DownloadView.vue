@@ -2,7 +2,7 @@
   import { DownloadIcon, ArrowLeftIcon, ExternalLinkIcon } from 'lucide-vue-next'
 
   const WEBSITE_URL = 'https://solahub.org'
-  const version = '0.1.13'
+  const version = '0.1.14'
   const GH_BASE = `https://github.com/alvslovescyber/SolaHub/releases/download/v${version}`
 
   const downloads = {

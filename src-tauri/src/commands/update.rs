@@ -130,7 +130,7 @@ pub async fn install_app_update(
     // Installation succeeded — signal the UI then give it a moment to render
     // "Restarting" before the process is replaced.
     let _ = on_event.send(UpdateDownloadEvent::Finished);
-    tokio::time::sleep(std::time::Duration::from_millis(150)).await;
+    tokio::time::sleep(std::time::Duration::from_millis(400)).await;
     app.restart();
 }
 

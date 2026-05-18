@@ -40,6 +40,7 @@
   const downloadedBytes = ref(0)
   const contentLength = ref<number | null>(null)
   const willRestart = ref(false)
+  let restartDeadlineId: ReturnType<typeof setTimeout> | null = null
 
   const progressPercent = computed(() => {
     if (!contentLength.value || contentLength.value <= 0) return null
@@ -94,6 +95,15 @@
       // Finished = installation succeeded, app.restart() fires in ~150ms.
       willRestart.value = true
       status.value = 'restarting'
+      // Safety net: if the process hasn't died within 10s, the restart silently
+      // failed on this platform. Reset the UI and tell the user to reopen manually.
+      restartDeadlineId = setTimeout(() => {
+        willRestart.value = false
+        busy.value = false
+        status.value = 'idle'
+        done.value = true
+        toast.success('Update installed', 'Please quit and reopen SolaHub to apply the update.')
+      }, 10_000)
     })
 
     try {
@@ -116,7 +126,14 @@
     } catch (error) {
       clearUpdateReturnRoute()
       // When app.restart() fires the IPC closes and invoke() rejects — not a real error.
-      if (willRestart.value) return
+      if (willRestart.value) {
+        // Process did exit — cancel the fallback timer, it's no longer needed.
+        if (restartDeadlineId !== null) {
+          clearTimeout(restartDeadlineId)
+          restartDeadlineId = null
+        }
+        return
+      }
       toast.error('Update failed', extractErrorMessage(error))
     } finally {
       // Don't reset state when restarting — the app is about to die anyway.

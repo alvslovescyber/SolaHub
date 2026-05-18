@@ -82,6 +82,14 @@ export const routes: RouteRecordRaw[] = [
         name: 'settings',
         component: () => import('@/views/SettingsView.vue'),
       },
+
+      // ADMIN
+      {
+        path: 'admin',
+        name: 'admin',
+        component: () => import('@/views/AdminView.vue'),
+        meta: { requiresAdmin: true },
+      },
     ],
   },
 
@@ -99,14 +107,6 @@ export const routes: RouteRecordRaw[] = [
     name: 'download',
     component: () => import('@/views/DownloadView.vue'),
     meta: { authIsolated: true },
-  },
-
-  // ─── Admin ───────────────────────────────────────────────────────────────────
-  {
-    path: '/admin',
-    name: 'admin',
-    component: () => import('@/views/AdminView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true },
   },
 
   // ─── 404 ────────────────────────────────────────────────────────────────────

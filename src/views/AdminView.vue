@@ -142,11 +142,9 @@
   const confirmDeactivateId = ref<string | null>(null)
   const confirmRevokeId = ref<string | null>(null)
 
-  // Reset password modal state
   const resetPwModal = ref({ show: false, loading: false, tempPassword: null as string | null })
   const copiedPassword = ref(false)
 
-  // Delete confirm modal state
   const deleteModal = ref({
     show: false,
     loading: false,
@@ -331,19 +329,30 @@
 </script>
 
 <template>
-  <div class="flex flex-col h-full overflow-hidden bg-surface-canvas">
-    <!-- ── Header + tabs ─────────────────────────────────────────────────────── -->
-    <div class="shrink-0 border-b border-line px-6 pt-5 pb-0">
-      <div class="flex items-center gap-3 mb-4">
+  <div class="flex flex-col h-full overflow-hidden">
+    <!-- ── Header ─────────────────────────────────────────────────────────────── -->
+    <div class="shrink-0 border-b border-line px-5 pt-4 pb-0">
+      <div class="flex items-center gap-2.5 mb-3.5">
         <div
-          class="w-9 h-9 rounded-lg bg-purple-500/10 dark:bg-purple-500/15 flex items-center justify-center shrink-0"
+          class="w-7 h-7 rounded-md bg-purple-500/10 dark:bg-purple-500/15 flex items-center justify-center shrink-0"
         >
-          <ShieldCheckIcon class="w-4 h-4 text-purple-600 dark:text-purple-400" />
+          <ShieldCheckIcon class="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
         </div>
-        <div>
-          <h1 class="text-base font-semibold text-ink-strong leading-tight">Admin</h1>
-          <p class="text-xs text-ink-muted">Manage users and monitor platform activity</p>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-sm font-semibold text-ink-strong leading-tight">Admin</h1>
+          <p class="text-xs text-ink-subtle">Platform management</p>
         </div>
+        <button
+          class="w-7 h-7 rounded-md flex items-center justify-center text-ink-subtle hover:text-ink-strong hover:bg-surface-sunken transition-colors"
+          title="Refresh"
+          @click="
+            loadStats()
+            loadUsers()
+            loadRecentUsers()
+          "
+        >
+          <RefreshCwIcon class="w-3.5 h-3.5" />
+        </button>
       </div>
 
       <nav class="flex gap-0.5" role="tablist">
@@ -356,7 +365,7 @@
           role="tab"
           :aria-selected="activeTab === tab.id"
           :class="[
-            'flex items-center gap-1.5 px-3.5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
+            'flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors',
             activeTab === tab.id
               ? 'border-purple-600 text-purple-700 dark:border-purple-400 dark:text-purple-300'
               : 'border-transparent text-ink-muted hover:text-ink-strong',
@@ -367,7 +376,7 @@
           {{ tab.label }}
           <span
             v-if="tab.id === 'users' && usersData"
-            class="ml-0.5 px-1.5 py-0.5 rounded-full text-xs font-normal bg-surface-sunken text-ink-muted"
+            class="ml-0.5 px-1.5 py-0.5 rounded-full text-xs font-normal bg-surface-sunken text-ink-subtle"
           >
             {{ usersData.total.toLocaleString() }}
           </span>
@@ -378,52 +387,48 @@
     <!-- ── Tab content ────────────────────────────────────────────────────────── -->
     <div class="flex-1 overflow-hidden">
       <!-- ───── Overview ────────────────────────────────────────────────────── -->
-      <div v-if="activeTab === 'overview'" class="h-full overflow-auto p-6 space-y-6">
+      <div v-if="activeTab === 'overview'" class="h-full overflow-auto p-5 space-y-5">
         <!-- Stats grid -->
         <section>
-          <h2 class="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-3">
-            Platform Stats
-          </h2>
+          <p class="text-[11px] font-semibold text-ink-subtle uppercase tracking-wider mb-2.5">
+            Platform
+          </p>
 
-          <div v-if="statsLoading" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div v-if="statsLoading" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <div
               v-for="i in 7"
               :key="i"
-              class="rounded-lg border border-line bg-surface-raised p-4 animate-pulse h-24"
+              class="rounded-lg border border-line bg-surface-raised p-3.5 animate-pulse h-20"
             />
           </div>
 
-          <div v-else-if="stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div v-else-if="stats" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <!-- Total Users -->
-            <div
-              class="rounded-lg border border-line bg-surface-raised p-4 shadow-card flex flex-col gap-2"
-            >
-              <div class="flex items-center gap-2">
+            <div class="s-card p-3.5 flex flex-col gap-1.5">
+              <div class="flex items-center gap-1.5">
                 <div
-                  class="w-7 h-7 rounded-md bg-blue-500/10 dark:bg-blue-500/15 flex items-center justify-center"
+                  class="w-5 h-5 rounded-md bg-blue-500/10 dark:bg-blue-500/15 flex items-center justify-center shrink-0"
                 >
-                  <UsersIcon class="w-3.5 h-3.5 text-blue-500" />
+                  <UsersIcon class="w-3 h-3 text-blue-500" />
                 </div>
-                <span class="text-xs font-medium text-ink-muted">Total Users</span>
+                <span class="text-[11px] font-medium text-ink-muted">Total Users</span>
               </div>
-              <p class="text-2xl font-bold tabular-nums text-ink-strong">
+              <p class="text-xl font-bold tabular-nums text-ink-strong">
                 {{ stats.totalUsers.toLocaleString() }}
               </p>
             </div>
 
             <!-- Active Users -->
-            <div
-              class="rounded-lg border border-line bg-surface-raised p-4 shadow-card flex flex-col gap-2"
-            >
-              <div class="flex items-center gap-2">
+            <div class="s-card p-3.5 flex flex-col gap-1.5">
+              <div class="flex items-center gap-1.5">
                 <div
-                  class="w-7 h-7 rounded-md bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-center"
+                  class="w-5 h-5 rounded-md bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-center shrink-0"
                 >
-                  <UserCheckIcon class="w-3.5 h-3.5 text-emerald-500" />
+                  <UserCheckIcon class="w-3 h-3 text-emerald-500" />
                 </div>
-                <span class="text-xs font-medium text-ink-muted">Active</span>
+                <span class="text-[11px] font-medium text-ink-muted">Active</span>
               </div>
-              <p class="text-2xl font-bold tabular-nums text-ink-strong">
+              <p class="text-xl font-bold tabular-nums text-ink-strong">
                 {{ stats.activeUsers.toLocaleString() }}
               </p>
               <div class="h-1 rounded-full bg-surface-sunken overflow-hidden">
@@ -432,90 +437,80 @@
                   :style="{ width: `${activeRatio}%` }"
                 />
               </div>
-              <p class="text-xs text-ink-subtle -mt-1">{{ activeRatio }}% of total</p>
+              <p class="text-[10px] text-ink-subtle -mt-0.5">{{ activeRatio }}% of total</p>
             </div>
 
             <!-- Admins -->
-            <div
-              class="rounded-lg border border-line bg-surface-raised p-4 shadow-card flex flex-col gap-2"
-            >
-              <div class="flex items-center gap-2">
+            <div class="s-card p-3.5 flex flex-col gap-1.5">
+              <div class="flex items-center gap-1.5">
                 <div
-                  class="w-7 h-7 rounded-md bg-purple-500/10 dark:bg-purple-500/15 flex items-center justify-center"
+                  class="w-5 h-5 rounded-md bg-purple-500/10 dark:bg-purple-500/15 flex items-center justify-center shrink-0"
                 >
-                  <ShieldCheckIcon class="w-3.5 h-3.5 text-purple-500" />
+                  <ShieldCheckIcon class="w-3 h-3 text-purple-500" />
                 </div>
-                <span class="text-xs font-medium text-ink-muted">Admins</span>
+                <span class="text-[11px] font-medium text-ink-muted">Admins</span>
               </div>
-              <p class="text-2xl font-bold tabular-nums text-ink-strong">
+              <p class="text-xl font-bold tabular-nums text-ink-strong">
                 {{ stats.adminUsers.toLocaleString() }}
               </p>
             </div>
 
             <!-- Churches -->
-            <div
-              class="rounded-lg border border-line bg-surface-raised p-4 shadow-card flex flex-col gap-2"
-            >
-              <div class="flex items-center gap-2">
+            <div class="s-card p-3.5 flex flex-col gap-1.5">
+              <div class="flex items-center gap-1.5">
                 <div
-                  class="w-7 h-7 rounded-md bg-amber-500/10 dark:bg-amber-500/15 flex items-center justify-center"
+                  class="w-5 h-5 rounded-md bg-amber-500/10 dark:bg-amber-500/15 flex items-center justify-center shrink-0"
                 >
-                  <ChurchIcon class="w-3.5 h-3.5 text-amber-500" />
+                  <ChurchIcon class="w-3 h-3 text-amber-500" />
                 </div>
-                <span class="text-xs font-medium text-ink-muted">Churches</span>
+                <span class="text-[11px] font-medium text-ink-muted">Churches</span>
               </div>
-              <p class="text-2xl font-bold tabular-nums text-ink-strong">
+              <p class="text-xl font-bold tabular-nums text-ink-strong">
                 {{ stats.totalChurches.toLocaleString() }}
               </p>
             </div>
 
             <!-- Notes -->
-            <div
-              class="rounded-lg border border-line bg-surface-raised p-4 shadow-card flex flex-col gap-2"
-            >
-              <div class="flex items-center gap-2">
+            <div class="s-card p-3.5 flex flex-col gap-1.5">
+              <div class="flex items-center gap-1.5">
                 <div
-                  class="w-7 h-7 rounded-md bg-slate-500/10 dark:bg-slate-500/15 flex items-center justify-center"
+                  class="w-5 h-5 rounded-md bg-slate-500/10 dark:bg-slate-500/15 flex items-center justify-center shrink-0"
                 >
-                  <FileTextIcon class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                  <FileTextIcon class="w-3 h-3 text-slate-500 dark:text-slate-400" />
                 </div>
-                <span class="text-xs font-medium text-ink-muted">Notes</span>
+                <span class="text-[11px] font-medium text-ink-muted">Notes</span>
               </div>
-              <p class="text-2xl font-bold tabular-nums text-ink-strong">
+              <p class="text-xl font-bold tabular-nums text-ink-strong">
                 {{ stats.totalNotes.toLocaleString() }}
               </p>
             </div>
 
             <!-- Reading Plans -->
-            <div
-              class="rounded-lg border border-line bg-surface-raised p-4 shadow-card flex flex-col gap-2"
-            >
-              <div class="flex items-center gap-2">
+            <div class="s-card p-3.5 flex flex-col gap-1.5">
+              <div class="flex items-center gap-1.5">
                 <div
-                  class="w-7 h-7 rounded-md bg-indigo-500/10 dark:bg-indigo-500/15 flex items-center justify-center"
+                  class="w-5 h-5 rounded-md bg-indigo-500/10 dark:bg-indigo-500/15 flex items-center justify-center shrink-0"
                 >
-                  <BookOpenIcon class="w-3.5 h-3.5 text-indigo-500" />
+                  <BookOpenIcon class="w-3 h-3 text-indigo-500" />
                 </div>
-                <span class="text-xs font-medium text-ink-muted">Reading Plans</span>
+                <span class="text-[11px] font-medium text-ink-muted">Reading Plans</span>
               </div>
-              <p class="text-2xl font-bold tabular-nums text-ink-strong">
+              <p class="text-xl font-bold tabular-nums text-ink-strong">
                 {{ stats.totalPlans.toLocaleString() }}
               </p>
             </div>
 
             <!-- Community Posts -->
-            <div
-              class="rounded-lg border border-line bg-surface-raised p-4 shadow-card flex flex-col gap-2"
-            >
-              <div class="flex items-center gap-2">
+            <div class="s-card p-3.5 flex flex-col gap-1.5">
+              <div class="flex items-center gap-1.5">
                 <div
-                  class="w-7 h-7 rounded-md bg-rose-500/10 dark:bg-rose-500/15 flex items-center justify-center"
+                  class="w-5 h-5 rounded-md bg-rose-500/10 dark:bg-rose-500/15 flex items-center justify-center shrink-0"
                 >
-                  <MessageSquareIcon class="w-3.5 h-3.5 text-rose-500" />
+                  <MessageSquareIcon class="w-3 h-3 text-rose-500" />
                 </div>
-                <span class="text-xs font-medium text-ink-muted">Community Posts</span>
+                <span class="text-[11px] font-medium text-ink-muted">Posts</span>
               </div>
-              <p class="text-2xl font-bold tabular-nums text-ink-strong">
+              <p class="text-xl font-bold tabular-nums text-ink-strong">
                 {{ stats.totalCommunityPosts.toLocaleString() }}
               </p>
             </div>
@@ -528,43 +523,28 @@
 
         <!-- Recent registrations -->
         <section>
-          <h2 class="text-xs font-semibold text-ink-muted uppercase tracking-wider mb-3">
+          <p class="text-[11px] font-semibold text-ink-subtle uppercase tracking-wider mb-2.5">
             Recent Members
-          </h2>
+          </p>
 
-          <div
-            v-if="recentUsers.length"
-            class="bg-surface-raised border border-line rounded-lg shadow-card overflow-hidden divide-y divide-line-subtle"
-          >
+          <div v-if="recentUsers.length" class="s-card overflow-hidden divide-y divide-line-subtle">
             <div
               v-for="user in recentUsers"
               :key="user.id"
-              class="flex items-center gap-3 px-4 py-3 hover:bg-surface-sunken transition-colors"
+              class="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-sunken transition-colors cursor-default"
             >
               <div
-                class="w-9 h-9 rounded-full bg-purple-500/10 dark:bg-purple-500/15 flex items-center justify-center text-xs font-bold text-purple-600 dark:text-purple-400 shrink-0"
+                class="w-7 h-7 rounded-full bg-purple-500/10 dark:bg-purple-500/15 flex items-center justify-center text-[10px] font-bold text-purple-600 dark:text-purple-400 shrink-0"
               >
                 {{ initials(user.displayName) }}
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-ink-strong truncate">{{ user.displayName }}</p>
-                <p class="text-xs text-ink-muted truncate">{{ user.email }}</p>
+                <p class="text-xs font-medium text-ink-strong truncate">{{ user.displayName }}</p>
+                <p class="text-[11px] text-ink-muted truncate">{{ user.email }}</p>
               </div>
-              <div class="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-                <span class="text-xs text-ink-subtle">{{ formatDate(user.createdAt) }}</span>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="text-[11px] text-ink-subtle">{{ formatDate(user.createdAt) }}</span>
                 <RoleBadge :role="user.role" />
-                <span
-                  v-if="!user.isEmailVerified"
-                  class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400"
-                >
-                  Unverified
-                </span>
-                <span
-                  v-if="!user.isActive"
-                  class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400"
-                >
-                  Inactive
-                </span>
               </div>
             </div>
           </div>
@@ -577,8 +557,7 @@
       <div v-else-if="activeTab === 'users'" class="h-full flex overflow-hidden">
         <!-- Left: table -->
         <div class="flex flex-col overflow-hidden flex-1 min-w-0">
-          <div class="flex flex-col gap-3 p-4 pb-0">
-            <!-- Toolbar -->
+          <div class="flex flex-col gap-2.5 p-4 pb-0">
             <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
               <div class="relative flex-1">
                 <SearchIcon
@@ -588,14 +567,14 @@
                   :value="searchRaw"
                   type="search"
                   placeholder="Search by name or email…"
-                  class="w-full pl-8 pr-4 py-2 text-sm rounded-lg border border-line bg-surface-raised focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition text-ink-strong placeholder:text-ink-subtle"
+                  class="w-full pl-8 pr-4 py-1.5 text-sm rounded-lg border border-line bg-surface-raised focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition text-ink-strong placeholder:text-ink-subtle"
                   @input="onSearchInput(($event.target as HTMLInputElement).value)"
                 />
               </div>
-              <div class="flex items-center gap-1.5 flex-wrap">
+              <div class="flex items-center gap-1 flex-wrap">
                 <button
                   :class="[
-                    'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+                    'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors',
                     !roleFilter
                       ? 'bg-purple-600 text-white border-purple-600'
                       : 'border-line text-ink-muted hover:border-line-strong hover:text-ink-strong bg-surface-raised',
@@ -608,7 +587,7 @@
                   v-for="role in ROLES"
                   :key="role"
                   :class="[
-                    'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
+                    'px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors',
                     roleFilter === role
                       ? 'bg-purple-600 text-white border-purple-600'
                       : 'border-line text-ink-muted hover:border-line-strong hover:text-ink-strong bg-surface-raised',
@@ -623,34 +602,32 @@
 
           <!-- Table -->
           <div class="flex-1 overflow-auto p-4 pt-3 space-y-3">
-            <div
-              class="rounded-lg border border-line bg-surface-raised shadow-card overflow-hidden"
-            >
+            <div class="s-card overflow-hidden">
               <table class="w-full text-sm">
                 <thead>
                   <tr class="bg-surface-sunken border-b border-line">
                     <th
-                      class="text-left px-4 py-2.5 text-xs font-semibold text-ink-muted uppercase tracking-wide"
+                      class="text-left px-4 py-2 text-[11px] font-semibold text-ink-muted uppercase tracking-wide"
                     >
                       User
                     </th>
                     <th
-                      class="text-left px-4 py-2.5 text-xs font-semibold text-ink-muted uppercase tracking-wide hidden md:table-cell"
+                      class="text-left px-4 py-2 text-[11px] font-semibold text-ink-muted uppercase tracking-wide hidden md:table-cell"
                     >
                       Role
                     </th>
                     <th
-                      class="text-left px-4 py-2.5 text-xs font-semibold text-ink-muted uppercase tracking-wide hidden lg:table-cell"
+                      class="text-left px-4 py-2 text-[11px] font-semibold text-ink-muted uppercase tracking-wide hidden lg:table-cell"
                     >
                       Joined
                     </th>
                     <th
-                      class="text-left px-4 py-2.5 text-xs font-semibold text-ink-muted uppercase tracking-wide hidden lg:table-cell"
+                      class="text-left px-4 py-2 text-[11px] font-semibold text-ink-muted uppercase tracking-wide hidden lg:table-cell"
                     >
                       Last Login
                     </th>
                     <th
-                      class="text-left px-4 py-2.5 text-xs font-semibold text-ink-muted uppercase tracking-wide"
+                      class="text-left px-4 py-2 text-[11px] font-semibold text-ink-muted uppercase tracking-wide"
                     >
                       Status
                     </th>
@@ -658,7 +635,7 @@
                 </thead>
                 <tbody class="divide-y divide-line-subtle">
                   <tr v-if="usersLoading">
-                    <td colspan="5" class="px-4 py-12 text-center text-ink-muted text-sm">
+                    <td colspan="5" class="px-4 py-10 text-center text-ink-muted text-sm">
                       <RefreshCwIcon
                         class="w-4 h-4 animate-spin inline-block mr-2 text-ink-subtle"
                       />
@@ -668,14 +645,14 @@
                   <tr v-else-if="usersError">
                     <td
                       colspan="5"
-                      class="px-4 py-12 text-center text-sm"
+                      class="px-4 py-10 text-center text-sm"
                       style="color: var(--s-danger-fg)"
                     >
                       {{ usersError }}
                     </td>
                   </tr>
                   <tr v-else-if="!usersData?.users.length">
-                    <td colspan="5" class="px-4 py-12 text-center text-ink-muted text-sm">
+                    <td colspan="5" class="px-4 py-10 text-center text-ink-muted text-sm">
                       No users match your filters.
                     </td>
                   </tr>
@@ -693,36 +670,36 @@
                     ]"
                     @click="selectUser(user)"
                   >
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-2.5">
                       <div class="flex items-center gap-2.5">
                         <div
-                          class="w-8 h-8 rounded-full bg-purple-500/10 dark:bg-purple-500/15 flex items-center justify-center text-xs font-bold text-purple-600 dark:text-purple-400 shrink-0"
+                          class="w-7 h-7 rounded-full bg-purple-500/10 dark:bg-purple-500/15 flex items-center justify-center text-[10px] font-bold text-purple-600 dark:text-purple-400 shrink-0"
                         >
                           {{ initials(user.displayName) }}
                         </div>
                         <div class="min-w-0">
-                          <p class="font-medium text-ink-strong truncate max-w-[140px]">
+                          <p class="text-xs font-medium text-ink-strong truncate max-w-[140px]">
                             {{ user.displayName }}
                           </p>
-                          <p class="text-xs text-ink-muted truncate max-w-[140px]">
+                          <p class="text-[11px] text-ink-muted truncate max-w-[140px]">
                             {{ user.email }}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td class="px-4 py-3 hidden md:table-cell">
+                    <td class="px-4 py-2.5 hidden md:table-cell">
                       <RoleBadge :role="user.role" />
                     </td>
-                    <td class="px-4 py-3 text-xs text-ink-muted hidden lg:table-cell">
+                    <td class="px-4 py-2.5 text-[11px] text-ink-muted hidden lg:table-cell">
                       {{ formatDate(user.createdAt) }}
                     </td>
-                    <td class="px-4 py-3 text-xs text-ink-muted hidden lg:table-cell">
+                    <td class="px-4 py-2.5 text-[11px] text-ink-muted hidden lg:table-cell">
                       {{ formatDate(user.lastLoginAt) }}
                     </td>
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-2.5">
                       <span
                         :class="[
-                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium',
                           user.isActive
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
                             : 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
@@ -762,7 +739,7 @@
                   <ChevronLeftIcon class="w-3.5 h-3.5" />
                   Prev
                 </button>
-                <span class="px-2.5 py-1.5 text-xs text-ink-muted tabular-nums">{{ page }}</span>
+                <span class="px-2 py-1.5 text-xs text-ink-muted tabular-nums">{{ page }}</span>
                 <button
                   :disabled="!hasNextPage || usersLoading"
                   class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-line text-xs text-ink-muted disabled:opacity-40 hover:bg-surface-sunken transition-colors bg-surface-raised"
@@ -780,11 +757,13 @@
         <Transition name="panel-slide">
           <aside
             v-if="selectedUser"
-            class="w-72 shrink-0 border-l border-line flex flex-col overflow-hidden bg-surface-base"
+            class="w-68 shrink-0 border-l border-line flex flex-col overflow-hidden bg-surface-base"
           >
             <!-- Panel header -->
-            <div class="flex items-center justify-between px-4 py-3 border-b border-line shrink-0">
-              <span class="text-xs font-semibold text-ink-muted uppercase tracking-wide"
+            <div
+              class="flex items-center justify-between px-4 py-2.5 border-b border-line shrink-0"
+            >
+              <span class="text-[11px] font-semibold text-ink-muted uppercase tracking-wide"
                 >User Details</span
               >
               <button
@@ -797,20 +776,20 @@
 
             <div class="flex-1 overflow-auto">
               <!-- Identity -->
-              <div class="p-5 flex flex-col items-center text-center border-b border-line-subtle">
+              <div class="p-4 flex flex-col items-center text-center border-b border-line-subtle">
                 <div
-                  class="w-14 h-14 rounded-full bg-purple-500/10 dark:bg-purple-500/15 flex items-center justify-center text-lg font-bold text-purple-600 dark:text-purple-400 mb-3"
+                  class="w-12 h-12 rounded-full bg-purple-500/10 dark:bg-purple-500/15 flex items-center justify-center text-base font-bold text-purple-600 dark:text-purple-400 mb-2.5"
                 >
                   {{ initials(selectedUser.displayName) }}
                 </div>
                 <p class="text-sm font-semibold text-ink-strong">
                   {{ selectedUser.displayName }}
                 </p>
-                <p class="text-xs text-ink-muted mt-0.5 break-all">{{ selectedUser.email }}</p>
-                <div class="flex items-center gap-1.5 mt-3 flex-wrap justify-center">
+                <p class="text-[11px] text-ink-muted mt-0.5 break-all">{{ selectedUser.email }}</p>
+                <div class="flex items-center gap-1.5 mt-2.5 flex-wrap justify-center">
                   <span
                     :class="[
-                      'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                      'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium',
                       selectedUser.isActive
                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
                         : 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
@@ -826,7 +805,7 @@
                   </span>
                   <span
                     :class="[
-                      'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                      'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium',
                       selectedUser.isEmailVerified
                         ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400'
                         : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
@@ -840,37 +819,37 @@
 
               <!-- Account details -->
               <div class="p-4 border-b border-line-subtle space-y-1">
-                <h3 class="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2.5">
+                <h3 class="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
                   Account Info
                 </h3>
-                <dl class="space-y-2.5">
+                <dl class="space-y-2">
                   <div class="flex items-start gap-2">
-                    <dt class="text-xs text-ink-muted w-20 shrink-0 pt-px">Joined</dt>
-                    <dd class="text-xs text-ink-strong font-medium">
+                    <dt class="text-[11px] text-ink-muted w-20 shrink-0 pt-px">Joined</dt>
+                    <dd class="text-[11px] text-ink-strong font-medium">
                       {{ formatDate(selectedUser.createdAt, true) }}
                     </dd>
                   </div>
                   <div class="flex items-start gap-2">
-                    <dt class="text-xs text-ink-muted w-20 shrink-0 pt-px">Last Login</dt>
-                    <dd class="text-xs text-ink-strong font-medium">
+                    <dt class="text-[11px] text-ink-muted w-20 shrink-0 pt-px">Last Login</dt>
+                    <dd class="text-[11px] text-ink-strong font-medium">
                       {{ formatDate(selectedUser.lastLoginAt, true) }}
                     </dd>
                   </div>
                   <div class="flex items-start gap-2">
-                    <dt class="text-xs text-ink-muted w-20 shrink-0 pt-px">Church</dt>
-                    <dd class="text-xs text-ink-strong font-medium">
+                    <dt class="text-[11px] text-ink-muted w-20 shrink-0 pt-px">Church</dt>
+                    <dd class="text-[11px] text-ink-strong font-medium">
                       {{ selectedUser.churchId ? 'Linked' : 'None' }}
                     </dd>
                   </div>
                   <div class="flex items-start gap-2">
-                    <dt class="text-xs text-ink-muted w-20 shrink-0 pt-px">Session v</dt>
-                    <dd class="text-xs text-ink-muted tabular-nums">
+                    <dt class="text-[11px] text-ink-muted w-20 shrink-0 pt-px">Session v</dt>
+                    <dd class="text-[11px] text-ink-subtle tabular-nums">
                       {{ selectedUser.sessionVersion }}
                     </dd>
                   </div>
                   <div class="flex items-start gap-2">
-                    <dt class="text-xs text-ink-muted w-20 shrink-0 pt-px">User ID</dt>
-                    <dd class="text-xs text-ink-subtle font-mono break-all">
+                    <dt class="text-[11px] text-ink-muted w-20 shrink-0 pt-px">User ID</dt>
+                    <dd class="text-[11px] text-ink-subtle font-mono break-all">
                       {{ selectedUser.id.slice(0, 8) }}…
                     </dd>
                   </div>
@@ -879,7 +858,7 @@
 
               <!-- Role -->
               <div class="p-4 border-b border-line-subtle">
-                <h3 class="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2.5">
+                <h3 class="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
                   Role
                 </h3>
                 <select
@@ -894,11 +873,10 @@
 
               <!-- Actions -->
               <div class="p-4 space-y-2">
-                <h3 class="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-2.5">
+                <h3 class="text-[11px] font-semibold text-ink-muted uppercase tracking-wide mb-2">
                   Actions
                 </h3>
 
-                <!-- Deactivate confirm -->
                 <template v-if="confirmDeactivateId === selectedUser.id">
                   <div
                     class="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-3"
@@ -907,7 +885,7 @@
                       Deactivate this user?
                     </p>
                     <p
-                      class="text-xs text-amber-600/80 dark:text-amber-500/70 mb-3 leading-relaxed"
+                      class="text-[11px] text-amber-600/80 dark:text-amber-500/70 mb-3 leading-relaxed"
                     >
                       They'll be signed out immediately and cannot log back in until reactivated.
                     </p>
@@ -946,7 +924,6 @@
                   </button>
                 </template>
 
-                <!-- Revoke sessions confirm -->
                 <template v-if="confirmRevokeId === selectedUser.id">
                   <div
                     class="rounded-lg border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/10 p-3"
@@ -954,7 +931,9 @@
                     <p class="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">
                       Revoke all sessions?
                     </p>
-                    <p class="text-xs text-blue-600/80 dark:text-blue-500/70 mb-3 leading-relaxed">
+                    <p
+                      class="text-[11px] text-blue-600/80 dark:text-blue-500/70 mb-3 leading-relaxed"
+                    >
                       User will be signed out of all devices immediately.
                     </p>
                     <div class="flex gap-2">
