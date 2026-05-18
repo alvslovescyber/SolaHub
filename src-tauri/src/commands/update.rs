@@ -42,7 +42,7 @@ pub async fn check_app_update(app: AppHandle) -> Result<UpdateCheckResult, Strin
 }
 
 const DEFAULT_UPDATE_ENDPOINT: &str =
-    "https://pub-c5a5d4bded77499abee30a6e8fd383b8.r2.dev/latest.json";
+    "https://github.com/alvslovescyber/SolaHub/releases/latest/download/latest.json";
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]

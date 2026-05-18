@@ -28,7 +28,7 @@ def main() -> None:
     )
     parser.add_argument("--dist", default="dist", help="Directory containing release assets.")
     parser.add_argument("--tag", required=True, help="Release tag, for example v0.1.5.")
-    parser.add_argument("--r2-base", required=True, help="Public R2 base URL.")
+    parser.add_argument("--github-repo", required=True, help="GitHub repo in owner/name format.")
     parser.add_argument("--output", default="dist/latest.json", help="Output JSON path.")
     parser.add_argument(
         "--windows-optional",
@@ -40,7 +40,7 @@ def main() -> None:
     dist = Path(args.dist)
     output = Path(args.output)
     version = args.tag.removeprefix("v")
-    r2_base = args.r2_base.rstrip("/")
+    base_url = f"https://github.com/{args.github_repo}/releases/download/{args.tag}"
 
     if not dist.is_dir():
         raise SystemExit(f"Release artifact directory does not exist: {dist}")
@@ -60,11 +60,11 @@ def main() -> None:
     platforms: dict[str, dict[str, str]] = {
         "darwin-aarch64": {
             "signature": read_signature(mac_arm_sig),
-            "url": f"{r2_base}/{mac_arm_archive.name}",
+            "url": f"{base_url}/{mac_arm_archive.name}",
         },
         "darwin-x86_64": {
             "signature": read_signature(mac_x64_sig),
-            "url": f"{r2_base}/{mac_x64_archive.name}",
+            "url": f"{base_url}/{mac_x64_archive.name}",
         },
     }
 
@@ -73,7 +73,7 @@ def main() -> None:
         windows_archive = require_file(dist / windows_sig.name.removesuffix(".sig"))
         platforms["windows-x86_64"] = {
             "signature": read_signature(windows_sig),
-            "url": f"{r2_base}/{windows_archive.name}",
+            "url": f"{base_url}/{windows_archive.name}",
         }
     else:
         print("Windows artifacts absent — publishing macOS-only latest.json")

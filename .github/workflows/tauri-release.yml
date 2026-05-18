@@ -20,10 +20,9 @@ permissions:
 
 env:
   NODE_VERSION: '22'
-  R2_PUBLIC_BASE: 'https://pub-c5a5d4bded77499abee30a6e8fd383b8.r2.dev'
-  R2_BUCKET: 'solahub-downloads'
   RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  UPDATER_ENDPOINT: 'https://github.com/${{ github.repository }}/releases/latest/download/latest.json'
 
 jobs:
   build-macos:
@@ -81,7 +80,7 @@ jobs:
         run: python3 scripts/inject-updater-config.py
         env:
           SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
-          R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
+          SOLAHUB_UPDATER_ENDPOINT: ${{ env.UPDATER_ENDPOINT }}
 
       - name: Build & sign Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -91,6 +90,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
           SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
+          SOLAHUB_UPDATER_ENDPOINT: ${{ env.UPDATER_ENDPOINT }}
         with:
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: SolaHub ${{ env.RELEASE_TAG }}
@@ -199,7 +199,7 @@ jobs:
         run: python3 scripts/inject-updater-config.py
         env:
           SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
-          R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
+          SOLAHUB_UPDATER_ENDPOINT: ${{ env.UPDATER_ENDPOINT }}
 
       - name: Build & sign Tauri app
         uses: tauri-apps/tauri-action@v0
@@ -209,6 +209,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
           SOLAHUB_UPDATER_PUBLIC_KEY: ${{ secrets.SOLAHUB_UPDATER_PUBLIC_KEY }}
+          SOLAHUB_UPDATER_ENDPOINT: ${{ env.UPDATER_ENDPOINT }}
         with:
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: SolaHub ${{ env.RELEASE_TAG }}
@@ -251,8 +252,8 @@ jobs:
             --repo ${{ github.repository }} --clobber
           echo "Uploaded SolaHub_x64.nsis.zip and SolaHub_x64.nsis.zip.sig"
 
-  publish-r2:
-    name: Publish update artifacts to R2
+  publish-latest-json:
+    name: Publish latest.json to release
     needs: [build-macos, build-windows]
     if: always() && needs.build-macos.result == 'success'
     runs-on: ubuntu-latest
@@ -260,21 +261,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Download release artifacts
+      - name: Download updater artifacts from release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG=${{ env.RELEASE_TAG }}
           mkdir -p ./dist
-          # Download only the fixed-name updater artifacts (no version prefix) plus
-          # the version-named installers for the downloads page.
-          # Deliberately exclude version-named *.nsis.zip.sig files — they duplicate
-          # the SolaHub_x64.nsis.zip.sig we upload explicitly, causing generate-tauri-latest-json.py
-          # to find multiple *.nsis.zip.sig matches and exit with an error.
           gh release download "$TAG" \
             --repo ${{ github.repository }} \
             --pattern "SolaHub_aarch64.app.tar.gz" \
@@ -283,70 +275,27 @@ jobs:
             --pattern "SolaHub_x64.app.tar.gz.sig" \
             --pattern "SolaHub_x64.nsis.zip" \
             --pattern "SolaHub_x64.nsis.zip.sig" \
-            --pattern "*.dmg" \
-            --pattern "*-setup.exe" \
             --dir ./dist
           echo "--- Downloaded ---"
           ls -lh ./dist/
 
-      - name: Upload binaries to R2
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          cd dist
-          for file in *.nsis.zip *.nsis.zip.sig *.app.tar.gz *.app.tar.gz.sig *.dmg *-setup.exe *.msi; do
-            [ -f "$file" ] || continue
-            echo "Uploading $file ..."
-            npx wrangler r2 object put "${{ env.R2_BUCKET }}/$file" \
-              --file "$file" \
-              --content-type "application/octet-stream" \
-              --remote
-          done
-
-      - name: Build latest.json from signatures
+      - name: Generate latest.json
         run: |
           python3 scripts/generate-tauri-latest-json.py \
             --dist dist \
-            --tag "${TAG}" \
-            --r2-base "${R2_PUBLIC_BASE}" \
+            --tag "${{ env.RELEASE_TAG }}" \
+            --github-repo "${{ github.repository }}" \
             --output dist/latest.json \
             --windows-optional
-        env:
-          R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
-          TAG: ${{ env.RELEASE_TAG }}
+          echo "--- latest.json ---"
+          cat dist/latest.json
 
-      - name: Publish latest.json to R2
+      - name: Upload latest.json to release
         env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npx wrangler r2 object put "${{ env.R2_BUCKET }}/latest.json" \
-            --file dist/latest.json \
-            --content-type "application/json" \
-            --remote
-          echo "✅ latest.json live at ${{ env.R2_PUBLIC_BASE }}/latest.json"
-
-      - name: Publish downloads page to R2
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          R2_PUBLIC_BASE: ${{ env.R2_PUBLIC_BASE }}
-        run: |
-          TAG=${{ env.RELEASE_TAG }}
-          VERSION=${TAG#v}
-          sed -e "s/__MAC_VERSION__/${VERSION}/g" \
-              -e "s/__WIN_VERSION__/${VERSION}/g" \
-              scripts/downloads.template.html > dist/downloads.html
-          npx wrangler r2 object put "${{ env.R2_BUCKET }}/downloads.html" \
-            --file dist/downloads.html \
-            --content-type "text/html; charset=utf-8" \
-            --remote
-          echo "✅ downloads.html live (v${VERSION})"
-
-      - name: Clean up old versions from R2
-        continue-on-error: true
-        env:
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: python3 scripts/cleanup-r2.py --bucket ${{ env.R2_BUCKET }} --keep 2
+          gh release upload "${{ env.RELEASE_TAG }}" dist/latest.json \
+            --repo ${{ github.repository }} \
+            --clobber
+          echo "✅ latest.json uploaded to release ${{ env.RELEASE_TAG }}"
+          echo "🔗 Update endpoint: https://github.com/${{ github.repository }}/releases/latest/download/latest.json"
