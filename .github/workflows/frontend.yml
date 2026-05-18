@@ -77,6 +77,12 @@ jobs:
         env:
           VITE_API_URL: http://localhost:3000
 
+      - name: Build (Windows Vite target)
+        run: npm run build
+        env:
+          VITE_API_URL: http://localhost:3000
+          TAURI_ENV_PLATFORM: windows
+
   rust:
     name: Rust — Format, Lint & Tests
     runs-on: ubuntu-latest

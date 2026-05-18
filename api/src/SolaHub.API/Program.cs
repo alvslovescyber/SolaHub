@@ -494,10 +494,26 @@ static string[] ResolveCorsOrigins(IConfiguration configuration, IHostEnvironmen
     var configured = configuration["Cors:AllowedOrigins"];
     if (!string.IsNullOrWhiteSpace(configured))
     {
-        return configured.Split(
-            ',',
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
-        );
+        var origins = configured
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+
+        // Tauri 2: macOS WKWebView sends Origin: tauri://localhost; Windows WebView2 sends
+        // Origin: https://tauri.localhost. Both must be present — if a deployment env var
+        // only specifies one (common when macOS was tested first), the other platform's
+        // CORS preflight fails and Axios reports "network error" for every request.
+        if (
+            origins.Contains("tauri://localhost", StringComparer.OrdinalIgnoreCase)
+            && !origins.Contains("https://tauri.localhost", StringComparer.OrdinalIgnoreCase)
+        )
+            origins.Add("https://tauri.localhost");
+        if (
+            origins.Contains("https://tauri.localhost", StringComparer.OrdinalIgnoreCase)
+            && !origins.Contains("tauri://localhost", StringComparer.OrdinalIgnoreCase)
+        )
+            origins.Add("tauri://localhost");
+
+        return [.. origins];
     }
 
     if (environment.IsDevelopment() || environment.IsEnvironment("Test"))
