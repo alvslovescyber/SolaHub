@@ -3222,7 +3222,7 @@ dependencies = [
 
 [[package]]
 name = "solahub"
-version = "0.1.12"
+version = "0.1.14"
 dependencies = [
  "log",
  "rusqlite",

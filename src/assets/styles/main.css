@@ -26,8 +26,8 @@
 .s-vibrancy-sidebar {
   position: relative;
   background-color: var(--s-surface-sidebar);
-  backdrop-filter: blur(40px) saturate(2.2);
-  -webkit-backdrop-filter: blur(40px) saturate(2.2);
+  backdrop-filter: blur(16px) saturate(1.8);
+  -webkit-backdrop-filter: blur(16px) saturate(1.8);
 }
 
 /* Warm aurora tint layered over the frosted glass. */
@@ -58,8 +58,8 @@
 
 .s-vibrancy-window {
   background: var(--s-surface-vibrancy);
-  backdrop-filter: blur(32px) saturate(1.7);
-  -webkit-backdrop-filter: blur(32px) saturate(1.7);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
 }
 
 /* Canvas left intentionally neutral — no aurora wash on main content. */
@@ -125,14 +125,14 @@
   border: 1px solid var(--s-border-default);
   box-shadow: var(--s-shadow-modal);
   background: var(--s-surface-vibrancy);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .dark .s-auth-card {
   background: var(--s-surface-raised);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* ─── Modal overlay (blurs entire window incl. sidebar) ──────────────────── */
@@ -140,8 +140,8 @@
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.32);
-  backdrop-filter: blur(14px) saturate(1.4);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .dark .s-modal-backdrop {

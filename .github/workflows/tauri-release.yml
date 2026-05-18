@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v0.1.5)'
+        description: 'Release tag (e.g. v0.1.13)'
         required: true
-        default: 'v0.1.5'
+        default: 'v0.1.13'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.inputs.tag || github.ref_name }}
@@ -28,6 +28,7 @@ jobs:
   build-macos:
     name: macOS (${{ matrix.label }})
     runs-on: macos-latest
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -103,7 +104,7 @@ jobs:
             - **macOS Intel** — `SolaHub_*_x64.dmg`
             - **Windows** — `SolaHub_*_x64-setup.exe`
           releaseDraft: false
-          prerelease: true
+          prerelease: false
           args: --target ${{ matrix.arch }}
           includeUpdaterJson: false
 
@@ -155,6 +156,7 @@ jobs:
   build-windows:
     name: Windows (x64)
     runs-on: windows-latest
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -222,7 +224,7 @@ jobs:
             - **macOS Intel** — `SolaHub_*_x64.dmg`
             - **Windows** — `SolaHub_*_x64-setup.exe`
           releaseDraft: false
-          prerelease: true
+          prerelease: false
           args: --target x86_64-pc-windows-msvc
           includeUpdaterJson: false
 

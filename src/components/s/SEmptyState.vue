@@ -42,7 +42,7 @@
   <div class="relative flex flex-col items-center text-center py-14 px-6 overflow-hidden">
     <div
       :class="[
-        'absolute -top-20 left-1/2 -translate-x-1/2 h-48 w-48 rounded-full blur-3xl opacity-70 pointer-events-none bg-gradient-to-br',
+        'absolute -top-20 left-1/2 -translate-x-1/2 h-48 w-48 rounded-full blur-xl opacity-60 pointer-events-none bg-gradient-to-br',
         orbClass,
       ]"
     />
