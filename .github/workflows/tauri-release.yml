@@ -23,6 +23,7 @@ env:
   R2_PUBLIC_BASE: 'https://pub-c5a5d4bded77499abee30a6e8fd383b8.r2.dev'
   R2_BUCKET: 'solahub-downloads'
   RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-macos:
@@ -269,14 +270,21 @@ jobs:
         run: |
           TAG=${{ env.RELEASE_TAG }}
           mkdir -p ./dist
+          # Download only the fixed-name updater artifacts (no version prefix) plus
+          # the version-named installers for the downloads page.
+          # Deliberately exclude version-named *.nsis.zip.sig files — they duplicate
+          # the SolaHub_x64.nsis.zip.sig we upload explicitly, causing generate-tauri-latest-json.py
+          # to find multiple *.nsis.zip.sig matches and exit with an error.
           gh release download "$TAG" \
             --repo ${{ github.repository }} \
-            --pattern "*.sig" \
-            --pattern "*.nsis.zip" \
-            --pattern "*.app.tar.gz" \
+            --pattern "SolaHub_aarch64.app.tar.gz" \
+            --pattern "SolaHub_aarch64.app.tar.gz.sig" \
+            --pattern "SolaHub_x64.app.tar.gz" \
+            --pattern "SolaHub_x64.app.tar.gz.sig" \
+            --pattern "SolaHub_x64.nsis.zip" \
+            --pattern "SolaHub_x64.nsis.zip.sig" \
             --pattern "*.dmg" \
             --pattern "*-setup.exe" \
-            --pattern "*.msi" \
             --dir ./dist
           echo "--- Downloaded ---"
           ls -lh ./dist/

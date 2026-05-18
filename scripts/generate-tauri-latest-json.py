@@ -50,12 +50,12 @@ def main() -> None:
     mac_x64_archive = require_file(dist / "SolaHub_x64.app.tar.gz")
     mac_x64_sig = require_file(dist / "SolaHub_x64.app.tar.gz.sig")
 
-    windows_sigs = sorted(dist.glob("*.nsis.zip.sig"))
+    # Use the fixed-name updater artifact (no version prefix) so this script never
+    # accidentally picks up version-named installer sigs from the release download.
+    windows_sig_path = dist / "SolaHub_x64.nsis.zip.sig"
+    windows_sigs = [windows_sig_path] if windows_sig_path.is_file() else []
     if not windows_sigs and not args.windows_optional:
-        raise SystemExit("Required Windows updater signature is missing: *.nsis.zip.sig")
-    if len(windows_sigs) > 1:
-        names = ", ".join(path.name for path in windows_sigs)
-        raise SystemExit(f"Expected one Windows updater signature, found: {names}")
+        raise SystemExit(f"Required Windows updater signature is missing: {windows_sig_path}")
 
     platforms: dict[str, dict[str, str]] = {
         "darwin-aarch64": {
