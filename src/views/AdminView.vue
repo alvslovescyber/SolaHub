@@ -321,11 +321,13 @@
     if (id === 'overview') closePanel()
   }
 
-  onMounted(() => {
+  function refreshAll() {
     void loadStats()
     void loadUsers()
     void loadRecentUsers()
-  })
+  }
+
+  onMounted(refreshAll)
 </script>
 
 <template>
@@ -345,11 +347,7 @@
         <button
           class="w-7 h-7 rounded-md flex items-center justify-center text-ink-subtle hover:text-ink-strong hover:bg-surface-sunken transition-colors"
           title="Refresh"
-          @click="
-            loadStats()
-            loadUsers()
-            loadRecentUsers()
-          "
+          @click="refreshAll"
         >
           <RefreshCwIcon class="w-3.5 h-3.5" />
         </button>
