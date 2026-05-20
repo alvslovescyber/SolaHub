@@ -16,11 +16,6 @@ It's built with Tauri so it actually feels like a real desktop app — no Electr
 
 ## Screenshots
 
-### Sign in
-![Login](docs/screenshots/login.png)
-Clean, minimal login screen. The gradient background is dynamic and shifts based on system theme.
-
----
 
 ### Dashboard
 ![Dashboard](docs/screenshots/dashboard.png)
